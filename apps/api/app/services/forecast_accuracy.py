@@ -1,5 +1,6 @@
 import math
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -99,6 +100,7 @@ async def calculate_accuracy_for_run(
         accuracy.mae = mae
         accuracy.bias = bias
         accuracy.samples_count = len(matched_rows)
+        accuracy.calculated_at = datetime.now(timezone.utc)
 
     await session.commit()
     await session.refresh(accuracy)

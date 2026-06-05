@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.forecast import (
@@ -132,6 +133,42 @@ async def create_actual_generation(
     return values
 
 
+async def upsert_actual_generation_point(
+    session: AsyncSession,
+    *,
+    solar_plant_id: uuid.UUID,
+    timestamp: datetime,
+    actual_power_kw: float,
+    actual_energy_kwh: float | None,
+    source: str,
+    quality: str,
+) -> ActualGeneration:
+    statement = (
+        insert(ActualGeneration)
+        .values(
+            solar_plant_id=solar_plant_id,
+            timestamp=timestamp,
+            actual_power_kw=actual_power_kw,
+            actual_energy_kwh=actual_energy_kwh,
+            source=source,
+            quality=quality,
+        )
+        .on_conflict_do_update(
+            constraint="uq_actual_generation_plant_timestamp",
+            set_={
+                "actual_power_kw": actual_power_kw,
+                "actual_energy_kwh": actual_energy_kwh,
+                "source": source,
+                "quality": quality,
+            },
+        )
+        .returning(ActualGeneration)
+    )
+    result = await session.execute(statement)
+    await session.commit()
+    return result.scalar_one()
+
+
 async def list_actual_generation(
     session: AsyncSession,
     plant_id: uuid.UUID,
@@ -156,3 +193,19 @@ async def get_accuracy_by_run(
         select(ForecastAccuracy).where(ForecastAccuracy.forecast_run_id == forecast_run_id)
     )
     return result.scalar_one_or_none()
+
+
+async def list_forecast_runs_for_actual_point(
+    session: AsyncSession,
+    *,
+    solar_plant_id: uuid.UUID,
+    timestamp: datetime,
+) -> list[ForecastRun]:
+    result = await session.execute(
+        select(ForecastRun)
+        .join(ForecastValue, ForecastValue.forecast_run_id == ForecastRun.id)
+        .where(ForecastRun.solar_plant_id == solar_plant_id)
+        .where(ForecastValue.timestamp == timestamp)
+        .order_by(ForecastRun.created_at.desc())
+    )
+    return list(result.scalars().unique().all())

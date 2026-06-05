@@ -1,10 +1,23 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.services.mqtt_subscriber import start_mqtt_subscriber, stop_mqtt_subscriber
 
 settings = get_settings()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    mqtt_task = start_mqtt_subscriber(settings)
+    try:
+        yield
+    finally:
+        await stop_mqtt_subscriber(mqtt_task)
+
 
 app = FastAPI(
     title="Energy Copilot AI",
@@ -13,6 +26,7 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

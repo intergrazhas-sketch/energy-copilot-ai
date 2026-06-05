@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     qdrant_api_key: str = "ec_qdrant_key"
     readiness_timeout_seconds: float = 3.0
     cors_origins: str = "http://localhost:3000,http://localhost:80"
+    mqtt_host: str = "localhost"
+    mqtt_port: int = 1883
+    mqtt_user: str = "ec_mqtt"
+    mqtt_password: str = "ec_mqtt_password"
+    mqtt_actual_topic: str = "plants/+/generation/actual"
+    mqtt_reconnect_seconds: float = 5.0
+    mqtt_enabled: bool = True
 
     model_config = SettingsConfigDict(extra="ignore")
 
