@@ -135,3 +135,38 @@ class ForecastAccuracy(Base):
     notes: Mapped[str | None] = mapped_column(Text)
 
     forecast_run: Mapped[ForecastRun] = relationship(back_populates="accuracy")
+
+
+class ForecastAccuracyAggregate(Base):
+    __tablename__ = "forecast_accuracy_aggregates"
+    __table_args__ = (
+        UniqueConstraint(
+            "solar_plant_id",
+            "provider_id",
+            "bucket_type",
+            "period_start",
+            name="uq_forecast_accuracy_aggregates_bucket",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    solar_plant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("solar_plants.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    provider_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("forecast_providers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    bucket_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    avg_mape: Mapped[float | None] = mapped_column(Float)
+    avg_rmse: Mapped[float | None] = mapped_column(Float)
+    avg_mae: Mapped[float | None] = mapped_column(Float)
+    avg_bias: Mapped[float | None] = mapped_column(Float)
+    forecast_runs_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    samples_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    calculated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
