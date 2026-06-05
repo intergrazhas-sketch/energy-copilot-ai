@@ -5,6 +5,7 @@ from app.api.v1 import (
     actual_generation,
     forecast_providers,
     forecast_runs,
+    provider_comparison,
     solar_plants,
     system,
 )
@@ -16,3 +17,4 @@ api_router.include_router(forecast_providers.router)
 api_router.include_router(forecast_runs.router)
 api_router.include_router(actual_generation.router)
 api_router.include_router(accuracy.router)
+api_router.include_router(provider_comparison.router)
