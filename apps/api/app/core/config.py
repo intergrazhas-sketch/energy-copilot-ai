@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     mqtt_port: int = 1883
     mqtt_user: str = "ec_mqtt"
     mqtt_password: str = "ec_mqtt_password"
-    mqtt_actual_topic: str = "plants/+/generation/actual"
+    mqtt_actual_topic: str = "plants/#"
     mqtt_reconnect_seconds: float = 5.0
     mqtt_enabled: bool = True
 

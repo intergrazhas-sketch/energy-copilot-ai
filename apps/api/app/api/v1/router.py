@@ -9,6 +9,7 @@ from app.api.v1 import (
     provider_comparison,
     solar_plants,
     system,
+    telemetry,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -20,3 +21,4 @@ api_router.include_router(actual_generation.router)
 api_router.include_router(accuracy.router)
 api_router.include_router(provider_comparison.router)
 api_router.include_router(accuracy_lab.router)
+api_router.include_router(telemetry.router)
