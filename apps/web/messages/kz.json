@@ -73,7 +73,48 @@
     "loadingTitle": "Күн станциялары жүктелуде",
     "loadingDetail": "Станциялар API арқылы жүктелуде.",
     "emptyTitle": "Күн станциялары әлі жоқ",
-    "emptyDetail": "Портфель деректерін көру үшін станцияны жасаңыз немесе жүктеңіз."
+    "emptyDetail": "Пилоттық актив Варваринская СЭС onboarding деректері дайын болғаннан кейін осы жерде қосылады.",
+    "assetListEyebrow": "Портфель",
+    "assetListTitle": "Күн станциялары",
+    "kpi": {
+      "totalPlants": "Барлық станциялар",
+      "totalPlantsHelper": "/api/v1/solar-plants қайтарған активтер",
+      "activePlants": "Белсенді станциялар",
+      "activePlantsHelper": "active статусы бар станциялар",
+      "totalCapacity": "Жалпы қуат",
+      "capacityValue": "{kw} кВт / {mw} МВт",
+      "telemetryTarget": "Телеметрия мақсатты интервалы",
+      "telemetryTargetValue": "15 мин",
+      "telemetryTargetHelper": "Пилоттық телеметрия жиілігі"
+    },
+    "table": {
+      "name": "Атауы",
+      "capacity": "Қуат",
+      "capacityValue": "{kw} кВт / {mw} МВт",
+      "status": "Статус",
+      "timezone": "Уақыт белдеуі",
+      "location": "Орналасуы",
+      "createdAt": "Құрылған"
+    },
+    "pilot": {
+      "eyebrow": "Пилот контексті",
+      "title": "Варваринская СЭС",
+      "nameLabel": "Пилоттық актив",
+      "name": "Varvarinskaya Solar Power Plant",
+      "location": "Қазақстан, Қостанай облысы",
+      "capacityLabel": "Орнатылған қуат",
+      "capacityValue": "22.6 МВт / 22 600 кВт",
+      "scadaLabel": "SCADA",
+      "scadaValue": "Huawei SmartACU2000D",
+      "invertersLabel": "Инверторлар",
+      "invertersValue": "68 Huawei инверторы",
+      "telemetryLabel": "Телеметрия",
+      "telemetryValue": "Әр 15 минут сайын",
+      "baselineLabel": "Болжам қатесінің базасы",
+      "baselineValue": "~14%",
+      "targetLabel": "Мақсатты сапа",
+      "targetValue": "<10% мақсат, <5% өте жақсы"
+    }
   },
   "accuracy": {
     "loadingTitle": "Дәлдік метрикалары жүктелуде",

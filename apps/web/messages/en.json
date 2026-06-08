@@ -73,7 +73,48 @@
     "loadingTitle": "Loading solar plants",
     "loadingDetail": "Loading plants from the API.",
     "emptyTitle": "No solar plants yet",
-    "emptyDetail": "Create or seed a plant to display portfolio data."
+    "emptyDetail": "The pilot asset will be connected here after the Varvarinskaya SPP onboarding data is available.",
+    "assetListEyebrow": "Portfolio",
+    "assetListTitle": "Solar Plants",
+    "kpi": {
+      "totalPlants": "Total plants",
+      "totalPlantsHelper": "Assets returned by /api/v1/solar-plants",
+      "activePlants": "Active plants",
+      "activePlantsHelper": "Plants marked active",
+      "totalCapacity": "Total capacity",
+      "capacityValue": "{kw} kW / {mw} MW",
+      "telemetryTarget": "Telemetry interval target",
+      "telemetryTargetValue": "15 min",
+      "telemetryTargetHelper": "Pilot telemetry cadence"
+    },
+    "table": {
+      "name": "Name",
+      "capacity": "Capacity",
+      "capacityValue": "{kw} kW / {mw} MW",
+      "status": "Status",
+      "timezone": "Timezone",
+      "location": "Location",
+      "createdAt": "Created"
+    },
+    "pilot": {
+      "eyebrow": "Pilot Context",
+      "title": "Varvarinskaya SPP",
+      "nameLabel": "Pilot asset",
+      "name": "Varvarinskaya Solar Power Plant",
+      "location": "Kazakhstan, Kostanay region",
+      "capacityLabel": "Installed capacity",
+      "capacityValue": "22.6 MW / 22,600 kW",
+      "scadaLabel": "SCADA",
+      "scadaValue": "Huawei SmartACU2000D",
+      "invertersLabel": "Inverters",
+      "invertersValue": "68 Huawei inverters",
+      "telemetryLabel": "Telemetry",
+      "telemetryValue": "Every 15 minutes",
+      "baselineLabel": "Forecast error baseline",
+      "baselineValue": "~14%",
+      "targetLabel": "Target quality",
+      "targetValue": "<10% target, <5% excellent"
+    }
   },
   "accuracy": {
     "loadingTitle": "Loading accuracy metrics",

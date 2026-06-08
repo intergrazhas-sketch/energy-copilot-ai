@@ -73,7 +73,48 @@
     "loadingTitle": "Загружаем солнечные станции",
     "loadingDetail": "Получаем станции из API.",
     "emptyTitle": "Солнечных станций пока нет",
-    "emptyDetail": "Создайте или загрузите станцию, чтобы увидеть данные портфеля."
+    "emptyDetail": "Пилотный актив будет подключён здесь после подготовки onboarding-данных Варваринской СЭС.",
+    "assetListEyebrow": "Портфель",
+    "assetListTitle": "Солнечные станции",
+    "kpi": {
+      "totalPlants": "Всего станций",
+      "totalPlantsHelper": "Активы из /api/v1/solar-plants",
+      "activePlants": "Активные станции",
+      "activePlantsHelper": "Станции со статусом active",
+      "totalCapacity": "Общая мощность",
+      "capacityValue": "{kw} кВт / {mw} МВт",
+      "telemetryTarget": "Целевой интервал телеметрии",
+      "telemetryTargetValue": "15 мин",
+      "telemetryTargetHelper": "Пилотная частота телеметрии"
+    },
+    "table": {
+      "name": "Название",
+      "capacity": "Мощность",
+      "capacityValue": "{kw} кВт / {mw} МВт",
+      "status": "Статус",
+      "timezone": "Часовой пояс",
+      "location": "Локация",
+      "createdAt": "Создана"
+    },
+    "pilot": {
+      "eyebrow": "Контекст пилота",
+      "title": "Варваринская СЭС",
+      "nameLabel": "Пилотный актив",
+      "name": "Varvarinskaya Solar Power Plant",
+      "location": "Казахстан, Костанайская область",
+      "capacityLabel": "Установленная мощность",
+      "capacityValue": "22.6 МВт / 22 600 кВт",
+      "scadaLabel": "SCADA",
+      "scadaValue": "Huawei SmartACU2000D",
+      "invertersLabel": "Инверторы",
+      "invertersValue": "68 инверторов Huawei",
+      "telemetryLabel": "Телеметрия",
+      "telemetryValue": "Каждые 15 минут",
+      "baselineLabel": "Базовая ошибка прогноза",
+      "baselineValue": "~14%",
+      "targetLabel": "Целевое качество",
+      "targetValue": "<10% цель, <5% отлично"
+    }
   },
   "accuracy": {
     "loadingTitle": "Загружаем метрики точности",

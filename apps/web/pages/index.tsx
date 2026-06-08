@@ -27,6 +27,10 @@ type SolarPlant = {
   name: string;
   capacity_kw: number;
   status: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  timezone?: string;
+  created_at?: string;
 };
 
 type ForecastProvider = {
@@ -76,7 +80,7 @@ type Locale = "en" | "ru" | "kz";
 type MessageValue = string | number;
 type Translate = (key: string, values?: Record<string, MessageValue>) => string;
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
 const navigationItems = [
   { key: "overview", labelKey: "overview" },
@@ -127,7 +131,16 @@ const emptyData: DashboardData = {
   rejected: null,
 };
 
+function getApiBaseUrl() {
+  if (typeof window !== "undefined" && window.location.hostname === "127.0.0.1") {
+    return "";
+  }
+
+  return configuredApiBaseUrl;
+}
+
 function buildUrl(path: string, params?: Record<string, string>) {
+  const apiBaseUrl = getApiBaseUrl();
   const url = `${apiBaseUrl}${path}`;
   if (!params) {
     return url;
@@ -163,6 +176,43 @@ function formatPercent(value: number | null | undefined, fallback = "") {
 
 function normalizeReason(value: string) {
   return value.replaceAll("_", " ");
+}
+
+function formatCapacityMw(valueKw: number, fallback: string) {
+  return `${formatNumber(valueKw / 1000, 2, fallback)} MW`;
+}
+
+function formatPlantLocation(plant: SolarPlant, fallback: string) {
+  if (plant.latitude === null || plant.latitude === undefined) {
+    return fallback;
+  }
+
+  if (plant.longitude === null || plant.longitude === undefined) {
+    return fallback;
+  }
+
+  return `${formatNumber(plant.latitude, 4, fallback)}, ${formatNumber(
+    plant.longitude,
+    4,
+    fallback,
+  )}`;
+}
+
+function formatDate(value: string | undefined, fallback: string) {
+  if (!value) {
+    return fallback;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return fallback;
+  }
+
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function StatusBadge({ status, t }: { status?: string; t: Translate }) {
@@ -245,6 +295,136 @@ function SectionPlaceholder({
       <p className="eyebrow">{t("placeholders.eyebrow")}</p>
       <h2>{title}</h2>
       <p>{t("placeholders.detail", { section: title })}</p>
+    </section>
+  );
+}
+
+function SolarPlantsSection({
+  plants,
+  loading,
+  t,
+}: {
+  plants: SolarPlant[];
+  loading: boolean;
+  t: Translate;
+}) {
+  const noData = t("common.noData");
+  const totalCapacityKw = plants.reduce((sum, plant) => sum + plant.capacity_kw, 0);
+  const activePlants = plants.filter((plant) => plant.status === "active").length;
+
+  return (
+    <section className="section-stack">
+      <section className="metric-grid solar-metric-grid">
+        <MetricCard
+          helper={t("solarPlants.kpi.totalPlantsHelper")}
+          label={t("solarPlants.kpi.totalPlants")}
+          loading={loading}
+          t={t}
+          value={formatNumber(plants.length, 0, noData)}
+        />
+        <MetricCard
+          helper={t("solarPlants.kpi.activePlantsHelper")}
+          label={t("solarPlants.kpi.activePlants")}
+          loading={loading}
+          t={t}
+          value={formatNumber(activePlants, 0, noData)}
+        />
+        <MetricCard
+          helper={formatCapacityMw(totalCapacityKw, noData)}
+          label={t("solarPlants.kpi.totalCapacity")}
+          loading={loading}
+          t={t}
+          value={t("solarPlants.kpi.capacityValue", {
+            kw: formatNumber(totalCapacityKw, 0, noData),
+            mw: formatNumber(totalCapacityKw / 1000, 2, noData),
+          })}
+        />
+        <MetricCard
+          helper={t("solarPlants.kpi.telemetryTargetHelper")}
+          label={t("solarPlants.kpi.telemetryTarget")}
+          loading={loading}
+          t={t}
+          value={t("solarPlants.kpi.telemetryTargetValue")}
+        />
+      </section>
+
+      <section className="solar-layout">
+        <Panel eyebrow={t("solarPlants.assetListEyebrow")} title={t("solarPlants.assetListTitle")}>
+          {loading ? (
+            <EmptyState detail={t("solarPlants.loadingDetail")} title={t("solarPlants.loadingTitle")} />
+          ) : plants.length > 0 ? (
+            <div className="plants-table">
+              <div className="plants-table-head">
+                <span>{t("solarPlants.table.name")}</span>
+                <span>{t("solarPlants.table.capacity")}</span>
+                <span>{t("solarPlants.table.status")}</span>
+                <span>{t("solarPlants.table.timezone")}</span>
+                <span>{t("solarPlants.table.location")}</span>
+                <span>{t("solarPlants.table.createdAt")}</span>
+              </div>
+              {plants.map((plant) => (
+                <div className="plants-table-row" key={plant.id}>
+                  <strong>{plant.name}</strong>
+                  <span>
+                    {t("solarPlants.table.capacityValue", {
+                      kw: formatNumber(plant.capacity_kw, 0, noData),
+                      mw: formatNumber(plant.capacity_kw / 1000, 2, noData),
+                    })}
+                  </span>
+                  <span>
+                    <StatusBadge status={plant.status} t={t} />
+                  </span>
+                  <span>{plant.timezone || noData}</span>
+                  <span>{formatPlantLocation(plant, noData)}</span>
+                  <span>{formatDate(plant.created_at, noData)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              detail={t("solarPlants.emptyDetail")}
+              title={t("solarPlants.emptyTitle")}
+            />
+          )}
+        </Panel>
+
+        <Panel eyebrow={t("solarPlants.pilot.eyebrow")} title={t("solarPlants.pilot.title")}>
+          <div className="pilot-card">
+            <div className="pilot-hero">
+              <span>{t("solarPlants.pilot.nameLabel")}</span>
+              <strong>{t("solarPlants.pilot.name")}</strong>
+              <p>{t("solarPlants.pilot.location")}</p>
+            </div>
+
+            <div className="pilot-grid">
+              <div>
+                <span>{t("solarPlants.pilot.capacityLabel")}</span>
+                <strong>{t("solarPlants.pilot.capacityValue")}</strong>
+              </div>
+              <div>
+                <span>{t("solarPlants.pilot.scadaLabel")}</span>
+                <strong>{t("solarPlants.pilot.scadaValue")}</strong>
+              </div>
+              <div>
+                <span>{t("solarPlants.pilot.invertersLabel")}</span>
+                <strong>{t("solarPlants.pilot.invertersValue")}</strong>
+              </div>
+              <div>
+                <span>{t("solarPlants.pilot.telemetryLabel")}</span>
+                <strong>{t("solarPlants.pilot.telemetryValue")}</strong>
+              </div>
+              <div>
+                <span>{t("solarPlants.pilot.baselineLabel")}</span>
+                <strong>{t("solarPlants.pilot.baselineValue")}</strong>
+              </div>
+              <div>
+                <span>{t("solarPlants.pilot.targetLabel")}</span>
+                <strong>{t("solarPlants.pilot.targetValue")}</strong>
+              </div>
+            </div>
+          </div>
+        </Panel>
+      </section>
     </section>
   );
 }
@@ -596,6 +776,8 @@ function DashboardOverview({
               </Panel>
             </section>
           </>
+        ) : activeSection === "solar-plants" ? (
+          <SolarPlantsSection plants={state.data.plants} loading={state.loading} t={t} />
         ) : (
           <SectionPlaceholder title={activeSectionTitle} t={t} />
         )}
@@ -788,6 +970,16 @@ function DashboardOverview({
           margin-bottom: 18px;
         }
 
+        .section-stack {
+          display: grid;
+          gap: 18px;
+        }
+
+        .solar-metric-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          margin-bottom: 0;
+        }
+
         .metric-card,
         .panel,
         .empty-state {
@@ -827,6 +1019,110 @@ function DashboardOverview({
         .panel {
           border-radius: 22px;
           padding: 20px;
+        }
+
+        .solar-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
+          gap: 18px;
+          align-items: start;
+        }
+
+        .plants-table {
+          display: grid;
+          gap: 10px;
+          overflow-x: auto;
+        }
+
+        .plants-table-head,
+        .plants-table-row {
+          display: grid;
+          grid-template-columns: minmax(180px, 1.4fr) minmax(130px, 1fr) minmax(100px, 0.7fr) minmax(130px, 1fr) minmax(150px, 1fr) minmax(120px, 0.9fr);
+          gap: 12px;
+          min-width: 920px;
+          align-items: center;
+        }
+
+        .plants-table-head {
+          color: rgba(245, 242, 237, 0.46);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          padding: 0 12px;
+          text-transform: uppercase;
+        }
+
+        .plants-table-row {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 12px;
+        }
+
+        .plants-table-row strong {
+          color: #fffaf4;
+          font-size: 14px;
+        }
+
+        .plants-table-row span {
+          color: rgba(245, 242, 237, 0.58);
+          font-size: 13px;
+        }
+
+        .pilot-card {
+          display: grid;
+          gap: 16px;
+        }
+
+        .pilot-hero {
+          border: 1px solid rgba(255, 122, 24, 0.2);
+          border-radius: 18px;
+          background: radial-gradient(circle at top left, rgba(255, 122, 24, 0.16), rgba(0, 0, 0, 0.2));
+          padding: 18px;
+        }
+
+        .pilot-hero span,
+        .pilot-grid span {
+          display: block;
+          color: rgba(245, 242, 237, 0.5);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .pilot-hero strong {
+          display: block;
+          margin-top: 8px;
+          color: #fffaf4;
+          font-size: 24px;
+          letter-spacing: -0.04em;
+          line-height: 1.05;
+        }
+
+        .pilot-hero p {
+          margin: 10px 0 0;
+          color: rgba(245, 242, 237, 0.62);
+          font-size: 13px;
+        }
+
+        .pilot-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .pilot-grid div {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 14px;
+        }
+
+        .pilot-grid strong {
+          display: block;
+          margin-top: 8px;
+          color: #fffaf4;
+          font-size: 16px;
+          line-height: 1.35;
         }
 
         .placeholder-panel {
@@ -1019,7 +1315,8 @@ function DashboardOverview({
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
-          .panel-grid {
+          .panel-grid,
+          .solar-layout {
             grid-template-columns: 1fr;
           }
         }
@@ -1051,7 +1348,12 @@ function DashboardOverview({
           }
 
           .metric-grid,
+          .solar-metric-grid,
           .accuracy-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .pilot-grid {
             grid-template-columns: 1fr;
           }
         }
