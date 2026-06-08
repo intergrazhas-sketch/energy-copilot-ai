@@ -1,0 +1,109 @@
+{
+  "brand": {
+    "name": "Energy Copilot",
+    "subtitle": "AI-операции",
+    "mark": "EC"
+  },
+  "navigation": {
+    "overview": "Обзор",
+    "solarPlants": "Солнечные станции",
+    "forecastAccuracyLab": "Лаборатория точности",
+    "forecastProviders": "Провайдеры прогноза",
+    "telemetry": "Телеметрия",
+    "rejectedTelemetry": "Отклонённая телеметрия",
+    "systemStatus": "Статус системы"
+  },
+  "header": {
+    "eyebrow": "Dashboard MVP",
+    "title": "Обзор",
+    "period": "Последние 7 дней",
+    "languageLabel": "Язык"
+  },
+  "common": {
+    "noData": "Нет данных",
+    "loading": "Загрузка...",
+    "fetchingLiveData": "Получаем данные из API",
+    "milliseconds": "{value} мс",
+    "kilowatts": "{value} кВт",
+    "activeProviders": "активных провайдеров: {count}",
+    "dependenciesChecked": "проверено зависимостей: {count}",
+    "samples": "выборок: {count}"
+  },
+  "status": {
+    "ok": "OK",
+    "active": "Активен",
+    "inactive": "Неактивен",
+    "degraded": "Деградация",
+    "open": "Открыто",
+    "unknown": "Неизвестно"
+  },
+  "metrics": {
+    "systemHealth": "Здоровье системы",
+    "solarPlants": "Солнечные станции",
+    "forecastProviders": "Провайдеры прогноза",
+    "accuracyMape": "Точность MAPE",
+    "rejectedTelemetry": "Отклонённая телеметрия",
+    "totalCapacity": "общая мощность: {value} кВт",
+    "openTelemetryIssues": "Открытые проблемы телеметрии"
+  },
+  "panels": {
+    "runtime": "Runtime",
+    "assets": "Активы",
+    "forecast": "Прогноз",
+    "providers": "Провайдеры",
+    "quality": "Качество",
+    "systemHealth": "Здоровье системы",
+    "solarPlants": "Солнечные станции",
+    "accuracySummary": "Сводка точности",
+    "forecastProviders": "Провайдеры прогноза",
+    "rejectedTelemetrySummary": "Сводка отклонённой телеметрии"
+  },
+  "placeholders": {
+    "eyebrow": "Раздел Dashboard",
+    "detail": "{section} доступен как навигационный раздел Dashboard MVP. Детальные представления данных будут добавлены в следующих UI-итерациях."
+  },
+  "system": {
+    "dependencyOk": "Зависимость успешно ответила",
+    "loadingTitle": "Загружаем статус системы",
+    "loadingDetail": "Проверяем API, базу данных, кэш и векторное хранилище.",
+    "emptyTitle": "Нет системных данных",
+    "emptyDetail": "Endpoint /api/v1/system/status не вернул статусы зависимостей."
+  },
+  "solarPlants": {
+    "loadingTitle": "Загружаем солнечные станции",
+    "loadingDetail": "Получаем станции из API.",
+    "emptyTitle": "Солнечных станций пока нет",
+    "emptyDetail": "Создайте или загрузите станцию, чтобы увидеть данные портфеля."
+  },
+  "accuracy": {
+    "loadingTitle": "Загружаем метрики точности",
+    "loadingDetail": "Получаем сводку Accuracy Lab.",
+    "emptyTitle": "Нет данных точности",
+    "emptyDetail": "За выбранный период нет дневных агрегатов.",
+    "avgMape": "Средний MAPE",
+    "avgRmse": "Средний RMSE",
+    "avgMae": "Средний MAE",
+    "avgBias": "Средний Bias",
+    "forecastRuns": "Запуски прогноза",
+    "aggregates": "Агрегаты"
+  },
+  "providers": {
+    "loadingTitle": "Загружаем провайдеров прогноза",
+    "loadingDetail": "Получаем registry провайдеров.",
+    "emptyTitle": "Провайдеров пока нет",
+    "emptyDetail": "API не вернул manual или mock providers."
+  },
+  "rejectedTelemetry": {
+    "loadingTitle": "Загружаем качество телеметрии",
+    "loadingDetail": "Получаем сводку отклонённой телеметрии.",
+    "emptyTitle": "Нет данных качества телеметрии",
+    "emptyDetail": "API не вернул сводку отклонённой телеметрии.",
+    "cleanTitle": "Телеметрия чистая",
+    "cleanDetail": "За этот период нет открытых причин отклонения телеметрии.",
+    "openMessages": "открытых отклонённых сообщений"
+  },
+  "errors": {
+    "apiUnavailableTitle": "API недоступен. Dashboard ожидает живые данные.",
+    "apiUnavailableDetail": "Запустите backend stack, и dashboard заполнится ответами API."
+  }
+}

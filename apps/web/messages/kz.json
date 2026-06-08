@@ -1,0 +1,109 @@
+{
+  "brand": {
+    "name": "Energy Copilot",
+    "subtitle": "AI операциялары",
+    "mark": "EC"
+  },
+  "navigation": {
+    "overview": "Шолу",
+    "solarPlants": "Күн станциялары",
+    "forecastAccuracyLab": "Дәлдік зертханасы",
+    "forecastProviders": "Болжам провайдерлері",
+    "telemetry": "Телеметрия",
+    "rejectedTelemetry": "Қабылданбаған телеметрия",
+    "systemStatus": "Жүйе статусы"
+  },
+  "header": {
+    "eyebrow": "Dashboard MVP",
+    "title": "Шолу",
+    "period": "Соңғы 7 күн",
+    "languageLabel": "Тіл"
+  },
+  "common": {
+    "noData": "Дерек жоқ",
+    "loading": "Жүктелуде...",
+    "fetchingLiveData": "API деректері жүктелуде",
+    "milliseconds": "{value} мс",
+    "kilowatts": "{value} кВт",
+    "activeProviders": "белсенді провайдерлер: {count}",
+    "dependenciesChecked": "тексерілген тәуелділіктер: {count}",
+    "samples": "үлгілер: {count}"
+  },
+  "status": {
+    "ok": "OK",
+    "active": "Белсенді",
+    "inactive": "Белсенді емес",
+    "degraded": "Нашарлаған",
+    "open": "Ашық",
+    "unknown": "Белгісіз"
+  },
+  "metrics": {
+    "systemHealth": "Жүйе жағдайы",
+    "solarPlants": "Күн станциялары",
+    "forecastProviders": "Болжам провайдерлері",
+    "accuracyMape": "MAPE дәлдігі",
+    "rejectedTelemetry": "Қабылданбаған телеметрия",
+    "totalCapacity": "жалпы қуат: {value} кВт",
+    "openTelemetryIssues": "Ашық телеметрия мәселелері"
+  },
+  "panels": {
+    "runtime": "Runtime",
+    "assets": "Активтер",
+    "forecast": "Болжам",
+    "providers": "Провайдерлер",
+    "quality": "Сапа",
+    "systemHealth": "Жүйе жағдайы",
+    "solarPlants": "Күн станциялары",
+    "accuracySummary": "Дәлдік жиынтығы",
+    "forecastProviders": "Болжам провайдерлері",
+    "rejectedTelemetrySummary": "Қабылданбаған телеметрия жиынтығы"
+  },
+  "placeholders": {
+    "eyebrow": "Dashboard бөлімі",
+    "detail": "{section} Dashboard MVP навигация бөлімі ретінде қолжетімді. Толық дерек көріністері келесі UI итерацияларында қосылады."
+  },
+  "system": {
+    "dependencyOk": "Тәуелділік сәтті жауап берді",
+    "loadingTitle": "Жүйе статусы жүктелуде",
+    "loadingDetail": "API, дерекқор, кэш және векторлық сақтау тексерілуде.",
+    "emptyTitle": "Жүйе деректері жоқ",
+    "emptyDetail": "/api/v1/system/status тәуелділік статустарын қайтармады."
+  },
+  "solarPlants": {
+    "loadingTitle": "Күн станциялары жүктелуде",
+    "loadingDetail": "Станциялар API арқылы жүктелуде.",
+    "emptyTitle": "Күн станциялары әлі жоқ",
+    "emptyDetail": "Портфель деректерін көру үшін станцияны жасаңыз немесе жүктеңіз."
+  },
+  "accuracy": {
+    "loadingTitle": "Дәлдік метрикалары жүктелуде",
+    "loadingDetail": "Accuracy Lab жиынтығы жүктелуде.",
+    "emptyTitle": "Дәлдік деректері жоқ",
+    "emptyDetail": "Таңдалған кезең үшін күндік агрегаттар жоқ.",
+    "avgMape": "Орташа MAPE",
+    "avgRmse": "Орташа RMSE",
+    "avgMae": "Орташа MAE",
+    "avgBias": "Орташа Bias",
+    "forecastRuns": "Болжам іске қосулары",
+    "aggregates": "Агрегаттар"
+  },
+  "providers": {
+    "loadingTitle": "Болжам провайдерлері жүктелуде",
+    "loadingDetail": "Провайдер registry жүктелуде.",
+    "emptyTitle": "Провайдерлер әлі жоқ",
+    "emptyDetail": "API manual немесе mock providers қайтармады."
+  },
+  "rejectedTelemetry": {
+    "loadingTitle": "Телеметрия сапасы жүктелуде",
+    "loadingDetail": "Қабылданбаған телеметрия жиынтығы жүктелуде.",
+    "emptyTitle": "Телеметрия сапасы бойынша дерек жоқ",
+    "emptyDetail": "API қабылданбаған телеметрия жиынтығын қайтармады.",
+    "cleanTitle": "Телеметрия таза",
+    "cleanDetail": "Бұл кезеңде ашық қабылданбау себептері жоқ.",
+    "openMessages": "ашық қабылданбаған хабарлама"
+  },
+  "errors": {
+    "apiUnavailableTitle": "API қолжетімсіз. Dashboard нақты деректерді күтуде.",
+    "apiUnavailableDetail": "Backend stack іске қосылса, dashboard API жауаптарымен толады."
+  }
+}

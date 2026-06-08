@@ -1,0 +1,109 @@
+{
+  "brand": {
+    "name": "Energy Copilot",
+    "subtitle": "AI Operations",
+    "mark": "EC"
+  },
+  "navigation": {
+    "overview": "Overview",
+    "solarPlants": "Solar Plants",
+    "forecastAccuracyLab": "Forecast Accuracy Lab",
+    "forecastProviders": "Forecast Providers",
+    "telemetry": "Telemetry",
+    "rejectedTelemetry": "Rejected Telemetry",
+    "systemStatus": "System Status"
+  },
+  "header": {
+    "eyebrow": "Dashboard MVP",
+    "title": "Overview",
+    "period": "Last 7 days",
+    "languageLabel": "Language"
+  },
+  "common": {
+    "noData": "No data",
+    "loading": "Loading...",
+    "fetchingLiveData": "Fetching live API data",
+    "milliseconds": "{value} ms",
+    "kilowatts": "{value} kW",
+    "activeProviders": "{count} active providers",
+    "dependenciesChecked": "{count} dependencies checked",
+    "samples": "{count} samples"
+  },
+  "status": {
+    "ok": "OK",
+    "active": "Active",
+    "inactive": "Inactive",
+    "degraded": "Degraded",
+    "open": "Open",
+    "unknown": "Unknown"
+  },
+  "metrics": {
+    "systemHealth": "System Health",
+    "solarPlants": "Solar Plants",
+    "forecastProviders": "Forecast Providers",
+    "accuracyMape": "Accuracy MAPE",
+    "rejectedTelemetry": "Rejected Telemetry",
+    "totalCapacity": "{value} kW total capacity",
+    "openTelemetryIssues": "Open telemetry issues"
+  },
+  "panels": {
+    "runtime": "Runtime",
+    "assets": "Assets",
+    "forecast": "Forecast",
+    "providers": "Providers",
+    "quality": "Quality",
+    "systemHealth": "System Health",
+    "solarPlants": "Solar Plants",
+    "accuracySummary": "Accuracy Summary",
+    "forecastProviders": "Forecast Providers",
+    "rejectedTelemetrySummary": "Rejected Telemetry Summary"
+  },
+  "placeholders": {
+    "eyebrow": "Dashboard Section",
+    "detail": "{section} is available as a Dashboard MVP navigation section. Detailed data views will be added in the next UI iterations."
+  },
+  "system": {
+    "dependencyOk": "Dependency responded successfully",
+    "loadingTitle": "Loading system status",
+    "loadingDetail": "Checking API, database, cache and vector store.",
+    "emptyTitle": "No system data",
+    "emptyDetail": "No dependency status returned by /api/v1/system/status."
+  },
+  "solarPlants": {
+    "loadingTitle": "Loading solar plants",
+    "loadingDetail": "Loading plants from the API.",
+    "emptyTitle": "No solar plants yet",
+    "emptyDetail": "Create or seed a plant to display portfolio data."
+  },
+  "accuracy": {
+    "loadingTitle": "Loading accuracy metrics",
+    "loadingDetail": "Loading Accuracy Lab summary.",
+    "emptyTitle": "No accuracy data",
+    "emptyDetail": "No daily aggregates returned for the selected period.",
+    "avgMape": "Avg MAPE",
+    "avgRmse": "Avg RMSE",
+    "avgMae": "Avg MAE",
+    "avgBias": "Avg Bias",
+    "forecastRuns": "Forecast runs",
+    "aggregates": "Aggregates"
+  },
+  "providers": {
+    "loadingTitle": "Loading forecast providers",
+    "loadingDetail": "Loading provider registry.",
+    "emptyTitle": "No providers yet",
+    "emptyDetail": "No manual or mock providers were returned by the API."
+  },
+  "rejectedTelemetry": {
+    "loadingTitle": "Loading telemetry quality",
+    "loadingDetail": "Loading rejected telemetry summary.",
+    "emptyTitle": "No telemetry quality data",
+    "emptyDetail": "No rejected telemetry summary returned by the API.",
+    "cleanTitle": "Telemetry is clean",
+    "cleanDetail": "No open rejected telemetry reasons in this period.",
+    "openMessages": "open rejected messages"
+  },
+  "errors": {
+    "apiUnavailableTitle": "API unavailable. Dashboard is waiting for live data.",
+    "apiUnavailableDetail": "Start the backend stack and the dashboard will populate from live API responses."
+  }
+}
