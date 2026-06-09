@@ -218,6 +218,64 @@
       "emptyDetail": "Comparison will appear after provider ranking returns accuracy metrics."
     }
   },
+  "telemetry": {
+    "units": {
+      "kw": "{value} kW",
+      "kwh": "{value} kWh",
+      "minutes": "{value} min"
+    },
+    "freshness": {
+      "fresh": "Fresh",
+      "stale": "Stale",
+      "offline": "Offline",
+      "no_data": "No data"
+    },
+    "kpi": {
+      "currentPower": "Current Power",
+      "energyToday": "Energy Today",
+      "energyTodayHelper": "Production accumulated today",
+      "averagePower": "Average Power",
+      "averagePowerHelper": "Average power for selected period",
+      "maxPower": "Max Power",
+      "maxPowerHelper": "Peak power for selected period",
+      "lastTelemetry": "Last Telemetry Time",
+      "lastTelemetryHelper": "Latest accepted telemetry point",
+      "freshness": "Data Freshness Status",
+      "freshnessHelper": "Fresh, stale or offline",
+      "points": "Telemetry Points Count",
+      "pointsHelper": "Accepted points in selected period",
+      "gap": "Possible Data Gap Minutes",
+      "gapHelper": "Minutes since last accepted point",
+      "revenue": "Estimated Revenue Today",
+      "revenueHelper": "Shown only when backend returns revenue"
+    },
+    "history": {
+      "eyebrow": "Telemetry History",
+      "title": "Power History",
+      "loadingTitle": "Loading power history",
+      "loadingDetail": "Loading accepted telemetry points from the API.",
+      "emptyTitle": "No telemetry history",
+      "emptyDetail": "No accepted telemetry points were returned for the selected asset and period.",
+      "points": "{count} points",
+      "maxPower": "max {value} kW"
+    },
+    "status": {
+      "eyebrow": "Signal Status",
+      "title": "Telemetry Health",
+      "loadingTitle": "Loading telemetry status",
+      "loadingDetail": "Checking latest accepted telemetry.",
+      "asset": "Asset",
+      "source": "Source",
+      "quality": "Quality",
+      "lastTelemetry": "Last telemetry"
+    },
+    "empty": {
+      "noAssetTitle": "No asset available",
+      "noAssetDetail": "Telemetry dashboard requires at least one solar plant from the API.",
+      "unavailableTitle": "Telemetry API unavailable",
+      "unavailableDetail": "The dashboard could not load telemetry summary for the selected asset."
+    }
+  },
   "rejectedTelemetry": {
     "loadingTitle": "Loading telemetry quality",
     "loadingDetail": "Loading rejected telemetry summary.",

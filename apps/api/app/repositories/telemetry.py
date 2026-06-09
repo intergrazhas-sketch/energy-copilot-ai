@@ -5,8 +5,84 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.forecast import ActualGeneration
 from app.models.telemetry import RejectedTelemetry
 from app.schemas.telemetry import RejectedTelemetryResolutionStatus
+
+
+async def get_latest_actual_generation(
+    session: AsyncSession,
+    *,
+    asset_id: uuid.UUID,
+    period_from: datetime | None = None,
+    period_to: datetime | None = None,
+) -> ActualGeneration | None:
+    statement = select(ActualGeneration).where(ActualGeneration.solar_plant_id == asset_id)
+
+    if period_from is not None:
+        statement = statement.where(ActualGeneration.timestamp >= period_from)
+    if period_to is not None:
+        statement = statement.where(ActualGeneration.timestamp <= period_to)
+
+    result = await session.execute(statement.order_by(ActualGeneration.timestamp.desc()).limit(1))
+    return result.scalar_one_or_none()
+
+
+async def list_actual_generation_history(
+    session: AsyncSession,
+    *,
+    asset_id: uuid.UUID,
+    period_from: datetime,
+    period_to: datetime,
+    limit: int,
+    offset: int,
+) -> list[ActualGeneration]:
+    result = await session.execute(
+        select(ActualGeneration)
+        .where(ActualGeneration.solar_plant_id == asset_id)
+        .where(ActualGeneration.timestamp >= period_from)
+        .where(ActualGeneration.timestamp <= period_to)
+        .order_by(ActualGeneration.timestamp)
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(result.scalars().all())
+
+
+async def get_actual_generation_summary_stats(
+    session: AsyncSession,
+    *,
+    asset_id: uuid.UUID,
+    period_from: datetime,
+    period_to: datetime,
+):
+    result = await session.execute(
+        select(
+            func.count(ActualGeneration.id).label("telemetry_points_count"),
+            func.avg(ActualGeneration.actual_power_kw).label("avg_power_kw"),
+            func.max(ActualGeneration.actual_power_kw).label("max_power_kw"),
+        )
+        .where(ActualGeneration.solar_plant_id == asset_id)
+        .where(ActualGeneration.timestamp >= period_from)
+        .where(ActualGeneration.timestamp <= period_to)
+    )
+    return result.one()
+
+
+async def sum_actual_energy(
+    session: AsyncSession,
+    *,
+    asset_id: uuid.UUID,
+    period_from: datetime,
+    period_to: datetime,
+) -> float | None:
+    result = await session.execute(
+        select(func.sum(ActualGeneration.actual_energy_kwh))
+        .where(ActualGeneration.solar_plant_id == asset_id)
+        .where(ActualGeneration.timestamp >= period_from)
+        .where(ActualGeneration.timestamp < period_to)
+    )
+    return result.scalar_one_or_none()
 
 
 async def create_rejected_telemetry(

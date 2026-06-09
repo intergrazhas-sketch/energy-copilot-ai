@@ -218,6 +218,64 @@
       "emptyDetail": "Провайдер рейтингі дәлдік метрикаларын қайтарғаннан кейін салыстыру пайда болады."
     }
   },
+  "telemetry": {
+    "units": {
+      "kw": "{value} кВт",
+      "kwh": "{value} кВт⋅сағ",
+      "minutes": "{value} мин"
+    },
+    "freshness": {
+      "fresh": "Fresh",
+      "stale": "Stale",
+      "offline": "Offline",
+      "no_data": "Дерек жоқ"
+    },
+    "kpi": {
+      "currentPower": "Ағымдағы қуат",
+      "energyToday": "Бүгінгі энергия",
+      "energyTodayHelper": "Бүгін жиналған өндіріс",
+      "averagePower": "Орташа қуат",
+      "averagePowerHelper": "Таңдалған кезеңдегі орташа қуат",
+      "maxPower": "Максималды қуат",
+      "maxPowerHelper": "Таңдалған кезеңдегі ең жоғары қуат",
+      "lastTelemetry": "Соңғы телеметрия уақыты",
+      "lastTelemetryHelper": "Соңғы қабылданған телеметрия нүктесі",
+      "freshness": "Дерек жаңалығы статусы",
+      "freshnessHelper": "Fresh, stale немесе offline",
+      "points": "Телеметрия нүктелерінің саны",
+      "pointsHelper": "Таңдалған кезеңдегі қабылданған нүктелер",
+      "gap": "Мүмкін дерек үзілісі",
+      "gapHelper": "Соңғы қабылданған нүктеден өткен минуттар",
+      "revenue": "Бүгінгі болжамды кіріс",
+      "revenueHelper": "Backend кіріс мәнін қайтарса ғана көрсетіледі"
+    },
+    "history": {
+      "eyebrow": "Телеметрия тарихы",
+      "title": "Қуат тарихы",
+      "loadingTitle": "Қуат тарихы жүктелуде",
+      "loadingDetail": "API арқылы қабылданған телеметрия нүктелері жүктелуде.",
+      "emptyTitle": "Телеметрия тарихы жоқ",
+      "emptyDetail": "API таңдалған актив пен кезең үшін қабылданған телеметрия нүктелерін қайтармады.",
+      "points": "{count} нүкте",
+      "maxPower": "макс. {value} кВт"
+    },
+    "status": {
+      "eyebrow": "Сигнал статусы",
+      "title": "Телеметрия жағдайы",
+      "loadingTitle": "Телеметрия статусы жүктелуде",
+      "loadingDetail": "Соңғы қабылданған телеметрия тексерілуде.",
+      "asset": "Актив",
+      "source": "Дереккөзі",
+      "quality": "Сапа",
+      "lastTelemetry": "Соңғы телеметрия"
+    },
+    "empty": {
+      "noAssetTitle": "Қолжетімді актив жоқ",
+      "noAssetDetail": "Telemetry dashboard үшін API-дан кемінде бір күн станциясы қажет.",
+      "unavailableTitle": "Telemetry API қолжетімсіз",
+      "unavailableDetail": "Dashboard таңдалған актив үшін telemetry summary жүктей алмады."
+    }
+  },
   "rejectedTelemetry": {
     "loadingTitle": "Телеметрия сапасы жүктелуде",
     "loadingDetail": "Қабылданбаған телеметрия жиынтығы жүктелуде.",

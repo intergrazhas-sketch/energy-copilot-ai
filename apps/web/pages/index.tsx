@@ -82,6 +82,32 @@ type RejectedTelemetrySummary = {
   }>;
 };
 
+type TelemetryPoint = {
+  id: string;
+  asset_id: string;
+  timestamp: string;
+  actual_power_kw: number;
+  actual_energy_kwh: number | null;
+  source: string;
+  quality: string;
+  created_at: string;
+};
+
+type TelemetrySummary = {
+  asset_id: string;
+  period_from: string;
+  period_to: string;
+  current_power_kw: number | null;
+  energy_today_kwh: number | null;
+  avg_power_kw: number | null;
+  max_power_kw: number | null;
+  telemetry_points_count: number;
+  last_telemetry_time: string | null;
+  data_freshness_status: "fresh" | "stale" | "offline" | "no_data";
+  estimated_revenue_today: number | null;
+  possible_data_gap_minutes: number | null;
+};
+
 type DashboardData = {
   health: HealthResponse | null;
   system: SystemStatusResponse | null;
@@ -90,6 +116,10 @@ type DashboardData = {
   accuracy: AccuracySummary | null;
   accuracyRanking: AccuracyProviderRankingResponse | null;
   rejected: RejectedTelemetrySummary | null;
+  telemetryLatest: TelemetryPoint | null;
+  telemetryHistory: TelemetryPoint[];
+  telemetrySummary: TelemetrySummary | null;
+  telemetryAssetId: string | null;
 };
 
 type DashboardState = {
@@ -152,6 +182,10 @@ const emptyData: DashboardData = {
   accuracy: null,
   accuracyRanking: null,
   rejected: null,
+  telemetryLatest: null,
+  telemetryHistory: [],
+  telemetrySummary: null,
+  telemetryAssetId: null,
 };
 
 function getApiBaseUrl() {
@@ -197,6 +231,17 @@ function formatPercent(value: number | null | undefined, fallback = "") {
   return `${formatNumber(value, 2, fallback)}%`;
 }
 
+function formatTranslatedUnit(
+  value: number | null | undefined,
+  unitKey: string,
+  t: Translate,
+  fallback: string,
+  digits = 1,
+) {
+  const formattedValue = formatNumber(value, digits, "");
+  return formattedValue ? t(unitKey, { value: formattedValue }) : fallback;
+}
+
 function normalizeReason(value: string) {
   return value.replaceAll("_", " ");
 }
@@ -235,6 +280,25 @@ function formatDate(value: string | undefined, fallback: string) {
     year: "numeric",
     month: "short",
     day: "numeric",
+  });
+}
+
+function formatDateTime(value: string | null | undefined, fallback: string) {
+  if (!value) {
+    return fallback;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return fallback;
+  }
+
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -811,6 +875,238 @@ function ForecastProvidersSection({
   );
 }
 
+function FreshnessBadge({ status, t }: { status?: TelemetrySummary["data_freshness_status"]; t: Translate }) {
+  const normalized = status || "no_data";
+  return (
+    <span className={`freshness-badge ${normalized}`}>
+      {t(`telemetry.freshness.${normalized}`)}
+    </span>
+  );
+}
+
+function PowerHistoryChart({
+  points,
+  t,
+}: {
+  points: TelemetryPoint[];
+  t: Translate;
+}) {
+  const noData = t("common.noData");
+  if (points.length === 0) {
+    return (
+      <EmptyState
+        detail={t("telemetry.history.emptyDetail")}
+        title={t("telemetry.history.emptyTitle")}
+      />
+    );
+  }
+
+  const width = 720;
+  const height = 220;
+  const padding = 28;
+  const values = points.map((point) => point.actual_power_kw);
+  const maxValue = Math.max(...values, 1);
+  const xStep = points.length > 1 ? (width - padding * 2) / (points.length - 1) : 0;
+  const coordinates = points.map((point, index) => {
+    const x = padding + index * xStep;
+    const y = height - padding - (point.actual_power_kw / maxValue) * (height - padding * 2);
+    return { x, y, point };
+  });
+  const polyline = coordinates.map(({ x, y }) => `${x},${y}`).join(" ");
+  const firstPoint = points[0];
+  const lastPoint = points[points.length - 1];
+
+  return (
+    <div className="power-chart">
+      <div className="chart-meta">
+        <span>
+          {t("telemetry.history.points", {
+            count: formatNumber(points.length, 0, noData),
+          })}
+        </span>
+        <span>
+          {t("telemetry.history.maxPower", {
+            value: formatNumber(maxValue, 1, noData),
+          })}
+        </span>
+      </div>
+      <svg aria-label={t("telemetry.history.title")} viewBox={`0 0 ${width} ${height}`}>
+        <line x1={padding} x2={width - padding} y1={height - padding} y2={height - padding} />
+        <line x1={padding} x2={padding} y1={padding} y2={height - padding} />
+        <polyline points={polyline} />
+        {coordinates.map(({ x, y, point }) => (
+          <circle key={point.id} cx={x} cy={y} r="4" />
+        ))}
+      </svg>
+      <div className="chart-range">
+        <span>{formatDateTime(firstPoint?.timestamp, noData)}</span>
+        <span>{formatDateTime(lastPoint?.timestamp, noData)}</span>
+      </div>
+    </div>
+  );
+}
+
+function TelemetrySection({
+  plants,
+  latest,
+  history,
+  summary,
+  assetId,
+  loading,
+  t,
+}: {
+  plants: SolarPlant[];
+  latest: TelemetryPoint | null;
+  history: TelemetryPoint[];
+  summary: TelemetrySummary | null;
+  assetId: string | null;
+  loading: boolean;
+  t: Translate;
+}) {
+  const noData = t("common.noData");
+  const selectedPlant = plants.find((plant) => plant.id === assetId);
+  const freshnessStatus = summary?.data_freshness_status || "no_data";
+
+  return (
+    <section className="section-stack">
+      {!loading && !assetId ? (
+        <EmptyState
+          detail={t("telemetry.empty.noAssetDetail")}
+          title={t("telemetry.empty.noAssetTitle")}
+        />
+      ) : null}
+
+      {!loading && assetId && !summary ? (
+        <EmptyState
+          detail={t("telemetry.empty.unavailableDetail")}
+          title={t("telemetry.empty.unavailableTitle")}
+        />
+      ) : null}
+
+      <section className="metric-grid telemetry-metric-grid">
+        <MetricCard
+          helper={selectedPlant?.name || noData}
+          label={t("telemetry.kpi.currentPower")}
+          loading={loading}
+          t={t}
+          value={formatTranslatedUnit(
+            summary?.current_power_kw ?? latest?.actual_power_kw,
+            "telemetry.units.kw",
+            t,
+            noData,
+          )}
+        />
+        <MetricCard
+          helper={t("telemetry.kpi.energyTodayHelper")}
+          label={t("telemetry.kpi.energyToday")}
+          loading={loading}
+          t={t}
+          value={formatTranslatedUnit(summary?.energy_today_kwh, "telemetry.units.kwh", t, noData)}
+        />
+        <MetricCard
+          helper={t("telemetry.kpi.averagePowerHelper")}
+          label={t("telemetry.kpi.averagePower")}
+          loading={loading}
+          t={t}
+          value={formatTranslatedUnit(summary?.avg_power_kw, "telemetry.units.kw", t, noData)}
+        />
+        <MetricCard
+          helper={t("telemetry.kpi.maxPowerHelper")}
+          label={t("telemetry.kpi.maxPower")}
+          loading={loading}
+          t={t}
+          value={formatTranslatedUnit(summary?.max_power_kw, "telemetry.units.kw", t, noData)}
+        />
+        <MetricCard
+          helper={t("telemetry.kpi.lastTelemetryHelper")}
+          label={t("telemetry.kpi.lastTelemetry")}
+          loading={loading}
+          t={t}
+          value={formatDateTime(summary?.last_telemetry_time ?? latest?.timestamp, noData)}
+        />
+        <MetricCard
+          helper={t("telemetry.kpi.freshnessHelper")}
+          label={t("telemetry.kpi.freshness")}
+          loading={loading}
+          t={t}
+          value={t(`telemetry.freshness.${freshnessStatus}`)}
+        />
+        <MetricCard
+          helper={t("telemetry.kpi.pointsHelper")}
+          label={t("telemetry.kpi.points")}
+          loading={loading}
+          t={t}
+          value={formatNumber(summary?.telemetry_points_count, 0, noData)}
+        />
+        <MetricCard
+          helper={t("telemetry.kpi.gapHelper")}
+          label={t("telemetry.kpi.gap")}
+          loading={loading}
+          t={t}
+          value={formatTranslatedUnit(
+            summary?.possible_data_gap_minutes,
+            "telemetry.units.minutes",
+            t,
+            noData,
+            0,
+          )}
+        />
+        {summary?.estimated_revenue_today !== null && summary?.estimated_revenue_today !== undefined ? (
+          <MetricCard
+            helper={t("telemetry.kpi.revenueHelper")}
+            label={t("telemetry.kpi.revenue")}
+            loading={loading}
+            t={t}
+            value={formatNumber(summary.estimated_revenue_today, 2, noData)}
+          />
+        ) : null}
+      </section>
+
+      <section className="telemetry-layout">
+        <Panel eyebrow={t("telemetry.history.eyebrow")} title={t("telemetry.history.title")}>
+          {loading ? (
+            <EmptyState
+              detail={t("telemetry.history.loadingDetail")}
+              title={t("telemetry.history.loadingTitle")}
+            />
+          ) : (
+            <PowerHistoryChart points={history} t={t} />
+          )}
+        </Panel>
+
+        <Panel eyebrow={t("telemetry.status.eyebrow")} title={t("telemetry.status.title")}>
+          {loading ? (
+            <EmptyState
+              detail={t("telemetry.status.loadingDetail")}
+              title={t("telemetry.status.loadingTitle")}
+            />
+          ) : (
+            <div className="telemetry-status-card">
+              <FreshnessBadge status={summary?.data_freshness_status} t={t} />
+              <div>
+                <span>{t("telemetry.status.asset")}</span>
+                <strong>{selectedPlant?.name || noData}</strong>
+              </div>
+              <div>
+                <span>{t("telemetry.status.source")}</span>
+                <strong>{latest?.source || noData}</strong>
+              </div>
+              <div>
+                <span>{t("telemetry.status.quality")}</span>
+                <strong>{latest?.quality || noData}</strong>
+              </div>
+              <div>
+                <span>{t("telemetry.status.lastTelemetry")}</span>
+                <strong>{formatDateTime(summary?.last_telemetry_time ?? latest?.timestamp, noData)}</strong>
+              </div>
+            </div>
+          )}
+        </Panel>
+      </section>
+    </section>
+  );
+}
+
 function DashboardOverview({
   locale,
   onLocaleChange,
@@ -875,14 +1171,39 @@ function DashboardOverview({
         return;
       }
 
+      const plantList = plants.status === "fulfilled" ? plants.value : [];
+      const telemetryAssetId = plantList[0]?.id || null;
+      const [telemetryLatest, telemetryHistory, telemetrySummary] = telemetryAssetId
+        ? await Promise.allSettled([
+            fetchJson<TelemetryPoint>("/api/v1/telemetry/latest", {
+              asset_id: telemetryAssetId,
+            }),
+            fetchJson<TelemetryPoint[]>("/api/v1/telemetry/history", {
+              asset_id: telemetryAssetId,
+              from: period.from,
+              to: period.to,
+              limit: "96",
+            }),
+            fetchJson<TelemetrySummary>("/api/v1/telemetry/summary", {
+              asset_id: telemetryAssetId,
+              from: period.from,
+              to: period.to,
+            }),
+          ])
+        : [];
+
       const nextData: DashboardData = {
         health: health.status === "fulfilled" ? health.value : null,
         system: system.status === "fulfilled" ? system.value : null,
-        plants: plants.status === "fulfilled" ? plants.value : [],
+        plants: plantList,
         providers: providers.status === "fulfilled" ? providers.value : [],
         accuracy: accuracy.status === "fulfilled" ? accuracy.value : null,
         accuracyRanking: accuracyRanking.status === "fulfilled" ? accuracyRanking.value : null,
         rejected: rejected.status === "fulfilled" ? rejected.value : null,
+        telemetryLatest: telemetryLatest?.status === "fulfilled" ? telemetryLatest.value : null,
+        telemetryHistory: telemetryHistory?.status === "fulfilled" ? telemetryHistory.value : [],
+        telemetrySummary: telemetrySummary?.status === "fulfilled" ? telemetrySummary.value : null,
+        telemetryAssetId,
       };
 
       const hasAnyData =
@@ -892,7 +1213,9 @@ function DashboardOverview({
         nextData.providers.length > 0 ||
         Boolean(nextData.accuracy) ||
         Boolean(nextData.accuracyRanking) ||
-        Boolean(nextData.rejected);
+        Boolean(nextData.rejected) ||
+        Boolean(nextData.telemetrySummary) ||
+        nextData.telemetryHistory.length > 0;
 
       setState({
         loading: false,
@@ -1182,6 +1505,16 @@ function DashboardOverview({
             ranking={state.data.accuracyRanking}
             t={t}
           />
+        ) : activeSection === "telemetry" ? (
+          <TelemetrySection
+            assetId={state.data.telemetryAssetId}
+            history={state.data.telemetryHistory}
+            latest={state.data.telemetryLatest}
+            loading={state.loading}
+            plants={state.data.plants}
+            summary={state.data.telemetrySummary}
+            t={t}
+          />
         ) : (
           <SectionPlaceholder title={activeSectionTitle} t={t} />
         )}
@@ -1394,6 +1727,11 @@ function DashboardOverview({
           margin-bottom: 0;
         }
 
+        .telemetry-metric-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          margin-bottom: 0;
+        }
+
         .metric-card,
         .panel,
         .empty-state {
@@ -1450,6 +1788,13 @@ function DashboardOverview({
         }
 
         .providers-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
+          gap: 18px;
+          align-items: start;
+        }
+
+        .telemetry-layout {
           display: grid;
           grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
           gap: 18px;
@@ -1665,6 +2010,106 @@ function DashboardOverview({
         .provider-comparison-card small {
           margin-top: 8px;
           color: #ffad66;
+        }
+
+        .freshness-badge {
+          display: inline-flex;
+          width: fit-content;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 999px;
+          color: #fffaf4;
+          font-size: 12px;
+          font-weight: 800;
+          padding: 8px 11px;
+          text-transform: uppercase;
+        }
+
+        .freshness-badge.fresh {
+          border-color: rgba(50, 213, 131, 0.34);
+          background: rgba(50, 213, 131, 0.12);
+          color: #7cf2b4;
+        }
+
+        .freshness-badge.stale {
+          border-color: rgba(255, 183, 77, 0.34);
+          background: rgba(255, 183, 77, 0.12);
+          color: #ffd08a;
+        }
+
+        .freshness-badge.offline,
+        .freshness-badge.no_data {
+          border-color: rgba(255, 255, 255, 0.12);
+          background: rgba(255, 255, 255, 0.04);
+          color: rgba(245, 242, 237, 0.62);
+        }
+
+        .power-chart {
+          display: grid;
+          gap: 14px;
+        }
+
+        .chart-meta,
+        .chart-range {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          color: rgba(245, 242, 237, 0.56);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .power-chart svg {
+          width: 100%;
+          min-height: 220px;
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 18px;
+          background: rgba(0, 0, 0, 0.18);
+        }
+
+        .power-chart line {
+          stroke: rgba(245, 242, 237, 0.12);
+          stroke-width: 1;
+        }
+
+        .power-chart polyline {
+          fill: none;
+          stroke: #ff8a2a;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+          stroke-width: 3;
+        }
+
+        .power-chart circle {
+          fill: #ffb366;
+          stroke: rgba(9, 9, 11, 0.9);
+          stroke-width: 2;
+        }
+
+        .telemetry-status-card {
+          display: grid;
+          gap: 12px;
+        }
+
+        .telemetry-status-card div {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 14px;
+        }
+
+        .telemetry-status-card span {
+          display: block;
+          color: rgba(245, 242, 237, 0.54);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .telemetry-status-card strong {
+          display: block;
+          margin-top: 8px;
+          color: #fffaf4;
+          font-size: 15px;
+          line-height: 1.35;
         }
 
         .plants-table {
@@ -1957,7 +2402,8 @@ function DashboardOverview({
           .panel-grid,
           .solar-layout,
           .accuracy-lab-layout,
-          .providers-layout {
+          .providers-layout,
+          .telemetry-layout {
             grid-template-columns: 1fr;
           }
         }
@@ -1992,6 +2438,7 @@ function DashboardOverview({
           .solar-metric-grid,
           .accuracy-lab-metric-grid,
           .providers-metric-grid,
+          .telemetry-metric-grid,
           .accuracy-grid {
             grid-template-columns: 1fr;
           }

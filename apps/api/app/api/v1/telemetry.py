@@ -4,6 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.db.session import get_db_session
 from app.repositories.telemetry import (
     get_rejected_telemetry,
@@ -18,9 +19,63 @@ from app.schemas.telemetry import (
     RejectedTelemetryResolutionUpdate,
     RejectedTelemetrySummary,
     RejectedTelemetrySummaryItem,
+    TelemetryPointRead,
+    TelemetrySummaryRead,
+)
+from app.services.telemetry import (
+    get_latest_telemetry,
+    get_telemetry_history,
+    get_telemetry_summary,
 )
 
 router = APIRouter(prefix="/telemetry", tags=["Telemetry"])
+
+
+@router.get("/latest", response_model=TelemetryPointRead)
+async def get_latest_good_telemetry(
+    asset_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db_session),
+):
+    latest = await get_latest_telemetry(session, asset_id=asset_id)
+    if latest is None:
+        raise HTTPException(status_code=404, detail="Telemetry not found")
+    return latest
+
+
+@router.get("/history", response_model=list[TelemetryPointRead])
+async def get_good_telemetry_history(
+    asset_id: uuid.UUID,
+    period_from: datetime = Query(alias="from"),
+    period_to: datetime = Query(alias="to"),
+    limit: int = Query(default=500, ge=1, le=5000),
+    offset: int = Query(default=0, ge=0),
+    session: AsyncSession = Depends(get_db_session),
+):
+    return await get_telemetry_history(
+        session,
+        asset_id=asset_id,
+        period_from=period_from,
+        period_to=period_to,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/summary", response_model=TelemetrySummaryRead)
+async def get_good_telemetry_summary(
+    asset_id: uuid.UUID,
+    period_from: datetime = Query(alias="from"),
+    period_to: datetime = Query(alias="to"),
+    session: AsyncSession = Depends(get_db_session),
+):
+    settings = get_settings()
+    return await get_telemetry_summary(
+        session,
+        asset_id=asset_id,
+        period_from=period_from,
+        period_to=period_to,
+        revenue_per_kwh=settings.telemetry_revenue_per_kwh,
+    )
 
 
 @router.get("/rejected/summary", response_model=RejectedTelemetrySummary)

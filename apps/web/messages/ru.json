@@ -218,6 +218,64 @@
       "emptyDetail": "Сравнение появится после того, как рейтинг провайдеров вернёт метрики точности."
     }
   },
+  "telemetry": {
+    "units": {
+      "kw": "{value} кВт",
+      "kwh": "{value} кВт⋅ч",
+      "minutes": "{value} мин"
+    },
+    "freshness": {
+      "fresh": "Fresh",
+      "stale": "Stale",
+      "offline": "Offline",
+      "no_data": "Нет данных"
+    },
+    "kpi": {
+      "currentPower": "Текущая мощность",
+      "energyToday": "Энергия сегодня",
+      "energyTodayHelper": "Выработка, накопленная за сегодня",
+      "averagePower": "Средняя мощность",
+      "averagePowerHelper": "Средняя мощность за выбранный период",
+      "maxPower": "Максимальная мощность",
+      "maxPowerHelper": "Пиковая мощность за выбранный период",
+      "lastTelemetry": "Время последней телеметрии",
+      "lastTelemetryHelper": "Последняя принятая точка телеметрии",
+      "freshness": "Статус свежести данных",
+      "freshnessHelper": "Fresh, stale или offline",
+      "points": "Количество точек телеметрии",
+      "pointsHelper": "Принятые точки за выбранный период",
+      "gap": "Возможный разрыв данных",
+      "gapHelper": "Минуты с последней принятой точки",
+      "revenue": "Оценочная выручка сегодня",
+      "revenueHelper": "Показывается только если backend вернул выручку"
+    },
+    "history": {
+      "eyebrow": "История телеметрии",
+      "title": "История мощности",
+      "loadingTitle": "Загружаем историю мощности",
+      "loadingDetail": "Получаем принятые точки телеметрии из API.",
+      "emptyTitle": "Истории телеметрии нет",
+      "emptyDetail": "API не вернул принятые точки телеметрии для выбранного актива и периода.",
+      "points": "{count} точек",
+      "maxPower": "макс. {value} кВт"
+    },
+    "status": {
+      "eyebrow": "Статус сигнала",
+      "title": "Здоровье телеметрии",
+      "loadingTitle": "Загружаем статус телеметрии",
+      "loadingDetail": "Проверяем последнюю принятую телеметрию.",
+      "asset": "Актив",
+      "source": "Источник",
+      "quality": "Качество",
+      "lastTelemetry": "Последняя телеметрия"
+    },
+    "empty": {
+      "noAssetTitle": "Нет доступного актива",
+      "noAssetDetail": "Telemetry dashboard требует хотя бы одну солнечную станцию из API.",
+      "unavailableTitle": "Telemetry API недоступен",
+      "unavailableDetail": "Dashboard не смог загрузить telemetry summary для выбранного актива."
+    }
+  },
   "rejectedTelemetry": {
     "loadingTitle": "Загружаем качество телеметрии",
     "loadingDetail": "Получаем сводку отклонённой телеметрии.",

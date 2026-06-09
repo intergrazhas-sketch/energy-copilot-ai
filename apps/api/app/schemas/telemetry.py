@@ -14,6 +14,39 @@ class ActualGenerationTelemetryPayload(BaseModel):
     quality: str = "measured"
 
 
+class TelemetryDataFreshnessStatus(StrEnum):
+    fresh = "fresh"
+    stale = "stale"
+    offline = "offline"
+    no_data = "no_data"
+
+
+class TelemetryPointRead(BaseModel):
+    id: uuid.UUID
+    asset_id: uuid.UUID
+    timestamp: datetime
+    actual_power_kw: float
+    actual_energy_kwh: float | None
+    source: str
+    quality: str
+    created_at: datetime
+
+
+class TelemetrySummaryRead(BaseModel):
+    asset_id: uuid.UUID
+    period_from: datetime
+    period_to: datetime
+    current_power_kw: float | None
+    energy_today_kwh: float | None
+    avg_power_kw: float | None
+    max_power_kw: float | None
+    telemetry_points_count: int
+    last_telemetry_time: datetime | None
+    data_freshness_status: TelemetryDataFreshnessStatus
+    estimated_revenue_today: float | None
+    possible_data_gap_minutes: int | None
+
+
 class RejectedTelemetryReason(StrEnum):
     invalid_topic = "invalid_topic"
     invalid_plant_id = "invalid_plant_id"
