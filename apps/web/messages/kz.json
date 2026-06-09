@@ -128,6 +128,58 @@
     "forecastRuns": "Болжам іске қосулары",
     "aggregates": "Агрегаттар"
   },
+  "accuracyLab": {
+    "unavailableTitle": "Accuracy Lab API қолжетімсіз",
+    "unavailableDetail": "Dashboard Accuracy Lab күндік жиынтығын жүктей алмады.",
+    "noAggregatesTitle": "Агрегаттар әлі жоқ",
+    "noAggregatesDetail": "Таңдалған кезең үшін күндік дәлдік агрегаттары әлі қолжетімді емес.",
+    "kpi": {
+      "avgMape": "Орташа MAPE",
+      "avgMapeHelper": "Болжам қатесінің негізгі метрикасы",
+      "avgRmse": "Орташа RMSE",
+      "avgRmseHelper": "Орташа квадраттық қате",
+      "avgMae": "Орташа MAE",
+      "avgMaeHelper": "Орташа абсолюттік қате",
+      "avgBias": "Орташа Bias",
+      "avgBiasHelper": "Болжамның орташа ауытқуы",
+      "samples": "Үлгілер саны",
+      "samplesHelper": "Сәйкес келген болжам және факт нүктелері",
+      "forecastRuns": "Болжам іске қосулары",
+      "forecastRunsHelper": "Күндік агрегаттарға кірген іске қосулар"
+    },
+    "target": {
+      "eyebrow": "Пилот мақсаты",
+      "title": "Болжам тиімділігі",
+      "currentMape": "API-дан ағымдағы MAPE",
+      "baseline": "Baseline",
+      "target": "Мақсат",
+      "excellent": "Өте жақсы",
+      "status": {
+        "excellent": "Өте жақсы",
+        "onTarget": "Мақсатта",
+        "aboveTarget": "Мақсаттан жоғары",
+        "noData": "Дерек жоқ"
+      }
+    },
+    "ranking": {
+      "eyebrow": "Провайдерлер",
+      "title": "Провайдерлер рейтингі",
+      "loadingTitle": "Провайдерлер рейтингі жүктелуде",
+      "loadingDetail": "Accuracy Lab провайдерлер рейтингі жүктелуде.",
+      "unavailableTitle": "Провайдер рейтингі API қолжетімсіз",
+      "unavailableDetail": "Dashboard провайдер рейтингі деректерін жүктей алмады.",
+      "emptyTitle": "Провайдер рейтингі әлі жоқ",
+      "emptyDetail": "Рейтинг forecast runs нақты генерациямен салыстырылғаннан кейін пайда болады.",
+      "rank": "Ранг",
+      "provider": "Провайдер",
+      "avgMape": "Орташа MAPE",
+      "avgRmse": "Орташа RMSE",
+      "avgMae": "Орташа MAE",
+      "avgBias": "Орташа Bias",
+      "samples": "Үлгілер",
+      "forecastRuns": "Іске қосулар"
+    }
+  },
   "providers": {
     "loadingTitle": "Болжам провайдерлері жүктелуде",
     "loadingDetail": "Провайдер registry жүктелуде.",

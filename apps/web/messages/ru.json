@@ -128,6 +128,58 @@
     "forecastRuns": "Запуски прогноза",
     "aggregates": "Агрегаты"
   },
+  "accuracyLab": {
+    "unavailableTitle": "Accuracy Lab API недоступен",
+    "unavailableDetail": "Dashboard не смог загрузить дневную сводку Accuracy Lab.",
+    "noAggregatesTitle": "Агрегатов пока нет",
+    "noAggregatesDetail": "За выбранный период дневные агрегаты точности пока недоступны.",
+    "kpi": {
+      "avgMape": "Средний MAPE",
+      "avgMapeHelper": "Главная метрика ошибки прогноза",
+      "avgRmse": "Средний RMSE",
+      "avgRmseHelper": "Среднеквадратичная ошибка",
+      "avgMae": "Средний MAE",
+      "avgMaeHelper": "Средняя абсолютная ошибка",
+      "avgBias": "Средний Bias",
+      "avgBiasHelper": "Среднее смещение прогноза",
+      "samples": "Количество выборок",
+      "samplesHelper": "Совпавшие точки прогноза и факта",
+      "forecastRuns": "Количество запусков",
+      "forecastRunsHelper": "Запуски в дневных агрегатах"
+    },
+    "target": {
+      "eyebrow": "Цель пилота",
+      "title": "Эффективность прогноза",
+      "currentMape": "Текущий MAPE из API",
+      "baseline": "Baseline",
+      "target": "Цель",
+      "excellent": "Отлично",
+      "status": {
+        "excellent": "Отлично",
+        "onTarget": "В цели",
+        "aboveTarget": "Выше цели",
+        "noData": "Нет данных"
+      }
+    },
+    "ranking": {
+      "eyebrow": "Провайдеры",
+      "title": "Рейтинг провайдеров",
+      "loadingTitle": "Загружаем рейтинг провайдеров",
+      "loadingDetail": "Получаем рейтинг провайдеров из Accuracy Lab.",
+      "unavailableTitle": "API рейтинга провайдеров недоступен",
+      "unavailableDetail": "Dashboard не смог загрузить данные рейтинга провайдеров.",
+      "emptyTitle": "Рейтинга провайдеров пока нет",
+      "emptyDetail": "Рейтинг появится после сопоставления forecast runs с фактической генерацией.",
+      "rank": "Ранг",
+      "provider": "Провайдер",
+      "avgMape": "Средний MAPE",
+      "avgRmse": "Средний RMSE",
+      "avgMae": "Средний MAE",
+      "avgBias": "Средний Bias",
+      "samples": "Выборки",
+      "forecastRuns": "Запуски"
+    }
+  },
   "providers": {
     "loadingTitle": "Загружаем провайдеров прогноза",
     "loadingDetail": "Получаем registry провайдеров.",

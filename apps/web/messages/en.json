@@ -128,6 +128,58 @@
     "forecastRuns": "Forecast runs",
     "aggregates": "Aggregates"
   },
+  "accuracyLab": {
+    "unavailableTitle": "Accuracy Lab API unavailable",
+    "unavailableDetail": "The dashboard could not load daily summary data from Accuracy Lab.",
+    "noAggregatesTitle": "No aggregates yet",
+    "noAggregatesDetail": "Daily accuracy aggregates are not available for the selected period yet.",
+    "kpi": {
+      "avgMape": "Avg MAPE",
+      "avgMapeHelper": "Primary forecast error metric",
+      "avgRmse": "Avg RMSE",
+      "avgRmseHelper": "Root mean square error",
+      "avgMae": "Avg MAE",
+      "avgMaeHelper": "Mean absolute error",
+      "avgBias": "Avg Bias",
+      "avgBiasHelper": "Average forecast bias",
+      "samples": "Samples count",
+      "samplesHelper": "Matched forecast and actual points",
+      "forecastRuns": "Forecast runs count",
+      "forecastRunsHelper": "Runs included in daily aggregates"
+    },
+    "target": {
+      "eyebrow": "Pilot Target",
+      "title": "Forecast Effectiveness",
+      "currentMape": "Current MAPE from API",
+      "baseline": "Baseline",
+      "target": "Target",
+      "excellent": "Excellent",
+      "status": {
+        "excellent": "Excellent",
+        "onTarget": "On target",
+        "aboveTarget": "Above target",
+        "noData": "No data"
+      }
+    },
+    "ranking": {
+      "eyebrow": "Providers",
+      "title": "Provider Ranking",
+      "loadingTitle": "Loading provider ranking",
+      "loadingDetail": "Loading provider ranking from Accuracy Lab.",
+      "unavailableTitle": "Provider ranking API unavailable",
+      "unavailableDetail": "The dashboard could not load provider ranking data.",
+      "emptyTitle": "No provider ranking yet",
+      "emptyDetail": "Provider ranking will appear after forecast runs are matched with actual generation.",
+      "rank": "Rank",
+      "provider": "Provider",
+      "avgMape": "Avg MAPE",
+      "avgRmse": "Avg RMSE",
+      "avgMae": "Avg MAE",
+      "avgBias": "Avg Bias",
+      "samples": "Samples",
+      "forecastRuns": "Runs"
+    }
+  },
   "providers": {
     "loadingTitle": "Loading forecast providers",
     "loadingDetail": "Loading provider registry.",

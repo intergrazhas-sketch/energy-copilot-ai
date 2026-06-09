@@ -53,6 +53,27 @@ type AccuracySummary = {
   avg_bias: number | null;
 };
 
+type AccuracyProviderRankingItem = {
+  provider_id: string;
+  provider_code: string;
+  provider_name: string;
+  avg_mape: number | null;
+  avg_rmse: number | null;
+  avg_mae: number | null;
+  avg_bias: number | null;
+  forecast_runs_count: number;
+  samples_count: number;
+  rank: number;
+};
+
+type AccuracyProviderRankingResponse = {
+  bucket_type: string;
+  period_from: string;
+  period_to: string;
+  solar_plant_id?: string | null;
+  providers: AccuracyProviderRankingItem[];
+};
+
 type RejectedTelemetrySummary = {
   total: number;
   items: Array<{
@@ -67,6 +88,7 @@ type DashboardData = {
   plants: SolarPlant[];
   providers: ForecastProvider[];
   accuracy: AccuracySummary | null;
+  accuracyRanking: AccuracyProviderRankingResponse | null;
   rejected: RejectedTelemetrySummary | null;
 };
 
@@ -128,6 +150,7 @@ const emptyData: DashboardData = {
   plants: [],
   providers: [],
   accuracy: null,
+  accuracyRanking: null,
   rejected: null,
 };
 
@@ -429,6 +452,171 @@ function SolarPlantsSection({
   );
 }
 
+function getAccuracyTargetStatus(avgMape: number | null | undefined) {
+  if (avgMape === null || avgMape === undefined || Number.isNaN(avgMape)) {
+    return "noData";
+  }
+  if (avgMape < 5) {
+    return "excellent";
+  }
+  if (avgMape < 10) {
+    return "onTarget";
+  }
+  return "aboveTarget";
+}
+
+function ForecastAccuracyLabSection({
+  summary,
+  ranking,
+  loading,
+  t,
+}: {
+  summary: AccuracySummary | null;
+  ranking: AccuracyProviderRankingResponse | null;
+  loading: boolean;
+  t: Translate;
+}) {
+  const noData = t("common.noData");
+  const targetStatus = getAccuracyTargetStatus(summary?.avg_mape);
+  const rankingProviders = ranking?.providers || [];
+  const hasAggregates = Boolean(summary && summary.aggregates_count > 0);
+
+  return (
+    <section className="section-stack">
+      {!loading && !summary ? (
+        <EmptyState
+          detail={t("accuracyLab.unavailableDetail")}
+          title={t("accuracyLab.unavailableTitle")}
+        />
+      ) : null}
+
+      <section className="metric-grid accuracy-lab-metric-grid">
+        <MetricCard
+          helper={t("accuracyLab.kpi.avgMapeHelper")}
+          label={t("accuracyLab.kpi.avgMape")}
+          loading={loading}
+          t={t}
+          value={formatPercent(summary?.avg_mape, noData)}
+        />
+        <MetricCard
+          helper={t("accuracyLab.kpi.avgRmseHelper")}
+          label={t("accuracyLab.kpi.avgRmse")}
+          loading={loading}
+          t={t}
+          value={formatNumber(summary?.avg_rmse, 2, noData)}
+        />
+        <MetricCard
+          helper={t("accuracyLab.kpi.avgMaeHelper")}
+          label={t("accuracyLab.kpi.avgMae")}
+          loading={loading}
+          t={t}
+          value={formatNumber(summary?.avg_mae, 2, noData)}
+        />
+        <MetricCard
+          helper={t("accuracyLab.kpi.avgBiasHelper")}
+          label={t("accuracyLab.kpi.avgBias")}
+          loading={loading}
+          t={t}
+          value={formatNumber(summary?.avg_bias, 2, noData)}
+        />
+        <MetricCard
+          helper={t("accuracyLab.kpi.samplesHelper")}
+          label={t("accuracyLab.kpi.samples")}
+          loading={loading}
+          t={t}
+          value={formatNumber(summary?.samples_count, 0, noData)}
+        />
+        <MetricCard
+          helper={t("accuracyLab.kpi.forecastRunsHelper")}
+          label={t("accuracyLab.kpi.forecastRuns")}
+          loading={loading}
+          t={t}
+          value={formatNumber(summary?.forecast_runs_count, 0, noData)}
+        />
+      </section>
+
+      <section className="accuracy-lab-layout">
+        <Panel eyebrow={t("accuracyLab.target.eyebrow")} title={t("accuracyLab.target.title")}>
+          <div className="target-card">
+            <div className={`target-status ${targetStatus}`}>
+              <span>{t("accuracyLab.target.currentMape")}</span>
+              <strong>{formatPercent(summary?.avg_mape, noData)}</strong>
+              <em>{t(`accuracyLab.target.status.${targetStatus}`)}</em>
+            </div>
+            <div className="target-grid">
+              <div>
+                <span>{t("accuracyLab.target.baseline")}</span>
+                <strong>14%</strong>
+              </div>
+              <div>
+                <span>{t("accuracyLab.target.target")}</span>
+                <strong>&lt;10%</strong>
+              </div>
+              <div>
+                <span>{t("accuracyLab.target.excellent")}</span>
+                <strong>&lt;5%</strong>
+              </div>
+            </div>
+            {!loading && summary && !hasAggregates ? (
+              <EmptyState
+                detail={t("accuracyLab.noAggregatesDetail")}
+                title={t("accuracyLab.noAggregatesTitle")}
+              />
+            ) : null}
+          </div>
+        </Panel>
+
+        <Panel eyebrow={t("accuracyLab.ranking.eyebrow")} title={t("accuracyLab.ranking.title")}>
+          {loading ? (
+            <EmptyState
+              detail={t("accuracyLab.ranking.loadingDetail")}
+              title={t("accuracyLab.ranking.loadingTitle")}
+            />
+          ) : !ranking ? (
+            <EmptyState
+              detail={t("accuracyLab.ranking.unavailableDetail")}
+              title={t("accuracyLab.ranking.unavailableTitle")}
+            />
+          ) : rankingProviders.length > 0 ? (
+            <div className="ranking-table">
+              <div className="ranking-table-head">
+                <span>{t("accuracyLab.ranking.rank")}</span>
+                <span>{t("accuracyLab.ranking.provider")}</span>
+                <span>{t("accuracyLab.ranking.avgMape")}</span>
+                <span>{t("accuracyLab.ranking.avgRmse")}</span>
+                <span>{t("accuracyLab.ranking.avgMae")}</span>
+                <span>{t("accuracyLab.ranking.avgBias")}</span>
+                <span>{t("accuracyLab.ranking.samples")}</span>
+                <span>{t("accuracyLab.ranking.forecastRuns")}</span>
+              </div>
+              {rankingProviders.map((provider) => (
+                <div className="ranking-table-row" key={provider.provider_id}>
+                  <strong>#{provider.rank}</strong>
+                  <span>
+                    <strong>{provider.provider_name}</strong>
+                    <small>{provider.provider_code}</small>
+                  </span>
+                  <span>{formatPercent(provider.avg_mape, noData)}</span>
+                  <span>{formatNumber(provider.avg_rmse, 2, noData)}</span>
+                  <span>{formatNumber(provider.avg_mae, 2, noData)}</span>
+                  <span>{formatNumber(provider.avg_bias, 2, noData)}</span>
+                  <span>{formatNumber(provider.samples_count, 0, noData)}</span>
+                  <span>{formatNumber(provider.forecast_runs_count, 0, noData)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              detail={t("accuracyLab.ranking.emptyDetail")}
+              title={t("accuracyLab.ranking.emptyTitle")}
+            />
+          )}
+        </Panel>
+      </section>
+    </section>
+  );
+}
+
 function DashboardOverview({
   locale,
   onLocaleChange,
@@ -466,12 +654,18 @@ function DashboardOverview({
         error: null,
       }));
 
-      const [health, system, plants, providers, accuracy, rejected] = await Promise.allSettled([
+      const [health, system, plants, providers, accuracy, accuracyRanking, rejected] =
+        await Promise.allSettled([
         fetchJson<HealthResponse>("/health"),
         fetchJson<SystemStatusResponse>("/api/v1/system/status"),
         fetchJson<SolarPlant[]>("/api/v1/solar-plants"),
         fetchJson<ForecastProvider[]>("/api/v1/forecast-providers"),
         fetchJson<AccuracySummary>("/api/v1/accuracy-lab/summary", {
+          from: period.from,
+          to: period.to,
+          bucket: "day",
+        }),
+        fetchJson<AccuracyProviderRankingResponse>("/api/v1/accuracy-lab/providers/ranking", {
           from: period.from,
           to: period.to,
           bucket: "day",
@@ -493,6 +687,7 @@ function DashboardOverview({
         plants: plants.status === "fulfilled" ? plants.value : [],
         providers: providers.status === "fulfilled" ? providers.value : [],
         accuracy: accuracy.status === "fulfilled" ? accuracy.value : null,
+        accuracyRanking: accuracyRanking.status === "fulfilled" ? accuracyRanking.value : null,
         rejected: rejected.status === "fulfilled" ? rejected.value : null,
       };
 
@@ -502,6 +697,7 @@ function DashboardOverview({
         nextData.plants.length > 0 ||
         nextData.providers.length > 0 ||
         Boolean(nextData.accuracy) ||
+        Boolean(nextData.accuracyRanking) ||
         Boolean(nextData.rejected);
 
       setState({
@@ -778,6 +974,13 @@ function DashboardOverview({
           </>
         ) : activeSection === "solar-plants" ? (
           <SolarPlantsSection plants={state.data.plants} loading={state.loading} t={t} />
+        ) : activeSection === "forecast-accuracy-lab" ? (
+          <ForecastAccuracyLabSection
+            loading={state.loading}
+            ranking={state.data.accuracyRanking}
+            summary={state.data.accuracy}
+            t={t}
+          />
         ) : (
           <SectionPlaceholder title={activeSectionTitle} t={t} />
         )}
@@ -980,6 +1183,11 @@ function DashboardOverview({
           margin-bottom: 0;
         }
 
+        .accuracy-lab-metric-grid {
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          margin-bottom: 0;
+        }
+
         .metric-card,
         .panel,
         .empty-state {
@@ -1026,6 +1234,145 @@ function DashboardOverview({
           grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
           gap: 18px;
           align-items: start;
+        }
+
+        .accuracy-lab-layout {
+          display: grid;
+          grid-template-columns: minmax(360px, 0.72fr) minmax(0, 1.28fr);
+          gap: 18px;
+          align-items: start;
+        }
+
+        .target-card {
+          display: grid;
+          gap: 14px;
+        }
+
+        .target-status {
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 18px;
+          background: rgba(0, 0, 0, 0.2);
+          padding: 18px;
+        }
+
+        .target-status.excellent {
+          border-color: rgba(50, 213, 131, 0.34);
+          background: rgba(50, 213, 131, 0.1);
+        }
+
+        .target-status.onTarget {
+          border-color: rgba(255, 122, 24, 0.34);
+          background: rgba(255, 122, 24, 0.1);
+        }
+
+        .target-status.aboveTarget {
+          border-color: rgba(255, 183, 77, 0.34);
+          background: rgba(255, 183, 77, 0.1);
+        }
+
+        .target-status.noData {
+          border-color: rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.035);
+        }
+
+        .target-status span,
+        .target-grid span {
+          display: block;
+          color: rgba(245, 242, 237, 0.54);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .target-status strong {
+          display: block;
+          margin-top: 10px;
+          color: #fffaf4;
+          font-size: 44px;
+          letter-spacing: -0.06em;
+          line-height: 1;
+        }
+
+        .target-status em {
+          display: inline-flex;
+          margin-top: 12px;
+          border-radius: 999px;
+          background: rgba(0, 0, 0, 0.22);
+          color: #fffaf4;
+          font-size: 12px;
+          font-style: normal;
+          font-weight: 800;
+          padding: 7px 10px;
+          text-transform: uppercase;
+        }
+
+        .target-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .target-grid div {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 14px;
+        }
+
+        .target-grid strong {
+          display: block;
+          margin-top: 8px;
+          color: #fffaf4;
+          font-size: 18px;
+          letter-spacing: -0.03em;
+        }
+
+        .ranking-table {
+          display: grid;
+          gap: 10px;
+          overflow-x: auto;
+        }
+
+        .ranking-table-head,
+        .ranking-table-row {
+          display: grid;
+          grid-template-columns: 72px minmax(170px, 1.4fr) repeat(6, minmax(96px, 0.8fr));
+          gap: 12px;
+          min-width: 960px;
+          align-items: center;
+        }
+
+        .ranking-table-head {
+          color: rgba(245, 242, 237, 0.46);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          padding: 0 12px;
+          text-transform: uppercase;
+        }
+
+        .ranking-table-row {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 12px;
+        }
+
+        .ranking-table-row > strong,
+        .ranking-table-row span strong {
+          color: #fffaf4;
+          font-size: 14px;
+        }
+
+        .ranking-table-row span {
+          color: rgba(245, 242, 237, 0.62);
+          font-size: 13px;
+        }
+
+        .ranking-table-row small {
+          display: block;
+          margin-top: 4px;
+          color: rgba(245, 242, 237, 0.44);
+          font-size: 12px;
         }
 
         .plants-table {
@@ -1316,7 +1663,8 @@ function DashboardOverview({
           }
 
           .panel-grid,
-          .solar-layout {
+          .solar-layout,
+          .accuracy-lab-layout {
             grid-template-columns: 1fr;
           }
         }
@@ -1349,11 +1697,13 @@ function DashboardOverview({
 
           .metric-grid,
           .solar-metric-grid,
+          .accuracy-lab-metric-grid,
           .accuracy-grid {
             grid-template-columns: 1fr;
           }
 
-          .pilot-grid {
+          .pilot-grid,
+          .target-grid {
             grid-template-columns: 1fr;
           }
         }
