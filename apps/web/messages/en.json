@@ -186,6 +186,38 @@
     "emptyTitle": "No providers yet",
     "emptyDetail": "No manual or mock providers were returned by the API."
   },
+  "forecastProviders": {
+    "kpi": {
+      "totalProviders": "Total providers",
+      "totalProvidersHelper": "Providers returned by registry",
+      "activeProviders": "Active providers",
+      "activeProvidersHelper": "Providers marked active",
+      "forecastRuns": "Total forecast runs",
+      "forecastRunsHelper": "Runs included in provider ranking",
+      "bestProvider": "Best provider by MAPE",
+      "bestProviderHelper": "Lowest average MAPE"
+    },
+    "table": {
+      "eyebrow": "Registry + Accuracy",
+      "title": "Forecast Providers",
+      "name": "Provider name",
+      "code": "Provider code",
+      "status": "Status",
+      "avgMape": "Average MAPE",
+      "avgRmse": "Average RMSE",
+      "forecastRuns": "Forecast runs",
+      "rank": "Rank"
+    },
+    "comparison": {
+      "eyebrow": "Comparison",
+      "title": "Provider Performance",
+      "bestProvider": "Best provider",
+      "worstProvider": "Worst provider",
+      "mapeDelta": "MAPE difference",
+      "emptyTitle": "No provider comparison yet",
+      "emptyDetail": "Comparison will appear after provider ranking returns accuracy metrics."
+    }
+  },
   "rejectedTelemetry": {
     "loadingTitle": "Loading telemetry quality",
     "loadingDetail": "Loading rejected telemetry summary.",

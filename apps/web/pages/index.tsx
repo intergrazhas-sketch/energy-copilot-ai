@@ -617,6 +617,200 @@ function ForecastAccuracyLabSection({
   );
 }
 
+type ForecastProviderRow = {
+  id: string;
+  name: string;
+  code: string;
+  isActive?: boolean;
+  avgMape: number | null;
+  avgRmse: number | null;
+  forecastRunsCount: number | null;
+  rank: number | null;
+};
+
+function buildForecastProviderRows(
+  providers: ForecastProvider[],
+  ranking: AccuracyProviderRankingResponse | null,
+) {
+  const rankingProviders = ranking?.providers || [];
+  const rankingById = new Map(rankingProviders.map((provider) => [provider.provider_id, provider]));
+  const rankingByCode = new Map(rankingProviders.map((provider) => [provider.provider_code, provider]));
+  const rows = providers.map<ForecastProviderRow>((provider) => {
+    const providerRanking = rankingById.get(provider.id) || rankingByCode.get(provider.code);
+    return {
+      id: provider.id,
+      name: provider.name,
+      code: provider.code,
+      isActive: provider.is_active,
+      avgMape: providerRanking?.avg_mape ?? null,
+      avgRmse: providerRanking?.avg_rmse ?? null,
+      forecastRunsCount: providerRanking?.forecast_runs_count ?? null,
+      rank: providerRanking?.rank ?? null,
+    };
+  });
+
+  const providerIds = new Set(providers.map((provider) => provider.id));
+  rankingProviders.forEach((provider) => {
+    if (providerIds.has(provider.provider_id)) {
+      return;
+    }
+    rows.push({
+      id: provider.provider_id,
+      name: provider.provider_name,
+      code: provider.provider_code,
+      avgMape: provider.avg_mape,
+      avgRmse: provider.avg_rmse,
+      forecastRunsCount: provider.forecast_runs_count,
+      rank: provider.rank,
+    });
+  });
+
+  return rows.sort((first, second) => {
+    if (first.rank !== null && second.rank !== null) {
+      return first.rank - second.rank;
+    }
+    if (first.rank !== null) {
+      return -1;
+    }
+    if (second.rank !== null) {
+      return 1;
+    }
+    return first.name.localeCompare(second.name);
+  });
+}
+
+function ForecastProvidersSection({
+  providers,
+  ranking,
+  loading,
+  t,
+}: {
+  providers: ForecastProvider[];
+  ranking: AccuracyProviderRankingResponse | null;
+  loading: boolean;
+  t: Translate;
+}) {
+  const noData = t("common.noData");
+  const rows = buildForecastProviderRows(providers, ranking);
+  const rankedRows = rows.filter(
+    (provider) => provider.avgMape !== null && !Number.isNaN(provider.avgMape),
+  );
+  const bestProvider = rankedRows[0];
+  const worstProvider = rankedRows[rankedRows.length - 1];
+  const mapeDelta =
+    bestProvider && worstProvider && bestProvider.avgMape !== null && worstProvider.avgMape !== null
+      ? worstProvider.avgMape - bestProvider.avgMape
+      : null;
+  const activeProviders = providers.filter((provider) => provider.is_active).length;
+  const totalForecastRuns = rows.reduce(
+    (sum, provider) => sum + (provider.forecastRunsCount || 0),
+    0,
+  );
+
+  return (
+    <section className="section-stack">
+      {!loading && providers.length === 0 ? (
+        <EmptyState detail={t("providers.emptyDetail")} title={t("providers.emptyTitle")} />
+      ) : null}
+
+      <section className="metric-grid providers-metric-grid">
+        <MetricCard
+          helper={t("forecastProviders.kpi.totalProvidersHelper")}
+          label={t("forecastProviders.kpi.totalProviders")}
+          loading={loading}
+          t={t}
+          value={formatNumber(providers.length, 0, noData)}
+        />
+        <MetricCard
+          helper={t("forecastProviders.kpi.activeProvidersHelper")}
+          label={t("forecastProviders.kpi.activeProviders")}
+          loading={loading}
+          t={t}
+          value={formatNumber(activeProviders, 0, noData)}
+        />
+        <MetricCard
+          helper={t("forecastProviders.kpi.forecastRunsHelper")}
+          label={t("forecastProviders.kpi.forecastRuns")}
+          loading={loading}
+          t={t}
+          value={formatNumber(totalForecastRuns, 0, noData)}
+        />
+        <MetricCard
+          helper={t("forecastProviders.kpi.bestProviderHelper")}
+          label={t("forecastProviders.kpi.bestProvider")}
+          loading={loading}
+          t={t}
+          value={bestProvider?.name || noData}
+        />
+      </section>
+
+      <section className="providers-layout">
+        <Panel eyebrow={t("forecastProviders.table.eyebrow")} title={t("forecastProviders.table.title")}>
+          {loading ? (
+            <EmptyState detail={t("providers.loadingDetail")} title={t("providers.loadingTitle")} />
+          ) : rows.length > 0 ? (
+            <div className="providers-table">
+              <div className="providers-table-head">
+                <span>{t("forecastProviders.table.name")}</span>
+                <span>{t("forecastProviders.table.code")}</span>
+                <span>{t("forecastProviders.table.status")}</span>
+                <span>{t("forecastProviders.table.avgMape")}</span>
+                <span>{t("forecastProviders.table.avgRmse")}</span>
+                <span>{t("forecastProviders.table.forecastRuns")}</span>
+                <span>{t("forecastProviders.table.rank")}</span>
+              </div>
+              {rows.map((provider) => (
+                <div className="providers-table-row" key={provider.id}>
+                  <strong>{provider.name}</strong>
+                  <span>{provider.code}</span>
+                  <StatusBadge status={provider.isActive ? "active" : "inactive"} t={t} />
+                  <span>{formatPercent(provider.avgMape, noData)}</span>
+                  <span>{formatNumber(provider.avgRmse, 2, noData)}</span>
+                  <span>{formatNumber(provider.forecastRunsCount, 0, noData)}</span>
+                  <span>{provider.rank ? `#${provider.rank}` : noData}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState detail={t("providers.emptyDetail")} title={t("providers.emptyTitle")} />
+          )}
+        </Panel>
+
+        <Panel
+          eyebrow={t("forecastProviders.comparison.eyebrow")}
+          title={t("forecastProviders.comparison.title")}
+        >
+          {loading ? (
+            <EmptyState detail={t("providers.loadingDetail")} title={t("providers.loadingTitle")} />
+          ) : rankedRows.length > 0 ? (
+            <div className="provider-comparison-card">
+              <div>
+                <span>{t("forecastProviders.comparison.bestProvider")}</span>
+                <strong>{bestProvider?.name || noData}</strong>
+                <small>{formatPercent(bestProvider?.avgMape, noData)}</small>
+              </div>
+              <div>
+                <span>{t("forecastProviders.comparison.worstProvider")}</span>
+                <strong>{worstProvider?.name || noData}</strong>
+                <small>{formatPercent(worstProvider?.avgMape, noData)}</small>
+              </div>
+              <div className="provider-delta">
+                <span>{t("forecastProviders.comparison.mapeDelta")}</span>
+                <strong>{formatPercent(mapeDelta, noData)}</strong>
+              </div>
+            </div>
+          ) : (
+            <EmptyState
+              detail={t("forecastProviders.comparison.emptyDetail")}
+              title={t("forecastProviders.comparison.emptyTitle")}
+            />
+          )}
+        </Panel>
+      </section>
+    </section>
+  );
+}
+
 function DashboardOverview({
   locale,
   onLocaleChange,
@@ -981,6 +1175,13 @@ function DashboardOverview({
             summary={state.data.accuracy}
             t={t}
           />
+        ) : activeSection === "forecast-providers" ? (
+          <ForecastProvidersSection
+            loading={state.loading}
+            providers={state.data.providers}
+            ranking={state.data.accuracyRanking}
+            t={t}
+          />
         ) : (
           <SectionPlaceholder title={activeSectionTitle} t={t} />
         )}
@@ -1188,6 +1389,11 @@ function DashboardOverview({
           margin-bottom: 0;
         }
 
+        .providers-metric-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          margin-bottom: 0;
+        }
+
         .metric-card,
         .panel,
         .empty-state {
@@ -1239,6 +1445,13 @@ function DashboardOverview({
         .accuracy-lab-layout {
           display: grid;
           grid-template-columns: minmax(360px, 0.72fr) minmax(0, 1.28fr);
+          gap: 18px;
+          align-items: start;
+        }
+
+        .providers-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
           gap: 18px;
           align-items: start;
         }
@@ -1373,6 +1586,85 @@ function DashboardOverview({
           margin-top: 4px;
           color: rgba(245, 242, 237, 0.44);
           font-size: 12px;
+        }
+
+        .providers-table {
+          display: grid;
+          gap: 10px;
+          overflow-x: auto;
+        }
+
+        .providers-table-head,
+        .providers-table-row {
+          display: grid;
+          grid-template-columns: minmax(170px, 1.3fr) minmax(110px, 0.8fr) minmax(110px, 0.8fr) repeat(4, minmax(100px, 0.8fr));
+          gap: 12px;
+          min-width: 880px;
+          align-items: center;
+        }
+
+        .providers-table-head {
+          color: rgba(245, 242, 237, 0.46);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          padding: 0 12px;
+          text-transform: uppercase;
+        }
+
+        .providers-table-row {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 12px;
+        }
+
+        .providers-table-row strong {
+          color: #fffaf4;
+          font-size: 14px;
+        }
+
+        .providers-table-row span {
+          color: rgba(245, 242, 237, 0.62);
+          font-size: 13px;
+        }
+
+        .provider-comparison-card {
+          display: grid;
+          gap: 12px;
+        }
+
+        .provider-comparison-card div {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 16px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 16px;
+        }
+
+        .provider-comparison-card .provider-delta {
+          border-color: rgba(255, 122, 24, 0.28);
+          background: radial-gradient(circle at top left, rgba(255, 122, 24, 0.14), rgba(0, 0, 0, 0.18));
+        }
+
+        .provider-comparison-card span,
+        .provider-comparison-card small {
+          display: block;
+          color: rgba(245, 242, 237, 0.54);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .provider-comparison-card strong {
+          display: block;
+          margin-top: 8px;
+          color: #fffaf4;
+          font-size: 20px;
+          letter-spacing: -0.04em;
+        }
+
+        .provider-comparison-card small {
+          margin-top: 8px;
+          color: #ffad66;
         }
 
         .plants-table {
@@ -1664,7 +1956,8 @@ function DashboardOverview({
 
           .panel-grid,
           .solar-layout,
-          .accuracy-lab-layout {
+          .accuracy-lab-layout,
+          .providers-layout {
             grid-template-columns: 1fr;
           }
         }
@@ -1698,6 +1991,7 @@ function DashboardOverview({
           .metric-grid,
           .solar-metric-grid,
           .accuracy-lab-metric-grid,
+          .providers-metric-grid,
           .accuracy-grid {
             grid-template-columns: 1fr;
           }

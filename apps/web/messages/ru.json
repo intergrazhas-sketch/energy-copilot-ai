@@ -186,6 +186,38 @@
     "emptyTitle": "Провайдеров пока нет",
     "emptyDetail": "API не вернул manual или mock providers."
   },
+  "forecastProviders": {
+    "kpi": {
+      "totalProviders": "Всего провайдеров",
+      "totalProvidersHelper": "Провайдеры из registry",
+      "activeProviders": "Активные провайдеры",
+      "activeProvidersHelper": "Провайдеры со статусом active",
+      "forecastRuns": "Всего запусков прогноза",
+      "forecastRunsHelper": "Запуски в рейтинге провайдеров",
+      "bestProvider": "Лучший провайдер по MAPE",
+      "bestProviderHelper": "Минимальный средний MAPE"
+    },
+    "table": {
+      "eyebrow": "Registry + точность",
+      "title": "Провайдеры прогноза",
+      "name": "Название провайдера",
+      "code": "Код провайдера",
+      "status": "Статус",
+      "avgMape": "Средний MAPE",
+      "avgRmse": "Средний RMSE",
+      "forecastRuns": "Запуски прогноза",
+      "rank": "Ранг"
+    },
+    "comparison": {
+      "eyebrow": "Сравнение",
+      "title": "Эффективность провайдеров",
+      "bestProvider": "Лучший провайдер",
+      "worstProvider": "Худший провайдер",
+      "mapeDelta": "Разница MAPE",
+      "emptyTitle": "Сравнения провайдеров пока нет",
+      "emptyDetail": "Сравнение появится после того, как рейтинг провайдеров вернёт метрики точности."
+    }
+  },
   "rejectedTelemetry": {
     "loadingTitle": "Загружаем качество телеметрии",
     "loadingDetail": "Получаем сводку отклонённой телеметрии.",

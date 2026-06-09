@@ -186,6 +186,38 @@
     "emptyTitle": "Провайдерлер әлі жоқ",
     "emptyDetail": "API manual немесе mock providers қайтармады."
   },
+  "forecastProviders": {
+    "kpi": {
+      "totalProviders": "Барлық провайдерлер",
+      "totalProvidersHelper": "Registry қайтарған провайдерлер",
+      "activeProviders": "Белсенді провайдерлер",
+      "activeProvidersHelper": "active статусы бар провайдерлер",
+      "forecastRuns": "Барлық болжам іске қосулары",
+      "forecastRunsHelper": "Провайдер рейтингіндегі іске қосулар",
+      "bestProvider": "MAPE бойынша үздік провайдер",
+      "bestProviderHelper": "Ең төмен орташа MAPE"
+    },
+    "table": {
+      "eyebrow": "Registry + дәлдік",
+      "title": "Болжам провайдерлері",
+      "name": "Провайдер атауы",
+      "code": "Провайдер коды",
+      "status": "Статус",
+      "avgMape": "Орташа MAPE",
+      "avgRmse": "Орташа RMSE",
+      "forecastRuns": "Болжам іске қосулары",
+      "rank": "Ранг"
+    },
+    "comparison": {
+      "eyebrow": "Салыстыру",
+      "title": "Провайдер тиімділігі",
+      "bestProvider": "Үздік провайдер",
+      "worstProvider": "Ең нашар провайдер",
+      "mapeDelta": "MAPE айырмасы",
+      "emptyTitle": "Провайдер салыстыруы әлі жоқ",
+      "emptyDetail": "Провайдер рейтингі дәлдік метрикаларын қайтарғаннан кейін салыстыру пайда болады."
+    }
+  },
   "rejectedTelemetry": {
     "loadingTitle": "Телеметрия сапасы жүктелуде",
     "loadingDetail": "Қабылданбаған телеметрия жиынтығы жүктелуде.",
