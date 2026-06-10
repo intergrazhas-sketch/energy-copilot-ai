@@ -2489,6 +2489,11 @@ function DashboardOverview({
           margin-bottom: 0;
         }
 
+        .data-quality-metric-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          margin-bottom: 0;
+        }
+
         .metric-card,
         .panel,
         .empty-state {
