@@ -2498,6 +2498,7 @@ function DashboardOverview({
         }
 
         .metric-card {
+          min-width: 0;
           min-height: 136px;
           border-radius: 18px;
           padding: 18px;
@@ -2517,6 +2518,10 @@ function DashboardOverview({
           font-size: clamp(24px, 3vw, 34px);
           letter-spacing: -0.05em;
           line-height: 1;
+          max-width: 100%;
+          overflow-wrap: anywhere;
+          white-space: normal;
+          word-break: break-word;
         }
 
         .panel-grid {
