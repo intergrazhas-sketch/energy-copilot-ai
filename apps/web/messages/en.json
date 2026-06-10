@@ -360,6 +360,81 @@
       "status": "Status"
     }
   },
+  "systemHealth": {
+    "notAvailable": "Not available",
+    "mqttUnavailable": "MQTT readiness is not exposed by the backend yet.",
+    "status": {
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "critical": "Critical",
+      "unknown": "Unknown"
+    },
+    "statusDetail": {
+      "healthy": "Core platform services are responding normally.",
+      "warning": "One or more signals need operator attention.",
+      "critical": "A critical platform dependency is unavailable.",
+      "unknown": "Some platform signals are not available from backend health data."
+    },
+    "kpi": {
+      "overall": "Overall Platform Status",
+      "overallHelper": "Calculated from available live health signals",
+      "api": "API Status",
+      "database": "Database Status",
+      "databaseHelper": "PostgreSQL / TimescaleDB readiness",
+      "redis": "Redis Status",
+      "redisHelper": "Cache dependency readiness",
+      "qdrant": "Qdrant Status",
+      "qdrantHelper": "Vector store dependency readiness",
+      "mqtt": "MQTT Status",
+      "mqttHelper": "Not exposed by current backend status",
+      "dataFreshness": "Data Freshness",
+      "freshnessHelper": "From latest telemetry summary",
+      "lastTelemetry": "Last Telemetry Update",
+      "telemetryHelper": "Latest accepted telemetry timestamp"
+    },
+    "summary": {
+      "eyebrow": "Platform",
+      "title": "Service Health Summary",
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "critical": "Critical",
+      "unknown": "Unknown"
+    },
+    "signals": {
+      "eyebrow": "Operations",
+      "title": "Operational Signals",
+      "lastTelemetry": "Last telemetry update",
+      "dataFreshness": "Data freshness",
+      "lastForecast": "Last forecast update",
+      "environment": "Environment",
+      "version": "Version"
+    },
+    "services": {
+      "eyebrow": "Dependencies",
+      "title": "Service Status",
+      "api": "API",
+      "database": "Database",
+      "redis": "Redis",
+      "qdrant": "Qdrant",
+      "mqtt": "MQTT",
+      "service": "Service",
+      "status": "Status",
+      "latency": "Latency",
+      "detail": "Detail"
+    },
+    "loading": {
+      "summaryTitle": "Loading service summary",
+      "summaryDetail": "Reading live platform status.",
+      "signalsTitle": "Loading operational signals",
+      "signalsDetail": "Checking telemetry and forecast timestamps.",
+      "servicesTitle": "Loading service dependencies",
+      "servicesDetail": "Reading dependency status from /api/v1/system/status."
+    },
+    "empty": {
+      "unavailableTitle": "System health unavailable",
+      "unavailableDetail": "The dashboard could not load /health or /api/v1/system/status."
+    }
+  },
   "rejectedTelemetry": {
     "loadingTitle": "Loading telemetry quality",
     "loadingDetail": "Loading rejected telemetry summary.",

@@ -360,6 +360,81 @@
       "status": "Статус"
     }
   },
+  "systemHealth": {
+    "notAvailable": "Қолжетімсіз",
+    "mqttUnavailable": "MQTT дайындық статусы backend арқылы әлі берілмейді.",
+    "status": {
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "critical": "Critical",
+      "unknown": "Unknown"
+    },
+    "statusDetail": {
+      "healthy": "Платформаның негізгі сервистері қалыпты жауап беріп тұр.",
+      "warning": "Бір немесе бірнеше сигнал оператор назарын қажет етеді.",
+      "critical": "Платформаның маңызды тәуелділігі қолжетімсіз.",
+      "unknown": "Кейбір платформа сигналдары backend health data ішінде жоқ."
+    },
+    "kpi": {
+      "overall": "Платформаның жалпы статусы",
+      "overallHelper": "Қолжетімді live health signals бойынша есептеледі",
+      "api": "API статусы",
+      "database": "Дерекқор статусы",
+      "databaseHelper": "PostgreSQL / TimescaleDB дайындығы",
+      "redis": "Redis статусы",
+      "redisHelper": "Cache dependency дайындығы",
+      "qdrant": "Qdrant статусы",
+      "qdrantHelper": "Vector store dependency дайындығы",
+      "mqtt": "MQTT статусы",
+      "mqttHelper": "Қазіргі backend status арқылы берілмейді",
+      "dataFreshness": "Дерек жаңалығы",
+      "freshnessHelper": "Соңғы telemetry summary негізінде",
+      "lastTelemetry": "Соңғы телеметрия жаңаруы",
+      "telemetryHelper": "Соңғы қабылданған нүкте уақыты"
+    },
+    "summary": {
+      "eyebrow": "Платформа",
+      "title": "Сервистер жағдайының жиынтығы",
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "critical": "Critical",
+      "unknown": "Unknown"
+    },
+    "signals": {
+      "eyebrow": "Операциялар",
+      "title": "Операциялық сигналдар",
+      "lastTelemetry": "Соңғы телеметрия жаңаруы",
+      "dataFreshness": "Дерек жаңалығы",
+      "lastForecast": "Соңғы болжам жаңаруы",
+      "environment": "Орта",
+      "version": "Нұсқа"
+    },
+    "services": {
+      "eyebrow": "Тәуелділіктер",
+      "title": "Сервис статусы",
+      "api": "API",
+      "database": "Дерекқор",
+      "redis": "Redis",
+      "qdrant": "Qdrant",
+      "mqtt": "MQTT",
+      "service": "Сервис",
+      "status": "Статус",
+      "latency": "Кідіріс",
+      "detail": "Деталь"
+    },
+    "loading": {
+      "summaryTitle": "Сервис жиынтығы жүктелуде",
+      "summaryDetail": "Платформаның live status деректері оқылуда.",
+      "signalsTitle": "Операциялық сигналдар жүктелуде",
+      "signalsDetail": "Телеметрия және болжам timestamps тексерілуде.",
+      "servicesTitle": "Сервис тәуелділіктері жүктелуде",
+      "servicesDetail": "/api/v1/system/status арқылы тәуелділік статустары оқылуда."
+    },
+    "empty": {
+      "unavailableTitle": "System health қолжетімсіз",
+      "unavailableDetail": "Dashboard /health немесе /api/v1/system/status жүктей алмады."
+    }
+  },
   "rejectedTelemetry": {
     "loadingTitle": "Телеметрия сапасы жүктелуде",
     "loadingDetail": "Қабылданбаған телеметрия жиынтығы жүктелуде.",

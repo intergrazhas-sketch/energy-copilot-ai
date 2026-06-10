@@ -41,6 +41,17 @@ type ForecastProvider = {
   is_active: boolean;
 };
 
+type ForecastRun = {
+  id: string;
+  solar_plant_id: string;
+  provider_id: string;
+  run_at: string;
+  horizon_hours: number;
+  interval_minutes: number;
+  status: string;
+  created_at: string;
+};
+
 type AccuracySummary = {
   providers_count: number;
   solar_plants_count: number;
@@ -128,6 +139,7 @@ type DashboardData = {
   system: SystemStatusResponse | null;
   plants: SolarPlant[];
   providers: ForecastProvider[];
+  forecastRuns: ForecastRun[];
   accuracy: AccuracySummary | null;
   accuracyRanking: AccuracyProviderRankingResponse | null;
   rejected: RejectedTelemetrySummary | null;
@@ -146,6 +158,7 @@ type DashboardState = {
 type Locale = "en" | "ru" | "kz";
 type DataQualityPeriodKey = "24h" | "7d" | "30d";
 type DataQualityStatus = "clean" | "watch" | "attention";
+type MonitoringStatus = "healthy" | "warning" | "critical" | "unknown";
 type MessageValue = string | number;
 type Translate = (key: string, values?: Record<string, MessageValue>) => string;
 
@@ -217,6 +230,7 @@ const emptyData: DashboardData = {
   system: null,
   plants: [],
   providers: [],
+  forecastRuns: [],
   accuracy: null,
   accuracyRanking: null,
   rejected: null,
@@ -380,6 +394,67 @@ function getDataQualityStatus(totalRejected: number, rejectionRate: number | nul
   }
 
   return "attention";
+}
+
+function getMonitoringStatus(status: string | undefined | null): MonitoringStatus {
+  if (!status) {
+    return "unknown";
+  }
+
+  if (["ok", "active", "healthy", "fresh"].includes(status)) {
+    return "healthy";
+  }
+
+  if (["degraded", "stale", "warning", "open"].includes(status)) {
+    return "warning";
+  }
+
+  if (["error", "critical", "offline", "failed", "down"].includes(status)) {
+    return "critical";
+  }
+
+  return "unknown";
+}
+
+function getFreshnessMonitoringStatus(
+  status: TelemetrySummary["data_freshness_status"] | undefined,
+): MonitoringStatus {
+  if (status === "fresh") {
+    return "healthy";
+  }
+  if (status === "stale") {
+    return "warning";
+  }
+  if (status === "offline") {
+    return "critical";
+  }
+  return "unknown";
+}
+
+function getPlatformStatus(statuses: MonitoringStatus[]): MonitoringStatus {
+  if (statuses.includes("critical")) {
+    return "critical";
+  }
+  if (statuses.includes("warning")) {
+    return "warning";
+  }
+  if (statuses.length > 0 && statuses.every((status) => status === "healthy")) {
+    return "healthy";
+  }
+  return "unknown";
+}
+
+function getLatestForecastUpdate(forecastRuns: ForecastRun[]) {
+  const timestamps = forecastRuns
+    .map((run) => run.created_at || run.run_at)
+    .map((value) => new Date(value).getTime())
+    .filter((value) => !Number.isNaN(value));
+
+  if (timestamps.length === 0) {
+    return null;
+  }
+
+  return new Date(Math.max(...timestamps)).toISOString();
 }
 
 function StatusBadge({ status, t }: { status?: string; t: Translate }) {
@@ -1270,6 +1345,278 @@ function DataQualitySection({ plants, t }: { plants: SolarPlant[]; t: Translate 
   );
 }
 
+function MonitoringStatusBadge({ status, t }: { status: MonitoringStatus; t: Translate }) {
+  return (
+    <span className={`monitoring-badge ${status}`}>
+      {t(`systemHealth.status.${status}`)}
+    </span>
+  );
+}
+
+function SystemHealthSection({
+  health,
+  system,
+  latest,
+  summary,
+  forecastRuns,
+  loading,
+  t,
+}: {
+  health: HealthResponse | null;
+  system: SystemStatusResponse | null;
+  latest: TelemetryPoint | null;
+  summary: TelemetrySummary | null;
+  forecastRuns: ForecastRun[];
+  loading: boolean;
+  t: Translate;
+}) {
+  const noData = t("common.noData");
+  const notAvailable = t("systemHealth.notAvailable");
+  const dependencies = system?.dependencies || {};
+  const apiStatus = getMonitoringStatus(system?.status || health?.status);
+  const databaseStatus = getMonitoringStatus(dependencies.postgres?.status);
+  const redisStatus = getMonitoringStatus(dependencies.redis?.status);
+  const qdrantStatus = getMonitoringStatus(dependencies.qdrant?.status);
+  const mqttStatus: MonitoringStatus = "unknown";
+  const dataFreshnessStatus = getFreshnessMonitoringStatus(summary?.data_freshness_status);
+  const platformStatus = getPlatformStatus([
+    apiStatus,
+    databaseStatus,
+    redisStatus,
+    qdrantStatus,
+    dataFreshnessStatus,
+  ]);
+  const monitoredStatuses = [
+    apiStatus,
+    databaseStatus,
+    redisStatus,
+    qdrantStatus,
+    mqttStatus,
+    dataFreshnessStatus,
+  ];
+  const healthyCount = monitoredStatuses.filter((status) => status === "healthy").length;
+  const warningCount = monitoredStatuses.filter((status) => status === "warning").length;
+  const criticalCount = monitoredStatuses.filter((status) => status === "critical").length;
+  const unknownCount = monitoredStatuses.filter((status) => status === "unknown").length;
+  const lastTelemetryUpdate = summary?.last_telemetry_time ?? latest?.timestamp ?? null;
+  const lastForecastUpdate = getLatestForecastUpdate(forecastRuns);
+  const serviceRows = [
+    {
+      key: "api",
+      label: t("systemHealth.services.api"),
+      detail: health?.service || system?.service || notAvailable,
+      status: apiStatus,
+      latency: null,
+    },
+    {
+      key: "database",
+      label: t("systemHealth.services.database"),
+      detail: dependencies.postgres?.message || t("system.dependencyOk"),
+      status: databaseStatus,
+      latency: dependencies.postgres?.latency_ms,
+    },
+    {
+      key: "redis",
+      label: t("systemHealth.services.redis"),
+      detail: dependencies.redis?.message || t("system.dependencyOk"),
+      status: redisStatus,
+      latency: dependencies.redis?.latency_ms,
+    },
+    {
+      key: "qdrant",
+      label: t("systemHealth.services.qdrant"),
+      detail: dependencies.qdrant?.message || t("system.dependencyOk"),
+      status: qdrantStatus,
+      latency: dependencies.qdrant?.latency_ms,
+    },
+    {
+      key: "mqtt",
+      label: t("systemHealth.services.mqtt"),
+      detail: t("systemHealth.mqttUnavailable"),
+      status: mqttStatus,
+      latency: null,
+    },
+  ];
+
+  return (
+    <section className="section-stack">
+      {!loading && !health && !system ? (
+        <EmptyState
+          detail={t("systemHealth.empty.unavailableDetail")}
+          title={t("systemHealth.empty.unavailableTitle")}
+        />
+      ) : null}
+
+      <section className="metric-grid system-health-metric-grid">
+        <MetricCard
+          helper={t("systemHealth.kpi.overallHelper")}
+          label={t("systemHealth.kpi.overall")}
+          loading={loading}
+          t={t}
+          value={t(`systemHealth.status.${platformStatus}`)}
+        />
+        <MetricCard
+          helper={health?.service || system?.service || notAvailable}
+          label={t("systemHealth.kpi.api")}
+          loading={loading}
+          t={t}
+          value={t(`systemHealth.status.${apiStatus}`)}
+        />
+        <MetricCard
+          helper={t("systemHealth.kpi.databaseHelper")}
+          label={t("systemHealth.kpi.database")}
+          loading={loading}
+          t={t}
+          value={t(`systemHealth.status.${databaseStatus}`)}
+        />
+        <MetricCard
+          helper={t("systemHealth.kpi.redisHelper")}
+          label={t("systemHealth.kpi.redis")}
+          loading={loading}
+          t={t}
+          value={t(`systemHealth.status.${redisStatus}`)}
+        />
+        <MetricCard
+          helper={t("systemHealth.kpi.qdrantHelper")}
+          label={t("systemHealth.kpi.qdrant")}
+          loading={loading}
+          t={t}
+          value={t(`systemHealth.status.${qdrantStatus}`)}
+        />
+        <MetricCard
+          helper={t("systemHealth.kpi.mqttHelper")}
+          label={t("systemHealth.kpi.mqtt")}
+          loading={loading}
+          t={t}
+          value={t(`systemHealth.status.${mqttStatus}`)}
+        />
+        <MetricCard
+          helper={t("systemHealth.kpi.freshnessHelper")}
+          label={t("systemHealth.kpi.dataFreshness")}
+          loading={loading}
+          t={t}
+          value={
+            summary?.data_freshness_status
+              ? t(`telemetry.freshness.${summary.data_freshness_status}`)
+              : notAvailable
+          }
+        />
+        <MetricCard
+          helper={t("systemHealth.kpi.telemetryHelper")}
+          label={t("systemHealth.kpi.lastTelemetry")}
+          loading={loading}
+          t={t}
+          value={formatDateTime(lastTelemetryUpdate, noData)}
+        />
+      </section>
+
+      <section className="system-health-layout">
+        <Panel eyebrow={t("systemHealth.summary.eyebrow")} title={t("systemHealth.summary.title")}>
+          {loading ? (
+            <EmptyState
+              detail={t("systemHealth.loading.summaryDetail")}
+              title={t("systemHealth.loading.summaryTitle")}
+            />
+          ) : (
+            <div className="platform-status-card">
+              <MonitoringStatusBadge status={platformStatus} t={t} />
+              <strong>{t(`systemHealth.statusDetail.${platformStatus}`)}</strong>
+              <div className="platform-status-grid">
+                <div>
+                  <span>{t("systemHealth.summary.healthy")}</span>
+                  <strong>{formatNumber(healthyCount, 0, noData)}</strong>
+                </div>
+                <div>
+                  <span>{t("systemHealth.summary.warning")}</span>
+                  <strong>{formatNumber(warningCount, 0, noData)}</strong>
+                </div>
+                <div>
+                  <span>{t("systemHealth.summary.critical")}</span>
+                  <strong>{formatNumber(criticalCount, 0, noData)}</strong>
+                </div>
+                <div>
+                  <span>{t("systemHealth.summary.unknown")}</span>
+                  <strong>{formatNumber(unknownCount, 0, noData)}</strong>
+                </div>
+              </div>
+            </div>
+          )}
+        </Panel>
+
+        <Panel eyebrow={t("systemHealth.signals.eyebrow")} title={t("systemHealth.signals.title")}>
+          {loading ? (
+            <EmptyState
+              detail={t("systemHealth.loading.signalsDetail")}
+              title={t("systemHealth.loading.signalsTitle")}
+            />
+          ) : (
+            <div className="system-signal-list">
+              <div>
+                <span>{t("systemHealth.signals.lastTelemetry")}</span>
+                <strong>{formatDateTime(lastTelemetryUpdate, noData)}</strong>
+              </div>
+              <div>
+                <span>{t("systemHealth.signals.dataFreshness")}</span>
+                <strong>
+                  {summary?.data_freshness_status
+                    ? t(`telemetry.freshness.${summary.data_freshness_status}`)
+                    : notAvailable}
+                </strong>
+              </div>
+              <div>
+                <span>{t("systemHealth.signals.lastForecast")}</span>
+                <strong>{formatDateTime(lastForecastUpdate, noData)}</strong>
+              </div>
+              <div>
+                <span>{t("systemHealth.signals.environment")}</span>
+                <strong>{system?.environment || health?.environment || notAvailable}</strong>
+              </div>
+              <div>
+                <span>{t("systemHealth.signals.version")}</span>
+                <strong>{system?.version || health?.version || notAvailable}</strong>
+              </div>
+            </div>
+          )}
+        </Panel>
+      </section>
+
+      <Panel eyebrow={t("systemHealth.services.eyebrow")} title={t("systemHealth.services.title")}>
+        {loading ? (
+          <EmptyState
+            detail={t("systemHealth.loading.servicesDetail")}
+            title={t("systemHealth.loading.servicesTitle")}
+          />
+        ) : (
+          <div className="service-health-table">
+            <div className="service-health-head">
+              <span>{t("systemHealth.services.service")}</span>
+              <span>{t("systemHealth.services.status")}</span>
+              <span>{t("systemHealth.services.latency")}</span>
+              <span>{t("systemHealth.services.detail")}</span>
+            </div>
+            {serviceRows.map((row) => (
+              <div className="service-health-row" key={row.key}>
+                <strong>{row.label}</strong>
+                <span>
+                  <MonitoringStatusBadge status={row.status} t={t} />
+                </span>
+                <span>
+                  {row.latency === null || row.latency === undefined
+                    ? notAvailable
+                    : t("common.milliseconds", {
+                        value: formatNumber(row.latency, 0, noData),
+                      })}
+                </span>
+                <span>{row.detail}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
+    </section>
+  );
+}
+
 function FreshnessBadge({ status, t }: { status?: TelemetrySummary["data_freshness_status"]; t: Translate }) {
   const normalized = status || "no_data";
   return (
@@ -1539,12 +1886,13 @@ function DashboardOverview({
         error: null,
       }));
 
-      const [health, system, plants, providers, accuracy, accuracyRanking, rejected] =
+      const [health, system, plants, providers, forecastRuns, accuracy, accuracyRanking, rejected] =
         await Promise.allSettled([
         fetchJson<HealthResponse>("/health"),
         fetchJson<SystemStatusResponse>("/api/v1/system/status"),
         fetchJson<SolarPlant[]>("/api/v1/solar-plants"),
         fetchJson<ForecastProvider[]>("/api/v1/forecast-providers"),
+        fetchJson<ForecastRun[]>("/api/v1/forecast-runs"),
         fetchJson<AccuracySummary>("/api/v1/accuracy-lab/summary", {
           from: period.from,
           to: period.to,
@@ -1592,6 +1940,7 @@ function DashboardOverview({
         system: system.status === "fulfilled" ? system.value : null,
         plants: plantList,
         providers: providers.status === "fulfilled" ? providers.value : [],
+        forecastRuns: forecastRuns.status === "fulfilled" ? forecastRuns.value : [],
         accuracy: accuracy.status === "fulfilled" ? accuracy.value : null,
         accuracyRanking: accuracyRanking.status === "fulfilled" ? accuracyRanking.value : null,
         rejected: rejected.status === "fulfilled" ? rejected.value : null,
@@ -1606,6 +1955,7 @@ function DashboardOverview({
         Boolean(nextData.system) ||
         nextData.plants.length > 0 ||
         nextData.providers.length > 0 ||
+        nextData.forecastRuns.length > 0 ||
         Boolean(nextData.accuracy) ||
         Boolean(nextData.accuracyRanking) ||
         Boolean(nextData.rejected) ||
@@ -1912,6 +2262,16 @@ function DashboardOverview({
           />
         ) : activeSection === "rejected-telemetry" ? (
           <DataQualitySection plants={state.data.plants} t={t} />
+        ) : activeSection === "system-status" ? (
+          <SystemHealthSection
+            forecastRuns={state.data.forecastRuns}
+            health={state.data.health}
+            latest={state.data.telemetryLatest}
+            loading={state.loading}
+            summary={state.data.telemetrySummary}
+            system={state.data.system}
+            t={t}
+          />
         ) : (
           <SectionPlaceholder title={activeSectionTitle} t={t} />
         )}
@@ -2598,6 +2958,139 @@ function DashboardOverview({
           white-space: nowrap;
         }
 
+        .system-health-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
+          gap: 18px;
+          align-items: start;
+        }
+
+        .monitoring-badge {
+          display: inline-flex;
+          width: fit-content;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 999px;
+          color: #fffaf4;
+          font-size: 12px;
+          font-weight: 900;
+          padding: 8px 11px;
+          text-transform: uppercase;
+        }
+
+        .monitoring-badge.healthy {
+          border-color: rgba(50, 213, 131, 0.34);
+          background: rgba(50, 213, 131, 0.12);
+          color: #7cf2b4;
+        }
+
+        .monitoring-badge.warning {
+          border-color: rgba(255, 183, 77, 0.34);
+          background: rgba(255, 183, 77, 0.12);
+          color: #ffd08a;
+        }
+
+        .monitoring-badge.critical {
+          border-color: rgba(255, 95, 86, 0.34);
+          background: rgba(255, 95, 86, 0.12);
+          color: #ff9b94;
+        }
+
+        .monitoring-badge.unknown {
+          border-color: rgba(255, 255, 255, 0.12);
+          background: rgba(255, 255, 255, 0.04);
+          color: rgba(245, 242, 237, 0.62);
+        }
+
+        .platform-status-card {
+          display: grid;
+          gap: 16px;
+        }
+
+        .platform-status-card > strong {
+          color: #fffaf4;
+          font-size: 18px;
+          letter-spacing: -0.03em;
+          line-height: 1.35;
+        }
+
+        .platform-status-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .platform-status-grid div,
+        .system-signal-list div {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 14px;
+        }
+
+        .platform-status-grid span,
+        .system-signal-list span {
+          display: block;
+          color: rgba(245, 242, 237, 0.54);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .platform-status-grid strong,
+        .system-signal-list strong {
+          display: block;
+          margin-top: 8px;
+          color: #fffaf4;
+          font-size: 16px;
+          line-height: 1.35;
+        }
+
+        .system-signal-list {
+          display: grid;
+          gap: 10px;
+        }
+
+        .service-health-table {
+          display: grid;
+          gap: 10px;
+          overflow-x: auto;
+        }
+
+        .service-health-head,
+        .service-health-row {
+          display: grid;
+          grid-template-columns: minmax(160px, 1fr) minmax(120px, 0.7fr) minmax(120px, 0.7fr) minmax(220px, 1.4fr);
+          gap: 12px;
+          min-width: 780px;
+          align-items: center;
+        }
+
+        .service-health-head {
+          color: rgba(245, 242, 237, 0.46);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          padding: 0 12px;
+          text-transform: uppercase;
+        }
+
+        .service-health-row {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 12px;
+        }
+
+        .service-health-row strong {
+          color: #fffaf4;
+          font-size: 14px;
+        }
+
+        .service-health-row span {
+          color: rgba(245, 242, 237, 0.58);
+          font-size: 12px;
+          min-width: 0;
+        }
+
         .freshness-badge {
           display: inline-flex;
           width: fit-content;
@@ -2990,7 +3483,8 @@ function DashboardOverview({
           .accuracy-lab-layout,
           .providers-layout,
           .telemetry-layout,
-          .data-quality-layout {
+          .data-quality-layout,
+          .system-health-layout {
             grid-template-columns: 1fr;
           }
         }
@@ -3027,8 +3521,10 @@ function DashboardOverview({
           .providers-metric-grid,
           .telemetry-metric-grid,
           .data-quality-metric-grid,
+          .system-health-metric-grid,
           .data-quality-filters,
-          .accuracy-grid {
+          .accuracy-grid,
+          .platform-status-grid {
             grid-template-columns: 1fr;
           }
 

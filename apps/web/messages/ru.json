@@ -360,6 +360,81 @@
       "status": "Статус"
     }
   },
+  "systemHealth": {
+    "notAvailable": "Недоступно",
+    "mqttUnavailable": "Готовность MQTT пока не отдаётся backend status.",
+    "status": {
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "critical": "Critical",
+      "unknown": "Unknown"
+    },
+    "statusDetail": {
+      "healthy": "Ключевые сервисы платформы отвечают штатно.",
+      "warning": "Один или несколько сигналов требуют внимания оператора.",
+      "critical": "Критическая зависимость платформы недоступна.",
+      "unknown": "Часть сигналов платформы не доступна в backend health data."
+    },
+    "kpi": {
+      "overall": "Общий статус платформы",
+      "overallHelper": "Рассчитан по доступным live health signals",
+      "api": "Статус API",
+      "database": "Статус базы данных",
+      "databaseHelper": "Готовность PostgreSQL / TimescaleDB",
+      "redis": "Статус Redis",
+      "redisHelper": "Готовность cache dependency",
+      "qdrant": "Статус Qdrant",
+      "qdrantHelper": "Готовность vector store dependency",
+      "mqtt": "Статус MQTT",
+      "mqttHelper": "Не отдаётся текущим backend status",
+      "dataFreshness": "Свежесть данных",
+      "freshnessHelper": "Из последней telemetry summary",
+      "lastTelemetry": "Последнее обновление телеметрии",
+      "telemetryHelper": "Время последней принятой точки"
+    },
+    "summary": {
+      "eyebrow": "Платформа",
+      "title": "Сводка здоровья сервисов",
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "critical": "Critical",
+      "unknown": "Unknown"
+    },
+    "signals": {
+      "eyebrow": "Операции",
+      "title": "Операционные сигналы",
+      "lastTelemetry": "Последнее обновление телеметрии",
+      "dataFreshness": "Свежесть данных",
+      "lastForecast": "Последнее обновление прогноза",
+      "environment": "Окружение",
+      "version": "Версия"
+    },
+    "services": {
+      "eyebrow": "Зависимости",
+      "title": "Статус сервисов",
+      "api": "API",
+      "database": "База данных",
+      "redis": "Redis",
+      "qdrant": "Qdrant",
+      "mqtt": "MQTT",
+      "service": "Сервис",
+      "status": "Статус",
+      "latency": "Задержка",
+      "detail": "Детали"
+    },
+    "loading": {
+      "summaryTitle": "Загружаем сводку сервисов",
+      "summaryDetail": "Получаем live status платформы.",
+      "signalsTitle": "Загружаем операционные сигналы",
+      "signalsDetail": "Проверяем timestamps телеметрии и прогнозов.",
+      "servicesTitle": "Загружаем зависимости сервисов",
+      "servicesDetail": "Читаем статусы зависимостей из /api/v1/system/status."
+    },
+    "empty": {
+      "unavailableTitle": "System health недоступен",
+      "unavailableDetail": "Dashboard не смог загрузить /health или /api/v1/system/status."
+    }
+  },
   "rejectedTelemetry": {
     "loadingTitle": "Загружаем качество телеметрии",
     "loadingDetail": "Получаем сводку отклонённой телеметрии.",
