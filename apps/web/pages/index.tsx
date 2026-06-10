@@ -82,6 +82,21 @@ type RejectedTelemetrySummary = {
   }>;
 };
 
+type RejectedTelemetryRecord = {
+  id: string;
+  source: string;
+  topic: string;
+  plant_id: string | null;
+  reason: string;
+  error_message: string;
+  raw_payload_text: string;
+  raw_payload_json: unknown;
+  received_at: string;
+  resolved_at: string | null;
+  resolution_status: string;
+  metadata?: unknown;
+};
+
 type TelemetryPoint = {
   id: string;
   asset_id: string;
@@ -129,6 +144,8 @@ type DashboardState = {
 };
 
 type Locale = "en" | "ru" | "kz";
+type DataQualityPeriodKey = "24h" | "7d" | "30d";
+type DataQualityStatus = "clean" | "watch" | "attention";
 type MessageValue = string | number;
 type Translate = (key: string, values?: Record<string, MessageValue>) => string;
 
@@ -147,6 +164,27 @@ const navigationItems = [
 type SectionKey = (typeof navigationItems)[number]["key"];
 
 const locales: Locale[] = ["en", "ru", "kz"];
+
+const dataQualityPeriods: Array<{ key: DataQualityPeriodKey; labelKey: string; hours: number }> = [
+  { key: "24h", labelKey: "last24h", hours: 24 },
+  { key: "7d", labelKey: "last7d", hours: 24 * 7 },
+  { key: "30d", labelKey: "last30d", hours: 24 * 30 },
+];
+
+const rejectionReasons = [
+  "invalid_topic",
+  "invalid_plant_id",
+  "plant_not_found",
+  "invalid_json",
+  "invalid_timestamp",
+  "future_timestamp",
+  "stale_timestamp",
+  "negative_power",
+  "negative_energy",
+  "power_exceeds_capacity",
+  "db_error",
+  "unknown_error",
+] as const;
 
 const messages = {
   en: enMessages,
@@ -246,6 +284,16 @@ function normalizeReason(value: string) {
   return value.replaceAll("_", " ");
 }
 
+function translateRejectionReason(reason: string | undefined, t: Translate, fallback: string) {
+  if (!reason) {
+    return fallback;
+  }
+
+  const key = `dataQuality.reasons.${reason}`;
+  const translated = t(key);
+  return translated === key ? normalizeReason(reason) : translated;
+}
+
 function formatCapacityMw(valueKw: number, fallback: string) {
   return `${formatNumber(valueKw / 1000, 2, fallback)} MW`;
 }
@@ -302,15 +350,54 @@ function formatDateTime(value: string | null | undefined, fallback: string) {
   });
 }
 
+function getDataQualityPeriodRange(periodKey: DataQualityPeriodKey) {
+  const selectedPeriod =
+    dataQualityPeriods.find((period) => period.key === periodKey) || dataQualityPeriods[1];
+  const periodTo = new Date();
+  const periodFrom = new Date(periodTo.getTime() - selectedPeriod.hours * 60 * 60 * 1000);
+
+  return {
+    from: periodFrom.toISOString(),
+    to: periodTo.toISOString(),
+  };
+}
+
+function getPlantName(plants: SolarPlant[], plantId: string | null | undefined, fallback: string) {
+  if (!plantId) {
+    return fallback;
+  }
+
+  return plants.find((plant) => plant.id === plantId)?.name || plantId;
+}
+
+function getDataQualityStatus(totalRejected: number, rejectionRate: number | null): DataQualityStatus {
+  if (totalRejected === 0) {
+    return "clean";
+  }
+
+  if (rejectionRate !== null && rejectionRate < 2) {
+    return "watch";
+  }
+
+  return "attention";
+}
+
 function StatusBadge({ status, t }: { status?: string; t: Translate }) {
   const normalized = status || "unknown";
-  const displayStatus = ["ok", "active", "inactive", "degraded", "open", "unknown"].includes(
-    normalized,
-  )
+  const displayStatus = [
+    "ok",
+    "active",
+    "inactive",
+    "degraded",
+    "open",
+    "fixed",
+    "ignored",
+    "unknown",
+  ].includes(normalized)
     ? t(`status.${normalized}`)
     : normalized;
   const tone =
-    normalized === "ok" || normalized === "active"
+    normalized === "ok" || normalized === "active" || normalized === "fixed"
       ? "good"
       : normalized === "degraded" || normalized === "open"
         ? "warning"
@@ -871,6 +958,314 @@ function ForecastProvidersSection({
           )}
         </Panel>
       </section>
+    </section>
+  );
+}
+
+function QualityStatusBadge({ status, t }: { status: DataQualityStatus; t: Translate }) {
+  return (
+    <span className={`quality-badge ${status}`}>
+      {t(`dataQuality.status.${status}`)}
+    </span>
+  );
+}
+
+function DataQualitySection({ plants, t }: { plants: SolarPlant[]; t: Translate }) {
+  const noData = t("common.noData");
+  const [selectedPeriod, setSelectedPeriod] = useState<DataQualityPeriodKey>("7d");
+  const [selectedAssetId, setSelectedAssetId] = useState("all");
+  const [selectedReason, setSelectedReason] = useState("all");
+  const [state, setState] = useState<{
+    loading: boolean;
+    error: string | null;
+    summary: RejectedTelemetrySummary | null;
+    records: RejectedTelemetryRecord[];
+    acceptedPoints: number;
+  }>({
+    loading: true,
+    error: null,
+    summary: null,
+    records: [],
+    acceptedPoints: 0,
+  });
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadDataQuality() {
+      setState((current) => ({
+        ...current,
+        loading: true,
+        error: null,
+      }));
+
+      const range = getDataQualityPeriodRange(selectedPeriod);
+      const summaryParams: Record<string, string> = {
+        from: range.from,
+        to: range.to,
+      };
+      const listParams: Record<string, string> = {
+        from: range.from,
+        to: range.to,
+        limit: "100",
+      };
+
+      if (selectedAssetId !== "all") {
+        summaryParams.plant_id = selectedAssetId;
+        listParams.plant_id = selectedAssetId;
+      }
+
+      if (selectedReason !== "all") {
+        listParams.reason = selectedReason;
+      }
+
+      const [summaryResult, recordsResult] = await Promise.allSettled([
+        fetchJson<RejectedTelemetrySummary>("/api/v1/telemetry/rejected/summary", summaryParams),
+        fetchJson<RejectedTelemetryRecord[]>("/api/v1/telemetry/rejected", listParams),
+      ]);
+
+      const assetIds =
+        selectedAssetId === "all"
+          ? plants.map((plant) => plant.id)
+          : plants.some((plant) => plant.id === selectedAssetId)
+            ? [selectedAssetId]
+            : [];
+
+      const acceptedResults = await Promise.allSettled(
+        assetIds.map((assetId) =>
+          fetchJson<TelemetrySummary>("/api/v1/telemetry/summary", {
+            asset_id: assetId,
+            from: range.from,
+            to: range.to,
+          }),
+        ),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      const acceptedPoints = acceptedResults.reduce(
+        (sum, result) =>
+          result.status === "fulfilled" ? sum + result.value.telemetry_points_count : sum,
+        0,
+      );
+
+      setState({
+        loading: false,
+        error:
+          summaryResult.status === "rejected" && recordsResult.status === "rejected"
+            ? "apiUnavailable"
+            : null,
+        summary: summaryResult.status === "fulfilled" ? summaryResult.value : null,
+        records: recordsResult.status === "fulfilled" ? recordsResult.value : [],
+        acceptedPoints,
+      });
+    }
+
+    loadDataQuality();
+
+    return () => {
+      mounted = false;
+    };
+  }, [plants, selectedAssetId, selectedPeriod, selectedReason]);
+
+  const selectedSummaryItems =
+    selectedReason === "all"
+      ? state.summary?.items || []
+      : (state.summary?.items || []).filter((item) => item.reason === selectedReason);
+  const totalRejected =
+    selectedReason === "all"
+      ? state.summary?.total ?? state.records.length
+      : selectedSummaryItems[0]?.count ?? state.records.length;
+  const rejectionDenominator = totalRejected + state.acceptedPoints;
+  const rejectionRate =
+    rejectionDenominator > 0 ? (totalRejected / rejectionDenominator) * 100 : null;
+  const topReason = selectedSummaryItems[0];
+  const topReasons = selectedSummaryItems.slice(0, 5);
+  const affectedAssets = new Set(
+    state.records.map((record) => record.plant_id).filter(Boolean),
+  ).size;
+  const qualityStatus = getDataQualityStatus(totalRejected, rejectionRate);
+
+  return (
+    <section className="section-stack">
+      {state.error ? (
+        <EmptyState
+          detail={t("dataQuality.empty.unavailableDetail")}
+          title={t("dataQuality.empty.unavailableTitle")}
+        />
+      ) : null}
+
+      <Panel eyebrow={t("dataQuality.filters.eyebrow")} title={t("dataQuality.filters.title")}>
+        <div className="data-quality-filters">
+          <label>
+            <span>{t("dataQuality.filters.period")}</span>
+            <select
+              onChange={(event) => setSelectedPeriod(event.target.value as DataQualityPeriodKey)}
+              value={selectedPeriod}
+            >
+              {dataQualityPeriods.map((period) => (
+                <option key={period.key} value={period.key}>
+                  {t(`dataQuality.periods.${period.labelKey}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span>{t("dataQuality.filters.asset")}</span>
+            <select
+              onChange={(event) => setSelectedAssetId(event.target.value)}
+              value={selectedAssetId}
+            >
+              <option value="all">{t("dataQuality.filters.allAssets")}</option>
+              {plants.map((plant) => (
+                <option key={plant.id} value={plant.id}>
+                  {plant.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span>{t("dataQuality.filters.reason")}</span>
+            <select
+              onChange={(event) => setSelectedReason(event.target.value)}
+              value={selectedReason}
+            >
+              <option value="all">{t("dataQuality.filters.allReasons")}</option>
+              {rejectionReasons.map((reason) => (
+                <option key={reason} value={reason}>
+                  {translateRejectionReason(reason, t, noData)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </Panel>
+
+      <section className="metric-grid data-quality-metric-grid">
+        <MetricCard
+          helper={t("dataQuality.kpi.totalRejectedHelper")}
+          label={t("dataQuality.kpi.totalRejected")}
+          loading={state.loading}
+          t={t}
+          value={formatNumber(totalRejected, 0, noData)}
+        />
+        <MetricCard
+          helper={t("dataQuality.kpi.rejectionRateHelper", {
+            accepted: formatNumber(state.acceptedPoints, 0, noData),
+          })}
+          label={t("dataQuality.kpi.rejectionRate")}
+          loading={state.loading}
+          t={t}
+          value={formatPercent(rejectionRate, noData)}
+        />
+        <MetricCard
+          helper={t("dataQuality.kpi.topReasonHelper")}
+          label={t("dataQuality.kpi.topReason")}
+          loading={state.loading}
+          t={t}
+          value={translateRejectionReason(topReason?.reason, t, noData)}
+        />
+        <MetricCard
+          helper={t("dataQuality.kpi.affectedAssetsHelper")}
+          label={t("dataQuality.kpi.affectedAssets")}
+          loading={state.loading}
+          t={t}
+          value={formatNumber(affectedAssets, 0, noData)}
+        />
+      </section>
+
+      <section className="data-quality-layout">
+        <Panel eyebrow={t("dataQuality.reasons.eyebrow")} title={t("dataQuality.reasons.title")}>
+          {state.loading ? (
+            <EmptyState
+              detail={t("dataQuality.loading.summaryDetail")}
+              title={t("dataQuality.loading.summaryTitle")}
+            />
+          ) : topReasons.length > 0 ? (
+            <div className="quality-reason-list">
+              {topReasons.map((item) => (
+                <div className="quality-reason-row" key={item.reason}>
+                  <div>
+                    <strong>{translateRejectionReason(item.reason, t, noData)}</strong>
+                    <span>{normalizeReason(item.reason)}</span>
+                  </div>
+                  <em>{formatNumber(item.count, 0, noData)}</em>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              detail={t("dataQuality.empty.cleanDetail")}
+              title={t("dataQuality.empty.cleanTitle")}
+            />
+          )}
+        </Panel>
+
+        <Panel eyebrow={t("dataQuality.statusPanel.eyebrow")} title={t("dataQuality.statusPanel.title")}>
+          {state.loading ? (
+            <EmptyState
+              detail={t("dataQuality.loading.statusDetail")}
+              title={t("dataQuality.loading.statusTitle")}
+            />
+          ) : (
+            <div className={`quality-status-card ${qualityStatus}`}>
+              <QualityStatusBadge status={qualityStatus} t={t} />
+              <strong>{t(`dataQuality.statusDetail.${qualityStatus}`)}</strong>
+              <span>
+                {t("dataQuality.statusPanel.detail", {
+                  rejected: formatNumber(totalRejected, 0, noData),
+                  accepted: formatNumber(state.acceptedPoints, 0, noData),
+                })}
+              </span>
+            </div>
+          )}
+        </Panel>
+      </section>
+
+      <Panel eyebrow={t("dataQuality.table.eyebrow")} title={t("dataQuality.table.title")}>
+        {state.loading ? (
+          <EmptyState
+            detail={t("dataQuality.loading.recordsDetail")}
+            title={t("dataQuality.loading.recordsTitle")}
+          />
+        ) : state.records.length > 0 ? (
+          <div className="rejected-records-table">
+            <div className="rejected-records-head">
+              <span>{t("dataQuality.table.receivedAt")}</span>
+              <span>{t("dataQuality.table.reason")}</span>
+              <span>{t("dataQuality.table.source")}</span>
+              <span>{t("dataQuality.table.asset")}</span>
+              <span>{t("dataQuality.table.status")}</span>
+            </div>
+            {state.records.slice(0, 25).map((record) => (
+              <div className="rejected-records-row" key={record.id}>
+                <span>{formatDateTime(record.received_at, noData)}</span>
+                <span>
+                  <strong>{translateRejectionReason(record.reason, t, noData)}</strong>
+                  <small>{record.error_message || normalizeReason(record.reason)}</small>
+                </span>
+                <span>
+                  <strong>{record.source || noData}</strong>
+                  <small>{record.topic || noData}</small>
+                </span>
+                <span>{getPlantName(plants, record.plant_id, noData)}</span>
+                <span>
+                  <StatusBadge status={record.resolution_status} t={t} />
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            detail={t("dataQuality.empty.noRecordsDetail")}
+            title={t("dataQuality.empty.noRecordsTitle")}
+          />
+        )}
+      </Panel>
     </section>
   );
 }
@@ -1515,6 +1910,8 @@ function DashboardOverview({
             summary={state.data.telemetrySummary}
             t={t}
           />
+        ) : activeSection === "rejected-telemetry" ? (
+          <DataQualitySection plants={state.data.plants} t={t} />
         ) : (
           <SectionPlaceholder title={activeSectionTitle} t={t} />
         )}
@@ -2012,6 +2409,195 @@ function DashboardOverview({
           color: #ffad66;
         }
 
+        .data-quality-filters {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .data-quality-filters label {
+          display: grid;
+          gap: 8px;
+        }
+
+        .data-quality-filters span {
+          color: rgba(245, 242, 237, 0.54);
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
+
+        .data-quality-filters select {
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.24);
+          color: #fffaf4;
+          font: inherit;
+          padding: 12px 14px;
+        }
+
+        .data-quality-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+          gap: 18px;
+          align-items: start;
+        }
+
+        .quality-reason-list {
+          display: grid;
+          gap: 10px;
+        }
+
+        .quality-reason-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 14px;
+        }
+
+        .quality-reason-row strong,
+        .quality-status-card strong {
+          display: block;
+          color: #fffaf4;
+          font-size: 15px;
+          line-height: 1.35;
+        }
+
+        .quality-reason-row span,
+        .quality-status-card span {
+          display: block;
+          margin-top: 6px;
+          color: rgba(245, 242, 237, 0.54);
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .quality-reason-row em {
+          border-radius: 999px;
+          background: rgba(255, 122, 24, 0.12);
+          color: #ffad66;
+          font-size: 13px;
+          font-style: normal;
+          font-weight: 900;
+          min-width: 44px;
+          padding: 8px 12px;
+          text-align: center;
+        }
+
+        .quality-status-card {
+          display: grid;
+          gap: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 18px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 18px;
+        }
+
+        .quality-status-card.clean {
+          border-color: rgba(50, 213, 131, 0.3);
+          background: rgba(50, 213, 131, 0.08);
+        }
+
+        .quality-status-card.watch {
+          border-color: rgba(255, 122, 24, 0.3);
+          background: rgba(255, 122, 24, 0.08);
+        }
+
+        .quality-status-card.attention {
+          border-color: rgba(255, 183, 77, 0.34);
+          background: rgba(255, 183, 77, 0.08);
+        }
+
+        .quality-badge {
+          display: inline-flex;
+          width: fit-content;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 999px;
+          color: #fffaf4;
+          font-size: 12px;
+          font-weight: 900;
+          padding: 8px 11px;
+          text-transform: uppercase;
+        }
+
+        .quality-badge.clean {
+          border-color: rgba(50, 213, 131, 0.34);
+          background: rgba(50, 213, 131, 0.12);
+          color: #7cf2b4;
+        }
+
+        .quality-badge.watch {
+          border-color: rgba(255, 122, 24, 0.34);
+          background: rgba(255, 122, 24, 0.12);
+          color: #ffad66;
+        }
+
+        .quality-badge.attention {
+          border-color: rgba(255, 183, 77, 0.34);
+          background: rgba(255, 183, 77, 0.12);
+          color: #ffd08a;
+        }
+
+        .rejected-records-table {
+          display: grid;
+          gap: 10px;
+          overflow-x: auto;
+        }
+
+        .rejected-records-head,
+        .rejected-records-row {
+          display: grid;
+          grid-template-columns: minmax(170px, 1fr) minmax(220px, 1.3fr) minmax(180px, 1.1fr) minmax(170px, 1fr) minmax(110px, 0.7fr);
+          gap: 12px;
+          min-width: 980px;
+          align-items: center;
+        }
+
+        .rejected-records-head {
+          color: rgba(245, 242, 237, 0.46);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          padding: 0 12px;
+          text-transform: uppercase;
+        }
+
+        .rejected-records-row {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 12px;
+        }
+
+        .rejected-records-row span,
+        .rejected-records-row small {
+          color: rgba(245, 242, 237, 0.58);
+          font-size: 12px;
+          min-width: 0;
+        }
+
+        .rejected-records-row strong {
+          display: block;
+          overflow: hidden;
+          color: #fffaf4;
+          font-size: 13px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .rejected-records-row small {
+          display: block;
+          margin-top: 5px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
         .freshness-badge {
           display: inline-flex;
           width: fit-content;
@@ -2403,7 +2989,8 @@ function DashboardOverview({
           .solar-layout,
           .accuracy-lab-layout,
           .providers-layout,
-          .telemetry-layout {
+          .telemetry-layout,
+          .data-quality-layout {
             grid-template-columns: 1fr;
           }
         }
@@ -2439,6 +3026,8 @@ function DashboardOverview({
           .accuracy-lab-metric-grid,
           .providers-metric-grid,
           .telemetry-metric-grid,
+          .data-quality-metric-grid,
+          .data-quality-filters,
           .accuracy-grid {
             grid-template-columns: 1fr;
           }

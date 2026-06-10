@@ -35,6 +35,8 @@
     "inactive": "Неактивен",
     "degraded": "Деградация",
     "open": "Открыто",
+    "fixed": "Исправлено",
+    "ignored": "Игнорируется",
     "unknown": "Неизвестно"
   },
   "metrics": {
@@ -274,6 +276,88 @@
       "noAssetDetail": "Telemetry dashboard требует хотя бы одну солнечную станцию из API.",
       "unavailableTitle": "Telemetry API недоступен",
       "unavailableDetail": "Dashboard не смог загрузить telemetry summary для выбранного актива."
+    }
+  },
+  "dataQuality": {
+    "periods": {
+      "last24h": "Последние 24 часа",
+      "last7d": "Последние 7 дней",
+      "last30d": "Последние 30 дней"
+    },
+    "filters": {
+      "eyebrow": "Фильтры",
+      "title": "Область качества данных",
+      "period": "Период",
+      "asset": "Актив",
+      "reason": "Причина отклонения",
+      "allAssets": "Все активы",
+      "allReasons": "Все причины"
+    },
+    "kpi": {
+      "totalRejected": "Всего отклонённых записей",
+      "totalRejectedHelper": "Отклонённая телеметрия в выбранной области",
+      "rejectionRate": "Доля отклонений",
+      "rejectionRateHelper": "В сравнении с {accepted} принятыми точками телеметрии",
+      "topReason": "Главная причина отклонения",
+      "topReasonHelper": "Самая частая ошибка валидации",
+      "affectedAssets": "Затронутые активы",
+      "affectedAssetsHelper": "Станции в последних отклонённых записях"
+    },
+    "reasons": {
+      "eyebrow": "Причины",
+      "title": "Top причин отклонения",
+      "invalid_topic": "Некорректный topic",
+      "invalid_plant_id": "Некорректный plant ID",
+      "plant_not_found": "Станция не найдена",
+      "invalid_json": "Некорректный JSON",
+      "invalid_timestamp": "Некорректное время",
+      "future_timestamp": "Время в будущем",
+      "stale_timestamp": "Устаревшее время",
+      "negative_power": "Отрицательная мощность",
+      "negative_energy": "Отрицательная энергия",
+      "power_exceeds_capacity": "Мощность выше установленной",
+      "db_error": "Ошибка базы данных",
+      "unknown_error": "Неизвестная ошибка"
+    },
+    "status": {
+      "clean": "Чисто",
+      "watch": "Наблюдать",
+      "attention": "Внимание"
+    },
+    "statusDetail": {
+      "clean": "За выбранную область отклонённая телеметрия не найдена.",
+      "watch": "Отклонённая телеметрия есть, но доля низкая.",
+      "attention": "Отклонённая телеметрия требует проверки оператора перед доверием к данным пилота."
+    },
+    "statusPanel": {
+      "eyebrow": "Статус качества",
+      "title": "Доверие к телеметрии",
+      "detail": "{rejected} отклонённых записей против {accepted} принятых точек"
+    },
+    "loading": {
+      "summaryTitle": "Загружаем сводку отклонений",
+      "summaryDetail": "Получаем основные причины из rejected telemetry API.",
+      "statusTitle": "Загружаем статус качества",
+      "statusDetail": "Сравниваем количество отклонённой и принятой телеметрии.",
+      "recordsTitle": "Загружаем отклонённые записи",
+      "recordsDetail": "Получаем последние отклонённые записи телеметрии."
+    },
+    "empty": {
+      "unavailableTitle": "Rejected telemetry API недоступен",
+      "unavailableDetail": "Dashboard не смог загрузить данные отклонённой телеметрии.",
+      "cleanTitle": "Причин отклонения нет",
+      "cleanDetail": "Для выбранных фильтров API не вернул причин отклонения телеметрии.",
+      "noRecordsTitle": "Отклонённых записей нет",
+      "noRecordsDetail": "Для выбранных фильтров нет отклонённых записей телеметрии."
+    },
+    "table": {
+      "eyebrow": "Последние записи",
+      "title": "Отклонённая телеметрия",
+      "receivedAt": "Время возникновения",
+      "reason": "Причина",
+      "source": "Источник",
+      "asset": "Asset / Plant",
+      "status": "Статус"
     }
   },
   "rejectedTelemetry": {

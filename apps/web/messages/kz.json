@@ -35,6 +35,8 @@
     "inactive": "Белсенді емес",
     "degraded": "Нашарлаған",
     "open": "Ашық",
+    "fixed": "Түзетілді",
+    "ignored": "Еленбейді",
     "unknown": "Белгісіз"
   },
   "metrics": {
@@ -274,6 +276,88 @@
       "noAssetDetail": "Telemetry dashboard үшін API-дан кемінде бір күн станциясы қажет.",
       "unavailableTitle": "Telemetry API қолжетімсіз",
       "unavailableDetail": "Dashboard таңдалған актив үшін telemetry summary жүктей алмады."
+    }
+  },
+  "dataQuality": {
+    "periods": {
+      "last24h": "Соңғы 24 сағат",
+      "last7d": "Соңғы 7 күн",
+      "last30d": "Соңғы 30 күн"
+    },
+    "filters": {
+      "eyebrow": "Сүзгілер",
+      "title": "Дерек сапасы аймағы",
+      "period": "Кезең",
+      "asset": "Актив",
+      "reason": "Қабылданбау себебі",
+      "allAssets": "Барлық активтер",
+      "allReasons": "Барлық себептер"
+    },
+    "kpi": {
+      "totalRejected": "Барлық қабылданбаған жазбалар",
+      "totalRejectedHelper": "Таңдалған аймақтағы қабылданбаған телеметрия",
+      "rejectionRate": "Қабылданбау үлесі",
+      "rejectionRateHelper": "{accepted} қабылданған телеметрия нүктесімен салыстырғанда",
+      "topReason": "Негізгі қабылданбау себебі",
+      "topReasonHelper": "Ең жиі валидация қатесі",
+      "affectedAssets": "Әсер еткен активтер",
+      "affectedAssetsHelper": "Соңғы қабылданбаған жазбалардағы станциялар"
+    },
+    "reasons": {
+      "eyebrow": "Себептер",
+      "title": "Негізгі қабылданбау себептері",
+      "invalid_topic": "Қате topic",
+      "invalid_plant_id": "Қате plant ID",
+      "plant_not_found": "Станция табылмады",
+      "invalid_json": "Қате JSON",
+      "invalid_timestamp": "Қате уақыт",
+      "future_timestamp": "Болашақ уақыт",
+      "stale_timestamp": "Ескірген уақыт",
+      "negative_power": "Теріс қуат",
+      "negative_energy": "Теріс энергия",
+      "power_exceeds_capacity": "Қуат орнатылған шектен жоғары",
+      "db_error": "Дерекқор қатесі",
+      "unknown_error": "Белгісіз қате"
+    },
+    "status": {
+      "clean": "Таза",
+      "watch": "Бақылау",
+      "attention": "Назар"
+    },
+    "statusDetail": {
+      "clean": "Таңдалған аймақ үшін қабылданбаған телеметрия табылмады.",
+      "watch": "Қабылданбаған телеметрия бар, бірақ үлесі төмен.",
+      "attention": "Пилот деректеріне сену алдында қабылданбаған телеметрияны оператор тексеруі керек."
+    },
+    "statusPanel": {
+      "eyebrow": "Сапа статусы",
+      "title": "Телеметрияға сенім",
+      "detail": "{rejected} қабылданбаған жазба және {accepted} қабылданған нүкте"
+    },
+    "loading": {
+      "summaryTitle": "Қабылданбау жиынтығы жүктелуде",
+      "summaryDetail": "Rejected telemetry API арқылы негізгі себептер жүктелуде.",
+      "statusTitle": "Сапа статусы жүктелуде",
+      "statusDetail": "Қабылданбаған және қабылданған телеметрия саны салыстырылуда.",
+      "recordsTitle": "Қабылданбаған жазбалар жүктелуде",
+      "recordsDetail": "Соңғы қабылданбаған телеметрия жазбалары жүктелуде."
+    },
+    "empty": {
+      "unavailableTitle": "Rejected telemetry API қолжетімсіз",
+      "unavailableDetail": "Dashboard қабылданбаған телеметрия деректерін жүктей алмады.",
+      "cleanTitle": "Қабылданбау себептері жоқ",
+      "cleanDetail": "Таңдалған сүзгілер үшін API қабылданбау себептерін қайтармады.",
+      "noRecordsTitle": "Қабылданбаған жазбалар жоқ",
+      "noRecordsDetail": "Таңдалған сүзгілер үшін қабылданбаған телеметрия жазбалары жоқ."
+    },
+    "table": {
+      "eyebrow": "Соңғы жазбалар",
+      "title": "Қабылданбаған телеметрия",
+      "receivedAt": "Пайда болған уақыт",
+      "reason": "Себеп",
+      "source": "Дереккөзі",
+      "asset": "Asset / Plant",
+      "status": "Статус"
     }
   },
   "rejectedTelemetry": {

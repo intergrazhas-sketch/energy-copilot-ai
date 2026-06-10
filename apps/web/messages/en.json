@@ -35,6 +35,8 @@
     "inactive": "Inactive",
     "degraded": "Degraded",
     "open": "Open",
+    "fixed": "Fixed",
+    "ignored": "Ignored",
     "unknown": "Unknown"
   },
   "metrics": {
@@ -274,6 +276,88 @@
       "noAssetDetail": "Telemetry dashboard requires at least one solar plant from the API.",
       "unavailableTitle": "Telemetry API unavailable",
       "unavailableDetail": "The dashboard could not load telemetry summary for the selected asset."
+    }
+  },
+  "dataQuality": {
+    "periods": {
+      "last24h": "Last 24 hours",
+      "last7d": "Last 7 days",
+      "last30d": "Last 30 days"
+    },
+    "filters": {
+      "eyebrow": "Filters",
+      "title": "Data Quality Scope",
+      "period": "Period",
+      "asset": "Asset",
+      "reason": "Rejection reason",
+      "allAssets": "All assets",
+      "allReasons": "All reasons"
+    },
+    "kpi": {
+      "totalRejected": "Total Rejected Records",
+      "totalRejectedHelper": "Rejected telemetry in selected scope",
+      "rejectionRate": "Rejection Rate",
+      "rejectionRateHelper": "Compared with {accepted} accepted telemetry points",
+      "topReason": "Top Rejection Reason",
+      "topReasonHelper": "Most frequent validation failure",
+      "affectedAssets": "Affected Assets",
+      "affectedAssetsHelper": "Plants present in latest rejected records"
+    },
+    "reasons": {
+      "eyebrow": "Reasons",
+      "title": "Top Rejection Reasons",
+      "invalid_topic": "Invalid topic",
+      "invalid_plant_id": "Invalid plant ID",
+      "plant_not_found": "Plant not found",
+      "invalid_json": "Invalid JSON",
+      "invalid_timestamp": "Invalid timestamp",
+      "future_timestamp": "Future timestamp",
+      "stale_timestamp": "Stale timestamp",
+      "negative_power": "Negative power",
+      "negative_energy": "Negative energy",
+      "power_exceeds_capacity": "Power exceeds capacity",
+      "db_error": "Database error",
+      "unknown_error": "Unknown error"
+    },
+    "status": {
+      "clean": "Clean",
+      "watch": "Watch",
+      "attention": "Attention"
+    },
+    "statusDetail": {
+      "clean": "No rejected telemetry found for the selected scope.",
+      "watch": "Rejected telemetry exists, but the rate is low.",
+      "attention": "Rejected telemetry needs operator review before trusting pilot data."
+    },
+    "statusPanel": {
+      "eyebrow": "Quality Status",
+      "title": "Telemetry Trust",
+      "detail": "{rejected} rejected records vs {accepted} accepted points"
+    },
+    "loading": {
+      "summaryTitle": "Loading rejection summary",
+      "summaryDetail": "Loading top reasons from rejected telemetry API.",
+      "statusTitle": "Loading quality status",
+      "statusDetail": "Comparing rejected and accepted telemetry counts.",
+      "recordsTitle": "Loading rejected records",
+      "recordsDetail": "Loading latest rejected telemetry records."
+    },
+    "empty": {
+      "unavailableTitle": "Rejected telemetry API unavailable",
+      "unavailableDetail": "The dashboard could not load rejected telemetry data.",
+      "cleanTitle": "No rejection reasons",
+      "cleanDetail": "No rejected telemetry reasons were returned for the selected filters.",
+      "noRecordsTitle": "No rejected records",
+      "noRecordsDetail": "No rejected telemetry records matched the selected filters."
+    },
+    "table": {
+      "eyebrow": "Latest Records",
+      "title": "Rejected Telemetry",
+      "receivedAt": "Occurred at",
+      "reason": "Reason",
+      "source": "Source",
+      "asset": "Asset / Plant",
+      "status": "Status"
     }
   },
   "rejectedTelemetry": {
