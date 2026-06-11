@@ -8,6 +8,7 @@
     "overview": "Шолу",
     "solarPlants": "Күн станциялары",
     "forecastInsights": "Болжам талдауы",
+    "alertsCenter": "Ескертулер орталығы",
     "forecastAccuracyLab": "Дәлдік зертханасы",
     "forecastProviders": "Болжам провайдерлері",
     "telemetry": "Телеметрия",
@@ -269,6 +270,131 @@
       "samples": "Үлгілер",
       "emptyTitle": "Провайдер салыстыруы әлі жоқ",
       "emptyDetail": "Салыстыру /api/v1/accuracy-lab/providers/ranking ранжирленген метрикаларды қайтарғаннан кейін пайда болады."
+    }
+  },
+  "alertsCenter": {
+    "mvpLimit": {
+      "title": "MVP шектеулері",
+      "detail": "Ескертулер ағымдағы API жауаптарынан есептеледі. Сақтау, растау және тарих кейін қосылады."
+    },
+    "severity": {
+      "critical": "Критикалық",
+      "warning": "Ескерту",
+      "info": "Ақпарат"
+    },
+    "categories": {
+      "telemetry": "Телеметрия",
+      "dataQuality": "Дерек сапасы",
+      "forecast": "Болжам",
+      "system": "Жүйе",
+      "asset": "Актив"
+    },
+    "status": {
+      "open": "Есептелген ашық"
+    },
+    "entities": {
+      "telemetryAsset": "Телеметрия активі",
+      "forecastAccuracy": "Болжам дәлдігі",
+      "forecastRuns": "Болжам іске қосулары",
+      "varvarinskayaSpp": "Варваринская СЭС"
+    },
+    "kpi": {
+      "activeAlerts": "Белсенді ескертулер",
+      "activeAlertsHelper": "Ағымдағы API жауаптарынан есептеледі",
+      "criticalAlerts": "Критикалық ескертулер",
+      "criticalAlertsHelper": "Оператор назарын қажет етеді",
+      "warningAlerts": "Ескертулер",
+      "warningAlertsHelper": "Бақылауға арналған сигналдар",
+      "forecastAlerts": "Болжам ескертулері",
+      "forecastAlertsHelper": "MAPE, провайдерлер және іске қосулар",
+      "dataQualityAlerts": "Дерек сапасы ескертулері",
+      "dataQualityAlertsHelper": "Қабылданбаған телеметрия және валидация",
+      "systemAlerts": "Жүйе ескертулері",
+      "systemAlertsHelper": "Тәуелділіктер жағдайы сигналдары",
+      "highestSeverity": "Ең жоғары маңыздылық",
+      "highestSeverityHelper": "Белсенді ескертулер ішіндегі ең жоғары деңгей"
+    },
+    "loading": {
+      "priorityTitle": "Оператор басымдықтары жүктелуде",
+      "priorityDetail": "Ағымдағы Dashboard деректерінен ескертулер есептелуде.",
+      "tableTitle": "Ескертулер жүктелуде",
+      "tableDetail": "Қолданыстағы API жауаптарынан ескерту жолдары жасалуда."
+    },
+    "empty": {
+      "priorityTitle": "Оператордың белсенді басымдықтары жоқ",
+      "priorityDetail": "Ағымдағы API жауаптары критикалық немесе warning ескертулерін жасамайды.",
+      "tableTitle": "Белсенді ескертулер жоқ",
+      "tableDetail": "Барлық есептелген сигналдар қазір MVP шектерінде."
+    },
+    "priority": {
+      "eyebrow": "Оператор басымдығы",
+      "title": "Негізгі ескертулер"
+    },
+    "summary": {
+      "eyebrow": "Ағымдағы сигналдар",
+      "title": "Ескерту кіріс деректері",
+      "telemetry": "Телеметрия жаңалығы",
+      "rejected": "Қабылданбаған телеметрия",
+      "mape": "Ағымдағы MAPE",
+      "dependencies": "Тексерілген тәуелділіктер"
+    },
+    "table": {
+      "eyebrow": "Есептелген ескертулер",
+      "title": "Ескертулер кестесі",
+      "severity": "Маңыздылық",
+      "category": "Санат",
+      "alertType": "Ескерту түрі",
+      "entity": "Объект",
+      "signalValue": "Сигнал мәні",
+      "status": "Статус",
+      "sourceApi": "API көзі",
+      "recommendedAction": "Ұсынылатын әрекет"
+    },
+    "alertTypes": {
+      "telemetryOffline": "Телеметрия қолжетімсіз",
+      "telemetryStale": "Телеметрия ескіріп жатыр",
+      "telemetryGap": "Телеметрия дерегіндегі үзіліс",
+      "rejectedTelemetry": "Қабылданбаған телеметрия бар",
+      "criticalRejectedReason": "Қабылдамаудың критикалық себебі",
+      "mapeAboveTarget": "MAPE мақсаттан жоғары",
+      "mapeAboveBaseline": "MAPE база деңгейінде немесе жоғары",
+      "providerWorstMape": "Провайдердің ең нашар MAPE мәні",
+      "strongForecastBias": "Болжамның күшті ауытқуы",
+      "noForecastRuns": "Болжам іске қосулары жоқ",
+      "forecastRunStatus": "Болжам іске қосулары сәтсіз немесе күтуде",
+      "systemDependency": "Жүйе тәуелділігі дұрыс емес",
+      "solarPlantMissing": "Күн станциясы жоқ",
+      "solarPlantInactive": "Күн станциясы белсенді емес"
+    },
+    "signals": {
+      "freshness": "Жаңалығы: {value}",
+      "dataGap": "Дерек үзілісі: {value}",
+      "rejectedTotal": "қабылданбаған хабарламалар: {value}",
+      "topRejectedReason": "{reason}: {count}",
+      "mapeTarget": "{current} және мақсат {target}",
+      "mapeBaseline": "{current} және база {baseline}",
+      "providerMape": "MAPE {value}",
+      "bias": "Орташа ауытқу {value}",
+      "noForecastRuns": "Іске қосулар қайтарылмады",
+      "forecastRunIssues": "сәтсіз немесе күтіп тұрған іске қосулар: {count}",
+      "dependencyStatus": "Статус: {value}",
+      "plantMissing": "Станция қайтарылмады",
+      "plantStatus": "Статус: {value}"
+    },
+    "actions": {
+      "checkTelemetryConnection": "MQTT/SCADA қосылымын және соңғы телеметрия уақытын тексеру.",
+      "checkTelemetryDelay": "Ingestion кідірісін тексеріп, 15 минуттық телеметрия жиілігін растау.",
+      "checkTelemetryGap": "Телеметрия тарихынан өткізіп алған интервалдар мен upstream үзілістерін тексеру.",
+      "reviewRejectedTelemetry": "Rejected Telemetry бөлімін ашып, негізгі қабылдамау себептерін тексеру.",
+      "fixRejectedReason": "Негізгі қабылдамау себебіне әсер еткен payload, topic немесе станция mapping мәселесін түзету.",
+      "reviewForecastAccuracy": "Forecast Insights бөлімін тексеріп, ағымдағы MAPE мәнін мақсатпен салыстыру.",
+      "escalateForecastQuality": "Болжам сапасын эскалациялау: ағымдағы MAPE базалық деңгейді жақсартпайды.",
+      "compareForecastProviders": "Провайдерлерді салыстырып, пилоттық тексеру үшін MAPE ең төмен провайдерді таңдау.",
+      "reviewForecastBias": "Болжам нақты генерацияны жүйелі түрде асыра немесе төмен көрсетпейтінін тексеру.",
+      "checkForecastScheduler": "Болжам генерациясы тапсырмалары орындалып жатқанын тексеру.",
+      "checkForecastRuns": "Failed немесе pending forecast runs тексеру.",
+      "checkSystemDependency": "Дұрыс емес сервисті және оның container/runtime logs жазбаларын тексеру.",
+      "checkSolarPlantRegistry": "Күн станциялары тізілімін және пилоттық актив статусын тексеру."
     }
   },
   "providers": {

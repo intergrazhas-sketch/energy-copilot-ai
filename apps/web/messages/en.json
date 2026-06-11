@@ -8,6 +8,7 @@
     "overview": "Overview",
     "solarPlants": "Solar Plants",
     "forecastInsights": "Forecast Insights",
+    "alertsCenter": "Alerts Center",
     "forecastAccuracyLab": "Forecast Accuracy Lab",
     "forecastProviders": "Forecast Providers",
     "telemetry": "Telemetry",
@@ -269,6 +270,131 @@
       "samples": "Samples",
       "emptyTitle": "No provider comparison yet",
       "emptyDetail": "Provider comparison will appear after /api/v1/accuracy-lab/providers/ranking returns ranked metrics."
+    }
+  },
+  "alertsCenter": {
+    "mvpLimit": {
+      "title": "MVP limits",
+      "detail": "Alerts are computed from current API responses. Persistence, acknowledgement and history will be added later."
+    },
+    "severity": {
+      "critical": "Critical",
+      "warning": "Warning",
+      "info": "Info"
+    },
+    "categories": {
+      "telemetry": "Telemetry",
+      "dataQuality": "Data quality",
+      "forecast": "Forecast",
+      "system": "System",
+      "asset": "Asset"
+    },
+    "status": {
+      "open": "Computed open"
+    },
+    "entities": {
+      "telemetryAsset": "Telemetry asset",
+      "forecastAccuracy": "Forecast accuracy",
+      "forecastRuns": "Forecast runs",
+      "varvarinskayaSpp": "Varvarinskaya SPP"
+    },
+    "kpi": {
+      "activeAlerts": "Active Alerts",
+      "activeAlertsHelper": "Computed from current API responses",
+      "criticalAlerts": "Critical Alerts",
+      "criticalAlertsHelper": "Requires operator attention",
+      "warningAlerts": "Warning Alerts",
+      "warningAlertsHelper": "Watchlist conditions",
+      "forecastAlerts": "Forecast Alerts",
+      "forecastAlertsHelper": "MAPE, provider and run signals",
+      "dataQualityAlerts": "Data Quality Alerts",
+      "dataQualityAlertsHelper": "Rejected telemetry and validation",
+      "systemAlerts": "System Alerts",
+      "systemAlertsHelper": "Dependency health signals",
+      "highestSeverity": "Highest Severity",
+      "highestSeverityHelper": "Top severity among active alerts"
+    },
+    "loading": {
+      "priorityTitle": "Loading operator priorities",
+      "priorityDetail": "Computing alerts from current Dashboard data.",
+      "tableTitle": "Loading alerts",
+      "tableDetail": "Computing alert rows from existing API responses."
+    },
+    "empty": {
+      "priorityTitle": "No active operator priorities",
+      "priorityDetail": "Current API responses do not produce critical or warning alerts.",
+      "tableTitle": "No active alerts",
+      "tableDetail": "All computed signals are currently within MVP thresholds."
+    },
+    "priority": {
+      "eyebrow": "Operator Priority",
+      "title": "Top Alerts"
+    },
+    "summary": {
+      "eyebrow": "Current Signals",
+      "title": "Alert Inputs",
+      "telemetry": "Telemetry freshness",
+      "rejected": "Rejected telemetry",
+      "mape": "Current MAPE",
+      "dependencies": "Dependencies checked"
+    },
+    "table": {
+      "eyebrow": "Computed Alerts",
+      "title": "Alerts Table",
+      "severity": "Severity",
+      "category": "Category",
+      "alertType": "Alert Type",
+      "entity": "Entity",
+      "signalValue": "Signal Value",
+      "status": "Status",
+      "sourceApi": "Source API",
+      "recommendedAction": "Recommended Action"
+    },
+    "alertTypes": {
+      "telemetryOffline": "Telemetry offline",
+      "telemetryStale": "Telemetry stale",
+      "telemetryGap": "Telemetry data gap",
+      "rejectedTelemetry": "Rejected telemetry exists",
+      "criticalRejectedReason": "Critical rejected reason",
+      "mapeAboveTarget": "MAPE above target",
+      "mapeAboveBaseline": "MAPE at or above baseline",
+      "providerWorstMape": "Provider worst MAPE",
+      "strongForecastBias": "Strong forecast bias",
+      "noForecastRuns": "No forecast runs",
+      "forecastRunStatus": "Forecast runs failed or pending",
+      "systemDependency": "System dependency unhealthy",
+      "solarPlantMissing": "Solar plant missing",
+      "solarPlantInactive": "Solar plant inactive"
+    },
+    "signals": {
+      "freshness": "Freshness: {value}",
+      "dataGap": "Data gap: {value}",
+      "rejectedTotal": "{value} rejected messages",
+      "topRejectedReason": "{reason}: {count}",
+      "mapeTarget": "{current} vs target {target}",
+      "mapeBaseline": "{current} vs baseline {baseline}",
+      "providerMape": "MAPE {value}",
+      "bias": "Average bias {value}",
+      "noForecastRuns": "No runs returned",
+      "forecastRunIssues": "{count} runs failed or pending",
+      "dependencyStatus": "Status: {value}",
+      "plantMissing": "No plant returned",
+      "plantStatus": "Status: {value}"
+    },
+    "actions": {
+      "checkTelemetryConnection": "Check MQTT/SCADA connectivity and the latest telemetry timestamp.",
+      "checkTelemetryDelay": "Check ingestion delay and confirm the 15-minute telemetry cadence.",
+      "checkTelemetryGap": "Inspect telemetry history for missing intervals and upstream gaps.",
+      "reviewRejectedTelemetry": "Open Rejected Telemetry and review top rejection reasons.",
+      "fixRejectedReason": "Fix the payload/topic/plant mapping issue behind the top rejected reason.",
+      "reviewForecastAccuracy": "Review Forecast Insights and compare current MAPE against target.",
+      "escalateForecastQuality": "Escalate forecast quality because current MAPE is not improving baseline.",
+      "compareForecastProviders": "Compare providers and prefer the lowest-MAPE provider for pilot review.",
+      "reviewForecastBias": "Check whether forecasts are consistently above or below actual generation.",
+      "checkForecastScheduler": "Check that forecast generation jobs are running.",
+      "checkForecastRuns": "Inspect failed or pending forecast runs.",
+      "checkSystemDependency": "Check the unhealthy service and its container/runtime logs.",
+      "checkSolarPlantRegistry": "Verify the solar plant registry and pilot asset status."
     }
   },
   "providers": {

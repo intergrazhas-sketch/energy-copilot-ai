@@ -159,6 +159,19 @@ type Locale = "en" | "ru" | "kz";
 type DataQualityPeriodKey = "24h" | "7d" | "30d";
 type DataQualityStatus = "clean" | "watch" | "attention";
 type MonitoringStatus = "healthy" | "warning" | "critical" | "unknown";
+type AlertSeverity = "critical" | "warning" | "info";
+type AlertCategory = "telemetry" | "dataQuality" | "forecast" | "system" | "asset";
+type DerivedAlert = {
+  id: string;
+  severity: AlertSeverity;
+  category: AlertCategory;
+  type: string;
+  entity: string;
+  signalValue: string;
+  sourceApi: string;
+  recommendedAction: string;
+  priority: number;
+};
 type MessageValue = string | number;
 type Translate = (key: string, values?: Record<string, MessageValue>) => string;
 
@@ -168,6 +181,7 @@ const navigationItems = [
   { key: "overview", labelKey: "overview" },
   { key: "solar-plants", labelKey: "solarPlants" },
   { key: "forecast-insights", labelKey: "forecastInsights" },
+  { key: "alerts-center", labelKey: "alertsCenter" },
   { key: "forecast-accuracy-lab", labelKey: "forecastAccuracyLab" },
   { key: "forecast-providers", labelKey: "forecastProviders" },
   { key: "telemetry", labelKey: "telemetry" },
@@ -222,6 +236,20 @@ const rejectionReasons = [
 
 const forecastBaselineMape = 14;
 const forecastTargetMape = 10;
+const strongForecastBiasThreshold = 1;
+const criticalRejectionReasons = new Set([
+  "invalid_topic",
+  "plant_not_found",
+  "invalid_json",
+  "negative_power",
+  "power_exceeds_capacity",
+]);
+
+const alertSeverityRank: Record<AlertSeverity, number> = {
+  critical: 0,
+  warning: 1,
+  info: 2,
+};
 
 const messages = {
   en: enMessages,
@@ -622,6 +650,10 @@ function StatusBadge({ status, t }: { status?: string; t: Translate }) {
   return <span className={`status-badge ${tone}`}>{displayStatus}</span>;
 }
 
+function AlertSeverityBadge({ severity, t }: { severity: AlertSeverity; t: Translate }) {
+  return <span className={`alert-severity-badge ${severity}`}>{t(`alertsCenter.severity.${severity}`)}</span>;
+}
+
 function MetricCard({
   label,
   value,
@@ -834,6 +866,453 @@ function getAccuracyTargetStatus(avgMape: number | null | undefined) {
     return "onTarget";
   }
   return "aboveTarget";
+}
+
+function sortAlerts(alerts: DerivedAlert[]) {
+  return [...alerts].sort((first, second) => {
+    const severityDelta = alertSeverityRank[first.severity] - alertSeverityRank[second.severity];
+    if (severityDelta !== 0) {
+      return severityDelta;
+    }
+    return first.priority - second.priority;
+  });
+}
+
+function getHighestAlertSeverity(alerts: DerivedAlert[]): AlertSeverity | null {
+  return sortAlerts(alerts)[0]?.severity || null;
+}
+
+function deriveAlertsFromDashboardData(data: DashboardData, locale: Locale, t: Translate): DerivedAlert[] {
+  const noData = t("common.noData");
+  const alerts: DerivedAlert[] = [];
+  const addAlert = (alert: DerivedAlert) => {
+    alerts.push(alert);
+  };
+  const pilotPlant =
+    data.plants.find((plant) => plant.name.toLowerCase().includes("varvar")) || data.plants[0] || null;
+  const telemetryEntity = pilotPlant?.name || data.telemetryAssetId || t("alertsCenter.entities.telemetryAsset");
+
+  if (data.telemetrySummary?.data_freshness_status === "offline") {
+    addAlert({
+      id: "telemetry-offline",
+      severity: "critical",
+      category: "telemetry",
+      type: t("alertsCenter.alertTypes.telemetryOffline"),
+      entity: telemetryEntity,
+      signalValue: t("alertsCenter.signals.freshness", {
+        value: t("telemetry.freshness.offline"),
+      }),
+      sourceApi: "/api/v1/telemetry/summary",
+      recommendedAction: t("alertsCenter.actions.checkTelemetryConnection"),
+      priority: 10,
+    });
+  } else if (data.telemetrySummary?.data_freshness_status === "stale") {
+    addAlert({
+      id: "telemetry-stale",
+      severity: "warning",
+      category: "telemetry",
+      type: t("alertsCenter.alertTypes.telemetryStale"),
+      entity: telemetryEntity,
+      signalValue: t("alertsCenter.signals.freshness", {
+        value: t("telemetry.freshness.stale"),
+      }),
+      sourceApi: "/api/v1/telemetry/summary",
+      recommendedAction: t("alertsCenter.actions.checkTelemetryDelay"),
+      priority: 20,
+    });
+  }
+
+  if (
+    data.telemetrySummary?.possible_data_gap_minutes !== null &&
+    data.telemetrySummary?.possible_data_gap_minutes !== undefined &&
+    data.telemetrySummary.possible_data_gap_minutes > 30
+  ) {
+    addAlert({
+      id: "telemetry-gap",
+      severity: data.telemetrySummary.possible_data_gap_minutes > 120 ? "critical" : "warning",
+      category: "telemetry",
+      type: t("alertsCenter.alertTypes.telemetryGap"),
+      entity: telemetryEntity,
+      signalValue: t("alertsCenter.signals.dataGap", {
+        value: formatTranslatedUnit(
+          data.telemetrySummary.possible_data_gap_minutes,
+          "telemetry.units.minutes",
+          t,
+          noData,
+          0,
+          locale,
+        ),
+      }),
+      sourceApi: "/api/v1/telemetry/summary",
+      recommendedAction: t("alertsCenter.actions.checkTelemetryGap"),
+      priority: 30,
+    });
+  }
+
+  if (data.rejected && data.rejected.total > 0) {
+    addAlert({
+      id: "rejected-telemetry-exists",
+      severity: "warning",
+      category: "dataQuality",
+      type: t("alertsCenter.alertTypes.rejectedTelemetry"),
+      entity: telemetryEntity,
+      signalValue: t("alertsCenter.signals.rejectedTotal", {
+        value: formatNumber(data.rejected.total, 0, noData, locale),
+      }),
+      sourceApi: "/api/v1/telemetry/rejected/summary",
+      recommendedAction: t("alertsCenter.actions.reviewRejectedTelemetry"),
+      priority: 40,
+    });
+
+    const topRejectedReason = [...data.rejected.items].sort((first, second) => second.count - first.count)[0];
+    if (topRejectedReason && criticalRejectionReasons.has(topRejectedReason.reason)) {
+      addAlert({
+        id: `top-rejection-${topRejectedReason.reason}`,
+        severity: "critical",
+        category: "dataQuality",
+        type: t("alertsCenter.alertTypes.criticalRejectedReason"),
+        entity: telemetryEntity,
+        signalValue: t("alertsCenter.signals.topRejectedReason", {
+          reason: translateRejectionReason(topRejectedReason.reason, t, noData),
+          count: formatNumber(topRejectedReason.count, 0, noData, locale),
+        }),
+        sourceApi: "/api/v1/telemetry/rejected/summary",
+        recommendedAction: t("alertsCenter.actions.fixRejectedReason"),
+        priority: 15,
+      });
+    }
+  }
+
+  const currentMape = data.accuracy?.avg_mape ?? null;
+  if (currentMape !== null && !Number.isNaN(currentMape) && currentMape > forecastTargetMape) {
+    addAlert({
+      id: "mape-above-target",
+      severity: currentMape >= forecastBaselineMape ? "critical" : "warning",
+      category: "forecast",
+      type: t("alertsCenter.alertTypes.mapeAboveTarget"),
+      entity: pilotPlant?.name || t("alertsCenter.entities.forecastAccuracy"),
+      signalValue: t("alertsCenter.signals.mapeTarget", {
+        current: formatPercent(currentMape, noData, locale),
+        target: t("forecastInsights.kpi.targetValue"),
+      }),
+      sourceApi: "/api/v1/accuracy-lab/summary",
+      recommendedAction: t("alertsCenter.actions.reviewForecastAccuracy"),
+      priority: 50,
+    });
+  }
+
+  if (currentMape !== null && !Number.isNaN(currentMape) && currentMape >= forecastBaselineMape) {
+    addAlert({
+      id: "mape-above-baseline",
+      severity: "critical",
+      category: "forecast",
+      type: t("alertsCenter.alertTypes.mapeAboveBaseline"),
+      entity: pilotPlant?.name || t("alertsCenter.entities.forecastAccuracy"),
+      signalValue: t("alertsCenter.signals.mapeBaseline", {
+        current: formatPercent(currentMape, noData, locale),
+        baseline: t("forecastInsights.kpi.baselineValue"),
+      }),
+      sourceApi: "/api/v1/accuracy-lab/summary",
+      recommendedAction: t("alertsCenter.actions.escalateForecastQuality"),
+      priority: 25,
+    });
+  }
+
+  const rankedProviders = data.accuracyRanking?.providers.filter(
+    (provider) => provider.avg_mape !== null && !Number.isNaN(provider.avg_mape),
+  ) || [];
+  const worstProvider = rankedProviders[rankedProviders.length - 1];
+  if (worstProvider?.avg_mape !== null && worstProvider?.avg_mape !== undefined && worstProvider.avg_mape > forecastTargetMape) {
+    addAlert({
+      id: `provider-worst-mape-${worstProvider.provider_id}`,
+      severity: worstProvider.avg_mape >= forecastBaselineMape ? "critical" : "warning",
+      category: "forecast",
+      type: t("alertsCenter.alertTypes.providerWorstMape"),
+      entity: translateProviderName(worstProvider.provider_name, worstProvider.provider_code, t, noData),
+      signalValue: t("alertsCenter.signals.providerMape", {
+        value: formatPercent(worstProvider.avg_mape, noData, locale),
+      }),
+      sourceApi: "/api/v1/accuracy-lab/providers/ranking",
+      recommendedAction: t("alertsCenter.actions.compareForecastProviders"),
+      priority: 60,
+    });
+  }
+
+  const avgBias = data.accuracy?.avg_bias ?? null;
+  if (avgBias !== null && !Number.isNaN(avgBias) && Math.abs(avgBias) >= strongForecastBiasThreshold) {
+    addAlert({
+      id: "forecast-strong-bias",
+      severity: "warning",
+      category: "forecast",
+      type: t("alertsCenter.alertTypes.strongForecastBias"),
+      entity: pilotPlant?.name || t("alertsCenter.entities.forecastAccuracy"),
+      signalValue: t("alertsCenter.signals.bias", {
+        value: formatNumber(avgBias, 2, noData, locale),
+      }),
+      sourceApi: "/api/v1/accuracy-lab/summary",
+      recommendedAction: t("alertsCenter.actions.reviewForecastBias"),
+      priority: 70,
+    });
+  }
+
+  if (data.forecastRuns.length === 0) {
+    addAlert({
+      id: "no-forecast-runs",
+      severity: "warning",
+      category: "forecast",
+      type: t("alertsCenter.alertTypes.noForecastRuns"),
+      entity: pilotPlant?.name || t("alertsCenter.entities.forecastRuns"),
+      signalValue: t("alertsCenter.signals.noForecastRuns"),
+      sourceApi: "/api/v1/forecast-runs",
+      recommendedAction: t("alertsCenter.actions.checkForecastScheduler"),
+      priority: 35,
+    });
+  }
+
+  const forecastRunIssues = data.forecastRuns.filter((run) =>
+    ["failed", "pending"].includes(normalizeMachineValue(run.status)),
+  );
+  if (forecastRunIssues.length > 0) {
+    const failedCount = forecastRunIssues.filter((run) => normalizeMachineValue(run.status) === "failed").length;
+    addAlert({
+      id: "forecast-run-status-issues",
+      severity: failedCount > 0 ? "critical" : "warning",
+      category: "forecast",
+      type: t("alertsCenter.alertTypes.forecastRunStatus"),
+      entity: pilotPlant?.name || t("alertsCenter.entities.forecastRuns"),
+      signalValue: t("alertsCenter.signals.forecastRunIssues", {
+        count: formatNumber(forecastRunIssues.length, 0, noData, locale),
+      }),
+      sourceApi: "/api/v1/forecast-runs",
+      recommendedAction: t("alertsCenter.actions.checkForecastRuns"),
+      priority: 45,
+    });
+  }
+
+  Object.entries(data.system?.dependencies || {}).forEach(([name, dependency]) => {
+    const normalizedStatus = normalizeMachineValue(dependency.status || "unknown");
+    if (["critical", "offline", "down", "failed", "error"].includes(normalizedStatus)) {
+      addAlert({
+        id: `dependency-${name}-${normalizedStatus}`,
+        severity: "critical",
+        category: "system",
+        type: t("alertsCenter.alertTypes.systemDependency"),
+        entity: name,
+        signalValue: t("alertsCenter.signals.dependencyStatus", {
+          value: translateStatusLabel(normalizedStatus, t, noData),
+        }),
+        sourceApi: "/api/v1/system/status",
+        recommendedAction: t("alertsCenter.actions.checkSystemDependency"),
+        priority: 5,
+      });
+    }
+  });
+
+  if (data.plants.length === 0) {
+    addAlert({
+      id: "solar-plant-missing",
+      severity: "critical",
+      category: "asset",
+      type: t("alertsCenter.alertTypes.solarPlantMissing"),
+      entity: t("alertsCenter.entities.varvarinskayaSpp"),
+      signalValue: t("alertsCenter.signals.plantMissing"),
+      sourceApi: "/api/v1/solar-plants",
+      recommendedAction: t("alertsCenter.actions.checkSolarPlantRegistry"),
+      priority: 12,
+    });
+  } else {
+    data.plants
+      .filter((plant) => normalizeMachineValue(plant.status) !== "active")
+      .forEach((plant) => {
+        addAlert({
+          id: `solar-plant-inactive-${plant.id}`,
+          severity: "warning",
+          category: "asset",
+          type: t("alertsCenter.alertTypes.solarPlantInactive"),
+          entity: plant.name,
+          signalValue: t("alertsCenter.signals.plantStatus", {
+            value: translateStatusLabel(plant.status, t, noData),
+          }),
+          sourceApi: "/api/v1/solar-plants",
+          recommendedAction: t("alertsCenter.actions.checkSolarPlantRegistry"),
+          priority: 80,
+        });
+      });
+  }
+
+  return sortAlerts(alerts);
+}
+
+function AlertsCenterSection({
+  data,
+  loading,
+  locale,
+  t,
+}: {
+  data: DashboardData;
+  loading: boolean;
+  locale: Locale;
+  t: Translate;
+}) {
+  const noData = t("common.noData");
+  const alerts = useMemo(() => deriveAlertsFromDashboardData(data, locale, t), [data, locale, t]);
+  const activeAlerts = alerts.length;
+  const criticalAlerts = alerts.filter((alert) => alert.severity === "critical").length;
+  const warningAlerts = alerts.filter((alert) => alert.severity === "warning").length;
+  const forecastAlerts = alerts.filter((alert) => alert.category === "forecast").length;
+  const dataQualityAlerts = alerts.filter((alert) => alert.category === "dataQuality").length;
+  const systemAlerts = alerts.filter((alert) => alert.category === "system").length;
+  const highestSeverity = getHighestAlertSeverity(alerts);
+  const priorityAlerts = alerts.slice(0, 5);
+
+  return (
+    <section className="section-stack">
+      <div className="alerts-mvp-note">
+        <strong>{t("alertsCenter.mvpLimit.title")}</strong>
+        <span>{t("alertsCenter.mvpLimit.detail")}</span>
+      </div>
+
+      <section className="metric-grid alerts-metric-grid">
+        <MetricCard
+          helper={t("alertsCenter.kpi.activeAlertsHelper")}
+          label={t("alertsCenter.kpi.activeAlerts")}
+          loading={loading}
+          t={t}
+          value={formatNumber(activeAlerts, 0, noData, locale)}
+        />
+        <MetricCard
+          helper={t("alertsCenter.kpi.criticalAlertsHelper")}
+          label={t("alertsCenter.kpi.criticalAlerts")}
+          loading={loading}
+          t={t}
+          value={formatNumber(criticalAlerts, 0, noData, locale)}
+        />
+        <MetricCard
+          helper={t("alertsCenter.kpi.warningAlertsHelper")}
+          label={t("alertsCenter.kpi.warningAlerts")}
+          loading={loading}
+          t={t}
+          value={formatNumber(warningAlerts, 0, noData, locale)}
+        />
+        <MetricCard
+          helper={t("alertsCenter.kpi.forecastAlertsHelper")}
+          label={t("alertsCenter.kpi.forecastAlerts")}
+          loading={loading}
+          t={t}
+          value={formatNumber(forecastAlerts, 0, noData, locale)}
+        />
+        <MetricCard
+          helper={t("alertsCenter.kpi.dataQualityAlertsHelper")}
+          label={t("alertsCenter.kpi.dataQualityAlerts")}
+          loading={loading}
+          t={t}
+          value={formatNumber(dataQualityAlerts, 0, noData, locale)}
+        />
+        <MetricCard
+          helper={t("alertsCenter.kpi.systemAlertsHelper")}
+          label={t("alertsCenter.kpi.systemAlerts")}
+          loading={loading}
+          t={t}
+          value={formatNumber(systemAlerts, 0, noData, locale)}
+        />
+        <MetricCard
+          helper={t("alertsCenter.kpi.highestSeverityHelper")}
+          label={t("alertsCenter.kpi.highestSeverity")}
+          loading={loading}
+          t={t}
+          value={highestSeverity ? t(`alertsCenter.severity.${highestSeverity}`) : noData}
+          valueClassName="metric-value-text"
+        />
+      </section>
+
+      <section className="alerts-layout">
+        <Panel eyebrow={t("alertsCenter.priority.eyebrow")} title={t("alertsCenter.priority.title")}>
+          {loading ? (
+            <EmptyState
+              detail={t("alertsCenter.loading.priorityDetail")}
+              title={t("alertsCenter.loading.priorityTitle")}
+            />
+          ) : priorityAlerts.length > 0 ? (
+            <div className="operator-priority-list">
+              {priorityAlerts.map((alert) => (
+                <div className={`operator-priority-item ${alert.severity}`} key={alert.id}>
+                  <AlertSeverityBadge severity={alert.severity} t={t} />
+                  <div>
+                    <strong>{alert.type}</strong>
+                    <span>{alert.entity}</span>
+                    <small>{alert.recommendedAction}</small>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              detail={t("alertsCenter.empty.priorityDetail")}
+              title={t("alertsCenter.empty.priorityTitle")}
+            />
+          )}
+        </Panel>
+
+        <Panel eyebrow={t("alertsCenter.summary.eyebrow")} title={t("alertsCenter.summary.title")}>
+          <div className="alerts-summary-card">
+            <div>
+              <span>{t("alertsCenter.summary.telemetry")}</span>
+              <strong>
+                {data.telemetrySummary?.data_freshness_status
+                  ? t(`telemetry.freshness.${data.telemetrySummary.data_freshness_status}`)
+                  : noData}
+              </strong>
+            </div>
+            <div>
+              <span>{t("alertsCenter.summary.rejected")}</span>
+              <strong>{formatNumber(data.rejected?.total, 0, noData, locale)}</strong>
+            </div>
+            <div>
+              <span>{t("alertsCenter.summary.mape")}</span>
+              <strong>{formatPercent(data.accuracy?.avg_mape, noData, locale)}</strong>
+            </div>
+            <div>
+              <span>{t("alertsCenter.summary.dependencies")}</span>
+              <strong>{formatNumber(Object.keys(data.system?.dependencies || {}).length, 0, noData, locale)}</strong>
+            </div>
+          </div>
+        </Panel>
+      </section>
+
+      <Panel eyebrow={t("alertsCenter.table.eyebrow")} title={t("alertsCenter.table.title")}>
+        {loading ? (
+          <EmptyState detail={t("alertsCenter.loading.tableDetail")} title={t("alertsCenter.loading.tableTitle")} />
+        ) : alerts.length > 0 ? (
+          <div className="alerts-table">
+            <div className="alerts-table-head">
+              <span>{t("alertsCenter.table.severity")}</span>
+              <span>{t("alertsCenter.table.category")}</span>
+              <span>{t("alertsCenter.table.alertType")}</span>
+              <span>{t("alertsCenter.table.entity")}</span>
+              <span>{t("alertsCenter.table.signalValue")}</span>
+              <span>{t("alertsCenter.table.status")}</span>
+              <span>{t("alertsCenter.table.sourceApi")}</span>
+              <span>{t("alertsCenter.table.recommendedAction")}</span>
+            </div>
+            {alerts.map((alert) => (
+              <div className="alerts-table-row" key={alert.id}>
+                <span><AlertSeverityBadge severity={alert.severity} t={t} /></span>
+                <span>{t(`alertsCenter.categories.${alert.category}`)}</span>
+                <strong>{alert.type}</strong>
+                <span>{alert.entity}</span>
+                <span>{alert.signalValue}</span>
+                <span>{t("alertsCenter.status.open")}</span>
+                <span>{alert.sourceApi}</span>
+                <span>{alert.recommendedAction}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState detail={t("alertsCenter.empty.tableDetail")} title={t("alertsCenter.empty.tableTitle")} />
+        )}
+      </Panel>
+    </section>
+  );
 }
 
 function ForecastInsightsSection({
@@ -2641,6 +3120,13 @@ function DashboardOverview({
             telemetrySummary={state.data.telemetrySummary}
             t={t}
           />
+        ) : activeSection === "alerts-center" ? (
+          <AlertsCenterSection
+            data={state.data}
+            locale={locale}
+            loading={state.loading}
+            t={t}
+          />
         ) : activeSection === "forecast-accuracy-lab" ? (
           <ForecastAccuracyLabSection
             locale={locale}
@@ -2898,6 +3384,11 @@ function DashboardOverview({
           margin-bottom: 0;
         }
 
+        .alerts-metric-grid {
+          grid-template-columns: repeat(7, minmax(0, 1fr));
+          margin-bottom: 0;
+        }
+
         .telemetry-metric-grid {
           grid-template-columns: repeat(4, minmax(0, 1fr));
           margin-bottom: 0;
@@ -2991,6 +3482,13 @@ function DashboardOverview({
         .forecast-insights-layout {
           display: grid;
           grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
+          gap: 18px;
+          align-items: start;
+        }
+
+        .alerts-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(340px, 0.72fr);
           gap: 18px;
           align-items: start;
         }
@@ -3322,6 +3820,192 @@ function DashboardOverview({
           font-size: 12px;
           overflow-wrap: anywhere;
           word-break: break-word;
+        }
+
+        .alerts-mvp-note {
+          display: grid;
+          gap: 6px;
+          border: 1px solid rgba(255, 122, 24, 0.22);
+          border-radius: 18px;
+          background: rgba(255, 122, 24, 0.08);
+          padding: 16px 18px;
+        }
+
+        .alerts-mvp-note strong {
+          color: #fffaf4;
+          font-size: 14px;
+        }
+
+        .alerts-mvp-note span {
+          color: rgba(245, 242, 237, 0.62);
+          font-size: 13px;
+          line-height: 1.45;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .alert-severity-badge {
+          display: inline-flex;
+          width: fit-content;
+          max-width: 100%;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 999px;
+          color: #fffaf4;
+          font-size: 11px;
+          font-weight: 900;
+          line-height: 1.2;
+          padding: 7px 10px;
+          text-transform: uppercase;
+          white-space: normal;
+        }
+
+        .alert-severity-badge.critical {
+          border-color: rgba(255, 95, 86, 0.38);
+          background: rgba(255, 95, 86, 0.12);
+          color: #ff9b94;
+        }
+
+        .alert-severity-badge.warning {
+          border-color: rgba(255, 183, 77, 0.38);
+          background: rgba(255, 183, 77, 0.12);
+          color: #ffd08a;
+        }
+
+        .alert-severity-badge.info {
+          border-color: rgba(255, 255, 255, 0.14);
+          background: rgba(255, 255, 255, 0.05);
+          color: rgba(245, 242, 237, 0.72);
+        }
+
+        .operator-priority-list,
+        .alerts-summary-card {
+          display: grid;
+          gap: 10px;
+        }
+
+        .operator-priority-item,
+        .alerts-summary-card div {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 14px;
+        }
+
+        .operator-priority-item {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          gap: 12px;
+          align-items: start;
+        }
+
+        .operator-priority-item.critical {
+          border-color: rgba(255, 95, 86, 0.28);
+          background: rgba(255, 95, 86, 0.08);
+        }
+
+        .operator-priority-item.warning {
+          border-color: rgba(255, 183, 77, 0.24);
+          background: rgba(255, 183, 77, 0.07);
+        }
+
+        .operator-priority-item strong,
+        .alerts-summary-card strong {
+          display: block;
+          color: #fffaf4;
+          font-size: 15px;
+          line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .operator-priority-item span,
+        .operator-priority-item small,
+        .alerts-summary-card span {
+          display: block;
+          margin-top: 5px;
+          color: rgba(245, 242, 237, 0.58);
+          font-size: 12px;
+          line-height: 1.45;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .operator-priority-item small {
+          color: #ffad66;
+        }
+
+        .alerts-table {
+          display: grid;
+          gap: 10px;
+          max-width: 100%;
+          overflow-x: visible;
+        }
+
+        .alerts-table-head,
+        .alerts-table-row {
+          display: grid;
+          grid-template-columns:
+            minmax(86px, 0.6fr)
+            minmax(92px, 0.65fr)
+            minmax(140px, 1fr)
+            minmax(130px, 0.9fr)
+            minmax(150px, 1fr)
+            minmax(72px, 0.48fr)
+            minmax(92px, 0.62fr)
+            minmax(220px, 1.55fr);
+          gap: 10px;
+          min-width: 0;
+          width: 100%;
+          align-items: start;
+        }
+
+        .alerts-table-head {
+          color: rgba(245, 242, 237, 0.46);
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          padding: 0 12px;
+          text-transform: uppercase;
+        }
+
+        .alerts-table-row {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 12px;
+        }
+
+        .alerts-table-row strong,
+        .alerts-table-row span {
+          color: rgba(245, 242, 237, 0.62);
+          font-size: 12px;
+          line-height: 1.4;
+          max-width: 100%;
+          min-width: 0;
+          overflow-wrap: anywhere;
+          white-space: normal;
+          word-break: break-word;
+        }
+
+        .alerts-table-row strong {
+          color: #fffaf4;
+          font-size: 13px;
+        }
+
+        .alerts-table-head span,
+        .alerts-table-row > span,
+        .alerts-table-row > strong {
+          min-width: 0;
+        }
+
+        .alerts-table-row > span:nth-child(6),
+        .alerts-table-row > span:nth-child(7) {
+          font-size: 11px;
+          line-height: 1.35;
+        }
+
+        .alerts-table-row > span:nth-child(8) {
+          line-height: 1.5;
         }
 
         .data-quality-filters {
@@ -4067,10 +4751,16 @@ function DashboardOverview({
           .accuracy-lab-layout,
           .providers-layout,
           .forecast-insights-layout,
+          .alerts-layout,
           .telemetry-layout,
           .data-quality-layout,
           .system-health-layout {
             grid-template-columns: 1fr;
+          }
+
+          .alerts-table-head,
+          .alerts-table-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
         }
 
@@ -4105,6 +4795,7 @@ function DashboardOverview({
           .accuracy-lab-metric-grid,
           .providers-metric-grid,
           .forecast-insights-metric-grid,
+          .alerts-metric-grid,
           .telemetry-metric-grid,
           .data-quality-metric-grid,
           .system-health-metric-grid,
@@ -4117,6 +4808,11 @@ function DashboardOverview({
 
           .pilot-grid,
           .target-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .alerts-table-head,
+          .alerts-table-row {
             grid-template-columns: 1fr;
           }
         }

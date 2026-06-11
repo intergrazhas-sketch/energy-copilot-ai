@@ -8,6 +8,7 @@
     "overview": "Обзор",
     "solarPlants": "Солнечные станции",
     "forecastInsights": "Инсайты прогноза",
+    "alertsCenter": "Центр алертов",
     "forecastAccuracyLab": "Лаборатория точности",
     "forecastProviders": "Провайдеры прогноза",
     "telemetry": "Телеметрия",
@@ -269,6 +270,131 @@
       "samples": "Выборки",
       "emptyTitle": "Сравнения провайдеров пока нет",
       "emptyDetail": "Сравнение появится после того, как /api/v1/accuracy-lab/providers/ranking вернёт ранжированные метрики."
+    }
+  },
+  "alertsCenter": {
+    "mvpLimit": {
+      "title": "Ограничения MVP",
+      "detail": "Алерты вычисляются из текущих ответов API. Сохранение, подтверждение и история будут добавлены позже."
+    },
+    "severity": {
+      "critical": "Критично",
+      "warning": "Предупреждение",
+      "info": "Инфо"
+    },
+    "categories": {
+      "telemetry": "Телеметрия",
+      "dataQuality": "Качество данных",
+      "forecast": "Прогноз",
+      "system": "Система",
+      "asset": "Актив"
+    },
+    "status": {
+      "open": "Вычислено как открыто"
+    },
+    "entities": {
+      "telemetryAsset": "Актив телеметрии",
+      "forecastAccuracy": "Точность прогноза",
+      "forecastRuns": "Запуски прогноза",
+      "varvarinskayaSpp": "Варваринская СЭС"
+    },
+    "kpi": {
+      "activeAlerts": "Активные алерты",
+      "activeAlertsHelper": "Вычислены из текущих ответов API",
+      "criticalAlerts": "Критичные алерты",
+      "criticalAlertsHelper": "Требуют внимания оператора",
+      "warningAlerts": "Предупреждения",
+      "warningAlertsHelper": "Сигналы для наблюдения",
+      "forecastAlerts": "Алерты прогноза",
+      "forecastAlertsHelper": "MAPE, провайдеры и запуски",
+      "dataQualityAlerts": "Алерты качества данных",
+      "dataQualityAlertsHelper": "Отклонённая телеметрия и валидация",
+      "systemAlerts": "Системные алерты",
+      "systemAlertsHelper": "Сигналы здоровья зависимостей",
+      "highestSeverity": "Максимальная важность",
+      "highestSeverityHelper": "Самый высокий уровень среди активных алертов"
+    },
+    "loading": {
+      "priorityTitle": "Загружаем приоритеты оператора",
+      "priorityDetail": "Вычисляем алерты из текущих данных Dashboard.",
+      "tableTitle": "Загружаем алерты",
+      "tableDetail": "Формируем строки алертов из существующих ответов API."
+    },
+    "empty": {
+      "priorityTitle": "Нет активных приоритетов оператора",
+      "priorityDetail": "Текущие ответы API не создают критичных алертов или предупреждений.",
+      "tableTitle": "Активных алертов нет",
+      "tableDetail": "Все вычисленные сигналы сейчас в пределах MVP-порогов."
+    },
+    "priority": {
+      "eyebrow": "Приоритет оператора",
+      "title": "Главные алерты"
+    },
+    "summary": {
+      "eyebrow": "Текущие сигналы",
+      "title": "Входные данные алертов",
+      "telemetry": "Свежесть телеметрии",
+      "rejected": "Отклонённая телеметрия",
+      "mape": "Текущий MAPE",
+      "dependencies": "Проверено зависимостей"
+    },
+    "table": {
+      "eyebrow": "Вычисленные алерты",
+      "title": "Таблица алертов",
+      "severity": "Важность",
+      "category": "Категория",
+      "alertType": "Тип алерта",
+      "entity": "Объект",
+      "signalValue": "Значение сигнала",
+      "status": "Статус",
+      "sourceApi": "Источник API",
+      "recommendedAction": "Рекомендуемое действие"
+    },
+    "alertTypes": {
+      "telemetryOffline": "Телеметрия недоступна",
+      "telemetryStale": "Телеметрия устаревает",
+      "telemetryGap": "Разрыв в телеметрии",
+      "rejectedTelemetry": "Есть отклонённая телеметрия",
+      "criticalRejectedReason": "Критичная причина отклонения",
+      "mapeAboveTarget": "MAPE выше цели",
+      "mapeAboveBaseline": "MAPE на уровне базы или выше",
+      "providerWorstMape": "Худший MAPE провайдера",
+      "strongForecastBias": "Сильное смещение прогноза",
+      "noForecastRuns": "Нет запусков прогноза",
+      "forecastRunStatus": "Запуски прогноза со сбоем или ожиданием",
+      "systemDependency": "Системная зависимость неисправна",
+      "solarPlantMissing": "Солнечная станция отсутствует",
+      "solarPlantInactive": "Солнечная станция неактивна"
+    },
+    "signals": {
+      "freshness": "Свежесть: {value}",
+      "dataGap": "Разрыв данных: {value}",
+      "rejectedTotal": "отклонённых сообщений: {value}",
+      "topRejectedReason": "{reason}: {count}",
+      "mapeTarget": "{current} против цели {target}",
+      "mapeBaseline": "{current} против базы {baseline}",
+      "providerMape": "MAPE {value}",
+      "bias": "Среднее смещение {value}",
+      "noForecastRuns": "Запуски не вернулись",
+      "forecastRunIssues": "запусков со сбоем или ожиданием: {count}",
+      "dependencyStatus": "Статус: {value}",
+      "plantMissing": "Станция не вернулась",
+      "plantStatus": "Статус: {value}"
+    },
+    "actions": {
+      "checkTelemetryConnection": "Проверить MQTT/SCADA подключение и время последней телеметрии.",
+      "checkTelemetryDelay": "Проверить задержку ingestion и подтвердить 15-минутный интервал телеметрии.",
+      "checkTelemetryGap": "Проверить историю телеметрии на пропущенные интервалы и upstream-разрывы.",
+      "reviewRejectedTelemetry": "Открыть Rejected Telemetry и проверить основные причины отклонения.",
+      "fixRejectedReason": "Исправить payload, topic или mapping станции для главной причины отклонения.",
+      "reviewForecastAccuracy": "Проверить Forecast Insights и сравнить текущий MAPE с целью.",
+      "escalateForecastQuality": "Эскалировать качество прогноза: текущий MAPE не улучшает базовый уровень.",
+      "compareForecastProviders": "Сравнить провайдеров и выбрать провайдера с минимальным MAPE для пилотной проверки.",
+      "reviewForecastBias": "Проверить, не завышает или не занижает ли прогноз фактическую генерацию систематически.",
+      "checkForecastScheduler": "Проверить, что задачи генерации прогноза выполняются.",
+      "checkForecastRuns": "Проверить failed или pending forecast runs.",
+      "checkSystemDependency": "Проверить неисправный сервис и его container/runtime logs.",
+      "checkSolarPlantRegistry": "Проверить реестр солнечных станций и статус пилотного актива."
     }
   },
   "providers": {
