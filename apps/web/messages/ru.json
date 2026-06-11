@@ -7,6 +7,7 @@
   "navigation": {
     "overview": "Обзор",
     "solarPlants": "Солнечные станции",
+    "forecastInsights": "Инсайты прогноза",
     "forecastAccuracyLab": "Лаборатория точности",
     "forecastProviders": "Провайдеры прогноза",
     "telemetry": "Телеметрия",
@@ -190,6 +191,84 @@
       "avgBias": "Средний Bias",
       "samples": "Выборки",
       "forecastRuns": "Запуски"
+    }
+  },
+  "forecastInsights": {
+    "common": {
+      "notEnoughData": "Недостаточно данных"
+    },
+    "empty": {
+      "unavailableTitle": "Инсайты прогноза недоступны",
+      "unavailableDetail": "Dashboard не смог загрузить сводку точности прогноза из существующего API."
+    },
+    "loading": {
+      "summaryTitle": "Загружаем инсайты",
+      "summaryDetail": "Загружаем точность прогноза, телеметрию и контекст актива.",
+      "providersTitle": "Загружаем сравнение провайдеров",
+      "providersDetail": "Получаем рейтинг провайдеров из Accuracy Lab."
+    },
+    "kpi": {
+      "currentMape": "Текущий MAPE",
+      "currentMapeHelper": {
+        "below": "Ниже цели пилота",
+        "above": "Выше цели пилота",
+        "noData": "Ожидаем агрегаты точности"
+      },
+      "baseline": "Базовый MAPE",
+      "baselineValue": "14%",
+      "baselineHelper": "Базовый уровень пилота до оптимизации",
+      "target": "Целевой MAPE",
+      "targetValue": "<10%",
+      "targetHelper": "Целевой порог пилота",
+      "improvement": "Улучшение к базе",
+      "improvementHelper": "Положительное значение означает MAPE ниже 14%",
+      "bestProvider": "Лучший провайдер",
+      "bestProviderHelper": "Минимальный MAPE в рейтинге провайдеров",
+      "daysBelowTarget": "Дней ниже цели",
+      "daysBelowTargetHelper": "Нужны дневные бакеты точности"
+    },
+    "trend": {
+      "eyebrow": "Тренд MAPE",
+      "title": "Прогресс от базы к цели",
+      "emptyTitle": "Для тренда нужны дневные бакеты точности",
+      "emptyDetail": "Текущий API сводки возвращает агрегированные метрики точности, а не дневной ряд MAPE. Без данных уровня бакетов тренд не строится.",
+      "baseline": "База",
+      "target": "Цель"
+    },
+    "summary": {
+      "eyebrow": "Вывод по пилоту",
+      "title": "Сводка инсайтов",
+      "pilotAsset": "Пилотный актив",
+      "currentVsBaseline": "Текущий MAPE к базе",
+      "currentVsBaselineValue": "{current} против {baseline}",
+      "targetStatus": "Статус цели",
+      "targetStatusValue": {
+        "below": "Текущий MAPE ниже цели <10%",
+        "above": "Текущий MAPE выше цели <10%",
+        "noData": "Для статуса цели нужны данные точности"
+      },
+      "bestProvider": "Лучший провайдер",
+      "bias": "Сигнал смещения",
+      "biasValue": {
+        "positive": "Среднее смещение {value}; прогнозы обычно выше фактической генерации",
+        "negative": "Среднее смещение {value}; прогнозы обычно ниже фактической генерации",
+        "neutral": "Среднее смещение {value}; выраженного направления нет",
+        "noData": "Для оценки смещения нужны агрегаты точности"
+      },
+      "dataCoverage": "Покрытие данных",
+      "dataCoverageValue": "{runs} запусков, {samples} выборок, {telemetry} точек телеметрии"
+    },
+    "providers": {
+      "eyebrow": "Сравнение провайдеров",
+      "title": "Метрики точности по провайдерам",
+      "provider": "Провайдер",
+      "mape": "MAPE",
+      "rmse": "RMSE",
+      "mae": "MAE",
+      "bias": "Bias",
+      "samples": "Выборки",
+      "emptyTitle": "Сравнения провайдеров пока нет",
+      "emptyDetail": "Сравнение появится после того, как /api/v1/accuracy-lab/providers/ranking вернёт ранжированные метрики."
     }
   },
   "providers": {

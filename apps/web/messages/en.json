@@ -7,6 +7,7 @@
   "navigation": {
     "overview": "Overview",
     "solarPlants": "Solar Plants",
+    "forecastInsights": "Forecast Insights",
     "forecastAccuracyLab": "Forecast Accuracy Lab",
     "forecastProviders": "Forecast Providers",
     "telemetry": "Telemetry",
@@ -190,6 +191,84 @@
       "avgBias": "Avg Bias",
       "samples": "Samples",
       "forecastRuns": "Runs"
+    }
+  },
+  "forecastInsights": {
+    "common": {
+      "notEnoughData": "Not enough data"
+    },
+    "empty": {
+      "unavailableTitle": "Forecast Insights unavailable",
+      "unavailableDetail": "The dashboard could not load forecast accuracy summary data from the existing API."
+    },
+    "loading": {
+      "summaryTitle": "Loading insights",
+      "summaryDetail": "Loading forecast accuracy, telemetry and asset context.",
+      "providersTitle": "Loading provider comparison",
+      "providersDetail": "Loading provider ranking from Accuracy Lab."
+    },
+    "kpi": {
+      "currentMape": "Current MAPE",
+      "currentMapeHelper": {
+        "below": "Below the pilot target",
+        "above": "Above the pilot target",
+        "noData": "Awaiting accuracy aggregates"
+      },
+      "baseline": "Baseline MAPE",
+      "baselineValue": "14%",
+      "baselineHelper": "Pilot baseline before optimization",
+      "target": "Target MAPE",
+      "targetValue": "<10%",
+      "targetHelper": "Pilot target threshold",
+      "improvement": "Improvement vs baseline",
+      "improvementHelper": "Positive means MAPE is lower than 14%",
+      "bestProvider": "Best provider",
+      "bestProviderHelper": "Lowest MAPE in provider ranking",
+      "daysBelowTarget": "Days below target",
+      "daysBelowTargetHelper": "Requires daily accuracy buckets"
+    },
+    "trend": {
+      "eyebrow": "MAPE Trend",
+      "title": "Baseline to Target Progress",
+      "emptyTitle": "Trend requires daily accuracy buckets",
+      "emptyDetail": "The current summary API returns aggregate accuracy metrics, not a daily MAPE series. No trend is drawn without bucket-level data.",
+      "baseline": "Baseline",
+      "target": "Target"
+    },
+    "summary": {
+      "eyebrow": "Pilot Readout",
+      "title": "Insights Summary",
+      "pilotAsset": "Pilot asset",
+      "currentVsBaseline": "Current MAPE vs baseline",
+      "currentVsBaselineValue": "{current} vs {baseline}",
+      "targetStatus": "Target status",
+      "targetStatusValue": {
+        "below": "Current MAPE is below the <10% target",
+        "above": "Current MAPE is above the <10% target",
+        "noData": "Target status requires accuracy data"
+      },
+      "bestProvider": "Best provider",
+      "bias": "Bias signal",
+      "biasValue": {
+        "positive": "Average bias is {value}; forecasts trend above actual generation",
+        "negative": "Average bias is {value}; forecasts trend below actual generation",
+        "neutral": "Average bias is {value}; no strong directional bias",
+        "noData": "Bias requires accuracy aggregates"
+      },
+      "dataCoverage": "Data coverage",
+      "dataCoverageValue": "{runs} runs, {samples} samples, {telemetry} telemetry points"
+    },
+    "providers": {
+      "eyebrow": "Provider Comparison",
+      "title": "Accuracy Metrics by Provider",
+      "provider": "Provider",
+      "mape": "MAPE",
+      "rmse": "RMSE",
+      "mae": "MAE",
+      "bias": "Bias",
+      "samples": "Samples",
+      "emptyTitle": "No provider comparison yet",
+      "emptyDetail": "Provider comparison will appear after /api/v1/accuracy-lab/providers/ranking returns ranked metrics."
     }
   },
   "providers": {

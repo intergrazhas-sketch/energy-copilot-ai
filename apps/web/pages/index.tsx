@@ -167,6 +167,7 @@ const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "";
 const navigationItems = [
   { key: "overview", labelKey: "overview" },
   { key: "solar-plants", labelKey: "solarPlants" },
+  { key: "forecast-insights", labelKey: "forecastInsights" },
   { key: "forecast-accuracy-lab", labelKey: "forecastAccuracyLab" },
   { key: "forecast-providers", labelKey: "forecastProviders" },
   { key: "telemetry", labelKey: "telemetry" },
@@ -218,6 +219,9 @@ const rejectionReasons = [
   "db_error",
   "unknown_error",
 ] as const;
+
+const forecastBaselineMape = 14;
+const forecastTargetMape = 10;
 
 const messages = {
   en: enMessages,
@@ -310,6 +314,19 @@ function formatPercent(
     return fallback;
   }
   return `${formatNumber(value, 2, fallback, locale)}%`;
+}
+
+function formatSignedPercent(
+  value: number | null | undefined,
+  fallback = "",
+  locale: Locale = "en",
+) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return fallback;
+  }
+
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${formatNumber(value, 1, fallback, locale)}%`;
 }
 
 function formatTranslatedUnit(
@@ -817,6 +834,226 @@ function getAccuracyTargetStatus(avgMape: number | null | undefined) {
     return "onTarget";
   }
   return "aboveTarget";
+}
+
+function ForecastInsightsSection({
+  summary,
+  ranking,
+  forecastRuns,
+  telemetrySummary,
+  plants,
+  loading,
+  locale,
+  t,
+}: {
+  summary: AccuracySummary | null;
+  ranking: AccuracyProviderRankingResponse | null;
+  forecastRuns: ForecastRun[];
+  telemetrySummary: TelemetrySummary | null;
+  plants: SolarPlant[];
+  loading: boolean;
+  locale: Locale;
+  t: Translate;
+}) {
+  const noData = t("common.noData");
+  const notEnoughData = t("forecastInsights.common.notEnoughData");
+  const rankingProviders = ranking?.providers || [];
+  const rankedProviders = rankingProviders.filter(
+    (provider) => provider.avg_mape !== null && !Number.isNaN(provider.avg_mape),
+  );
+  const bestProvider = rankedProviders[0];
+  const currentMape = summary?.avg_mape ?? null;
+  const improvement =
+    currentMape === null || Number.isNaN(currentMape)
+      ? null
+      : ((forecastBaselineMape - currentMape) / forecastBaselineMape) * 100;
+  const targetStatus =
+    currentMape === null || Number.isNaN(currentMape)
+      ? "noData"
+      : currentMape < forecastTargetMape
+        ? "below"
+        : "above";
+  const avgBias = summary?.avg_bias ?? null;
+  const hasBias = avgBias !== null && !Number.isNaN(avgBias);
+  const biasTone = !hasBias
+    ? "noData"
+    : Math.abs(avgBias || 0) < 0.1
+      ? "neutral"
+      : (avgBias || 0) > 0
+        ? "positive"
+        : "negative";
+  const pilotPlant =
+    plants.find((plant) => plant.name.toLowerCase().includes("varvar")) || plants[0] || null;
+
+  return (
+    <section className="section-stack">
+      {!loading && !summary ? (
+        <EmptyState
+          detail={t("forecastInsights.empty.unavailableDetail")}
+          title={t("forecastInsights.empty.unavailableTitle")}
+        />
+      ) : null}
+
+      <section className="metric-grid forecast-insights-metric-grid">
+        <MetricCard
+          helper={t(`forecastInsights.kpi.currentMapeHelper.${targetStatus}`)}
+          label={t("forecastInsights.kpi.currentMape")}
+          loading={loading}
+          t={t}
+          value={formatPercent(currentMape, noData, locale)}
+        />
+        <MetricCard
+          helper={t("forecastInsights.kpi.baselineHelper")}
+          label={t("forecastInsights.kpi.baseline")}
+          loading={loading}
+          t={t}
+          value={t("forecastInsights.kpi.baselineValue")}
+        />
+        <MetricCard
+          helper={t("forecastInsights.kpi.targetHelper")}
+          label={t("forecastInsights.kpi.target")}
+          loading={loading}
+          t={t}
+          value={t("forecastInsights.kpi.targetValue")}
+        />
+        <MetricCard
+          helper={t("forecastInsights.kpi.improvementHelper")}
+          label={t("forecastInsights.kpi.improvement")}
+          loading={loading}
+          t={t}
+          value={formatSignedPercent(improvement, noData, locale)}
+        />
+        <MetricCard
+          helper={t("forecastInsights.kpi.bestProviderHelper")}
+          label={t("forecastInsights.kpi.bestProvider")}
+          loading={loading}
+          t={t}
+          value={translateProviderName(bestProvider?.provider_name, bestProvider?.provider_code, t, noData)}
+          valueClassName="metric-value-text"
+        />
+        <MetricCard
+          helper={t("forecastInsights.kpi.daysBelowTargetHelper")}
+          label={t("forecastInsights.kpi.daysBelowTarget")}
+          loading={loading}
+          t={t}
+          value={notEnoughData}
+          valueClassName="metric-value-text"
+        />
+      </section>
+
+      <section className="forecast-insights-layout">
+        <Panel eyebrow={t("forecastInsights.trend.eyebrow")} title={t("forecastInsights.trend.title")}>
+          <EmptyState
+            detail={t("forecastInsights.trend.emptyDetail")}
+            title={t("forecastInsights.trend.emptyTitle")}
+          />
+          <div className="forecast-thresholds">
+            <div>
+              <span>{t("forecastInsights.trend.baseline")}</span>
+              <strong>{t("forecastInsights.kpi.baselineValue")}</strong>
+            </div>
+            <div>
+              <span>{t("forecastInsights.trend.target")}</span>
+              <strong>{t("forecastInsights.kpi.targetValue")}</strong>
+            </div>
+          </div>
+        </Panel>
+
+        <Panel eyebrow={t("forecastInsights.summary.eyebrow")} title={t("forecastInsights.summary.title")}>
+          {loading ? (
+            <EmptyState
+              detail={t("forecastInsights.loading.summaryDetail")}
+              title={t("forecastInsights.loading.summaryTitle")}
+            />
+          ) : (
+            <div className="forecast-insights-summary">
+              <div>
+                <span>{t("forecastInsights.summary.pilotAsset")}</span>
+                <strong>{pilotPlant?.name || noData}</strong>
+              </div>
+              <div>
+                <span>{t("forecastInsights.summary.currentVsBaseline")}</span>
+                <strong>
+                  {currentMape === null || Number.isNaN(currentMape)
+                    ? notEnoughData
+                    : t("forecastInsights.summary.currentVsBaselineValue", {
+                        current: formatPercent(currentMape, noData, locale),
+                        baseline: t("forecastInsights.kpi.baselineValue"),
+                      })}
+                </strong>
+              </div>
+              <div>
+                <span>{t("forecastInsights.summary.targetStatus")}</span>
+                <strong>{t(`forecastInsights.summary.targetStatusValue.${targetStatus}`)}</strong>
+              </div>
+              <div>
+                <span>{t("forecastInsights.summary.bestProvider")}</span>
+                <strong>{translateProviderName(bestProvider?.provider_name, bestProvider?.provider_code, t, noData)}</strong>
+              </div>
+              <div>
+                <span>{t("forecastInsights.summary.bias")}</span>
+                <strong>
+                  {hasBias
+                    ? t(`forecastInsights.summary.biasValue.${biasTone}`, {
+                        value: formatNumber(avgBias, 2, noData, locale),
+                      })
+                    : notEnoughData}
+                </strong>
+              </div>
+              <div>
+                <span>{t("forecastInsights.summary.dataCoverage")}</span>
+                <strong>
+                  {t("forecastInsights.summary.dataCoverageValue", {
+                    runs: formatNumber(summary?.forecast_runs_count ?? forecastRuns.length, 0, noData, locale),
+                    samples: formatNumber(summary?.samples_count, 0, noData, locale),
+                    telemetry: formatNumber(telemetrySummary?.telemetry_points_count, 0, noData, locale),
+                  })}
+                </strong>
+              </div>
+            </div>
+          )}
+        </Panel>
+      </section>
+
+      <Panel eyebrow={t("forecastInsights.providers.eyebrow")} title={t("forecastInsights.providers.title")}>
+        {loading ? (
+          <EmptyState
+            detail={t("forecastInsights.loading.providersDetail")}
+            title={t("forecastInsights.loading.providersTitle")}
+          />
+        ) : rankingProviders.length > 0 ? (
+          <div className="forecast-insights-provider-table">
+            <div className="forecast-insights-provider-head">
+              <span>{t("forecastInsights.providers.provider")}</span>
+              <span>{t("forecastInsights.providers.mape")}</span>
+              <span>{t("forecastInsights.providers.rmse")}</span>
+              <span>{t("forecastInsights.providers.mae")}</span>
+              <span>{t("forecastInsights.providers.bias")}</span>
+              <span>{t("forecastInsights.providers.samples")}</span>
+            </div>
+            {rankingProviders.map((provider) => (
+              <div className="forecast-insights-provider-row" key={provider.provider_id}>
+                <span>
+                  <strong>{translateProviderName(provider.provider_name, provider.provider_code, t, noData)}</strong>
+                  <small>{provider.provider_code}</small>
+                </span>
+                <span>{formatPercent(provider.avg_mape, noData, locale)}</span>
+                <span>{formatNumber(provider.avg_rmse, 2, noData, locale)}</span>
+                <span>{formatNumber(provider.avg_mae, 2, noData, locale)}</span>
+                <span>{formatNumber(provider.avg_bias, 2, noData, locale)}</span>
+                <span>{formatNumber(provider.samples_count, 0, noData, locale)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            detail={t("forecastInsights.providers.emptyDetail")}
+            title={t("forecastInsights.providers.emptyTitle")}
+          />
+        )}
+      </Panel>
+    </section>
+  );
 }
 
 function ForecastAccuracyLabSection({
@@ -2393,6 +2630,17 @@ function DashboardOverview({
             loading={state.loading}
             t={t}
           />
+        ) : activeSection === "forecast-insights" ? (
+          <ForecastInsightsSection
+            forecastRuns={state.data.forecastRuns}
+            locale={locale}
+            loading={state.loading}
+            plants={state.data.plants}
+            ranking={state.data.accuracyRanking}
+            summary={state.data.accuracy}
+            telemetrySummary={state.data.telemetrySummary}
+            t={t}
+          />
         ) : activeSection === "forecast-accuracy-lab" ? (
           <ForecastAccuracyLabSection
             locale={locale}
@@ -2645,6 +2893,11 @@ function DashboardOverview({
           margin-bottom: 0;
         }
 
+        .forecast-insights-metric-grid {
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          margin-bottom: 0;
+        }
+
         .telemetry-metric-grid {
           grid-template-columns: repeat(4, minmax(0, 1fr));
           margin-bottom: 0;
@@ -2731,6 +2984,13 @@ function DashboardOverview({
         .providers-layout {
           display: grid;
           grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
+          gap: 18px;
+          align-items: start;
+        }
+
+        .forecast-insights-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
           gap: 18px;
           align-items: start;
         }
@@ -2965,6 +3225,103 @@ function DashboardOverview({
         .provider-comparison-card small {
           margin-top: 8px;
           color: #ffad66;
+        }
+
+        .forecast-thresholds {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin-top: 14px;
+        }
+
+        .forecast-thresholds div,
+        .forecast-insights-summary div {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 14px;
+        }
+
+        .forecast-thresholds span,
+        .forecast-insights-summary span {
+          display: block;
+          color: rgba(245, 242, 237, 0.54);
+          font-size: 12px;
+          font-weight: 800;
+          line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .forecast-thresholds strong,
+        .forecast-insights-summary strong {
+          display: block;
+          margin-top: 8px;
+          color: #fffaf4;
+          font-size: 15px;
+          line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .forecast-insights-summary {
+          display: grid;
+          gap: 10px;
+        }
+
+        .forecast-insights-provider-table {
+          display: grid;
+          gap: 10px;
+          overflow-x: auto;
+        }
+
+        .forecast-insights-provider-head,
+        .forecast-insights-provider-row {
+          display: grid;
+          grid-template-columns: minmax(190px, 1.4fr) repeat(5, minmax(110px, 0.8fr));
+          gap: 12px;
+          min-width: 820px;
+          align-items: center;
+        }
+
+        .forecast-insights-provider-head {
+          color: rgba(245, 242, 237, 0.46);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          padding: 0 12px;
+          text-transform: uppercase;
+        }
+
+        .forecast-insights-provider-row {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 12px;
+        }
+
+        .forecast-insights-provider-row span {
+          color: rgba(245, 242, 237, 0.62);
+          font-size: 13px;
+          min-width: 0;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .forecast-insights-provider-row strong {
+          display: block;
+          color: #fffaf4;
+          font-size: 14px;
+          line-height: 1.35;
+        }
+
+        .forecast-insights-provider-row small {
+          display: block;
+          margin-top: 4px;
+          color: rgba(245, 242, 237, 0.44);
+          font-size: 12px;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .data-quality-filters {
@@ -3709,6 +4066,7 @@ function DashboardOverview({
           .solar-layout,
           .accuracy-lab-layout,
           .providers-layout,
+          .forecast-insights-layout,
           .telemetry-layout,
           .data-quality-layout,
           .system-health-layout {
@@ -3746,11 +4104,13 @@ function DashboardOverview({
           .solar-metric-grid,
           .accuracy-lab-metric-grid,
           .providers-metric-grid,
+          .forecast-insights-metric-grid,
           .telemetry-metric-grid,
           .data-quality-metric-grid,
           .system-health-metric-grid,
           .data-quality-filters,
           .accuracy-grid,
+          .forecast-thresholds,
           .platform-status-grid {
             grid-template-columns: 1fr;
           }

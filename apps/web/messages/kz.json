@@ -7,6 +7,7 @@
   "navigation": {
     "overview": "Шолу",
     "solarPlants": "Күн станциялары",
+    "forecastInsights": "Болжам талдауы",
     "forecastAccuracyLab": "Дәлдік зертханасы",
     "forecastProviders": "Болжам провайдерлері",
     "telemetry": "Телеметрия",
@@ -190,6 +191,84 @@
       "avgBias": "Орташа Bias",
       "samples": "Үлгілер",
       "forecastRuns": "Іске қосулар"
+    }
+  },
+  "forecastInsights": {
+    "common": {
+      "notEnoughData": "Дерек жеткіліксіз"
+    },
+    "empty": {
+      "unavailableTitle": "Болжам талдауы қолжетімсіз",
+      "unavailableDetail": "Dashboard қолданыстағы API арқылы болжам дәлдігі жиынтығын жүктей алмады."
+    },
+    "loading": {
+      "summaryTitle": "Талдау жүктелуде",
+      "summaryDetail": "Болжам дәлдігі, телеметрия және актив контексті жүктелуде.",
+      "providersTitle": "Провайдер салыстыруы жүктелуде",
+      "providersDetail": "Accuracy Lab провайдерлер рейтингі жүктелуде."
+    },
+    "kpi": {
+      "currentMape": "Ағымдағы MAPE",
+      "currentMapeHelper": {
+        "below": "Пилот мақсатынан төмен",
+        "above": "Пилот мақсатынан жоғары",
+        "noData": "Дәлдік агрегаттары күтілуде"
+      },
+      "baseline": "Базалық MAPE",
+      "baselineValue": "14%",
+      "baselineHelper": "Оңтайландыруға дейінгі пилот базасы",
+      "target": "Мақсатты MAPE",
+      "targetValue": "<10%",
+      "targetHelper": "Пилоттың мақсатты шегі",
+      "improvement": "Базаға қарағандағы жақсару",
+      "improvementHelper": "Оң мән MAPE 14%-дан төмен екенін білдіреді",
+      "bestProvider": "Үздік провайдер",
+      "bestProviderHelper": "Провайдер рейтингіндегі ең төмен MAPE",
+      "daysBelowTarget": "Мақсаттан төмен күндер",
+      "daysBelowTargetHelper": "Күндік дәлдік бакеттері қажет"
+    },
+    "trend": {
+      "eyebrow": "MAPE тренді",
+      "title": "Базадан мақсатқа дейінгі прогресс",
+      "emptyTitle": "Тренд үшін күндік дәлдік бакеттері қажет",
+      "emptyDetail": "Қазіргі жиынтық API дәлдіктің агрегатталған метрикаларын қайтарады, бірақ күндік MAPE қатарын бермейді. Бакет деңгейіндегі дерексіз тренд салынбайды.",
+      "baseline": "База",
+      "target": "Мақсат"
+    },
+    "summary": {
+      "eyebrow": "Пилот қорытындысы",
+      "title": "Талдау жиынтығы",
+      "pilotAsset": "Пилоттық актив",
+      "currentVsBaseline": "Ағымдағы MAPE және база",
+      "currentVsBaselineValue": "{current} және {baseline}",
+      "targetStatus": "Мақсат статусы",
+      "targetStatusValue": {
+        "below": "Ағымдағы MAPE <10% мақсатынан төмен",
+        "above": "Ағымдағы MAPE <10% мақсатынан жоғары",
+        "noData": "Мақсат статусына дәлдік деректері қажет"
+      },
+      "bestProvider": "Үздік провайдер",
+      "bias": "Ауытқу сигналы",
+      "biasValue": {
+        "positive": "Орташа ауытқу {value}; болжамдар нақты генерациядан жоғарырақ",
+        "negative": "Орташа ауытқу {value}; болжамдар нақты генерациядан төменірек",
+        "neutral": "Орташа ауытқу {value}; айқын бағыт жоқ",
+        "noData": "Ауытқуды бағалау үшін дәлдік агрегаттары қажет"
+      },
+      "dataCoverage": "Дерек қамтуы",
+      "dataCoverageValue": "{runs} іске қосу, {samples} үлгі, {telemetry} телеметрия нүктесі"
+    },
+    "providers": {
+      "eyebrow": "Провайдерлерді салыстыру",
+      "title": "Провайдерлер бойынша дәлдік метрикалары",
+      "provider": "Провайдер",
+      "mape": "MAPE",
+      "rmse": "RMSE",
+      "mae": "MAE",
+      "bias": "Bias",
+      "samples": "Үлгілер",
+      "emptyTitle": "Провайдер салыстыруы әлі жоқ",
+      "emptyDetail": "Салыстыру /api/v1/accuracy-lab/providers/ranking ранжирленген метрикаларды қайтарғаннан кейін пайда болады."
     }
   },
   "providers": {
