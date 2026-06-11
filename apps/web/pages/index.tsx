@@ -177,6 +177,26 @@ const navigationItems = [
 type SectionKey = (typeof navigationItems)[number]["key"];
 
 const locales: Locale[] = ["en", "ru", "kz"];
+const intlLocales: Record<Locale, string> = {
+  en: "en-US",
+  ru: "ru-RU",
+  kz: "kk-KZ",
+};
+
+const compactKzMonths = [
+  "қаң",
+  "ақп",
+  "нау",
+  "сәу",
+  "мам",
+  "мау",
+  "шіл",
+  "там",
+  "қыр",
+  "қаз",
+  "қар",
+  "жел",
+];
 
 const dataQualityPeriods: Array<{ key: DataQualityPeriodKey; labelKey: string; hours: number }> = [
   { key: "24h", labelKey: "last24h", hours: 24 },
@@ -267,20 +287,29 @@ async function fetchJson<T>(path: string, params?: Record<string, string>): Prom
   return response.json() as Promise<T>;
 }
 
-function formatNumber(value: number | null | undefined, digits = 1, fallback = "") {
+function formatNumber(
+  value: number | null | undefined,
+  digits = 1,
+  fallback = "",
+  locale: Locale = "en",
+) {
   if (value === null || value === undefined || Number.isNaN(value)) {
     return fallback;
   }
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(intlLocales[locale], {
     maximumFractionDigits: digits,
   }).format(value);
 }
 
-function formatPercent(value: number | null | undefined, fallback = "") {
+function formatPercent(
+  value: number | null | undefined,
+  fallback = "",
+  locale: Locale = "en",
+) {
   if (value === null || value === undefined || Number.isNaN(value)) {
     return fallback;
   }
-  return `${formatNumber(value, 2, fallback)}%`;
+  return `${formatNumber(value, 2, fallback, locale)}%`;
 }
 
 function formatTranslatedUnit(
@@ -289,13 +318,33 @@ function formatTranslatedUnit(
   t: Translate,
   fallback: string,
   digits = 1,
+  locale: Locale = "en",
 ) {
-  const formattedValue = formatNumber(value, digits, "");
+  const formattedValue = formatNumber(value, digits, "", locale);
   return formattedValue ? t(unitKey, { value: formattedValue }) : fallback;
+}
+
+function normalizeMachineValue(value: string) {
+  return value.trim().toLowerCase().replaceAll("-", "_").replaceAll(" ", "_");
 }
 
 function normalizeReason(value: string) {
   return value.replaceAll("_", " ");
+}
+
+function translateMachineValue(namespace: string, value: string | undefined, t: Translate, fallback: string) {
+  if (!value) {
+    return fallback;
+  }
+
+  const normalized = normalizeMachineValue(value);
+  const key = `${namespace}.${normalized}`;
+  const translated = t(key);
+  return translated === key ? value : translated;
+}
+
+function translateStatusLabel(status: string | undefined | null, t: Translate, fallback: string) {
+  return translateMachineValue("status", status || undefined, t, fallback);
 }
 
 function translateRejectionReason(reason: string | undefined, t: Translate, fallback: string) {
@@ -308,11 +357,65 @@ function translateRejectionReason(reason: string | undefined, t: Translate, fall
   return translated === key ? normalizeReason(reason) : translated;
 }
 
-function formatCapacityMw(valueKw: number, fallback: string) {
-  return `${formatNumber(valueKw / 1000, 2, fallback)} MW`;
+function translateTelemetrySource(source: string | undefined, t: Translate, fallback: string) {
+  return translateMachineValue("telemetry.sources", source, t, fallback);
 }
 
-function formatPlantLocation(plant: SolarPlant, fallback: string) {
+function translateTelemetryQuality(quality: string | undefined, t: Translate, fallback: string) {
+  return translateMachineValue("telemetry.quality", quality, t, fallback);
+}
+
+function getProviderDisplayKey(name: string | undefined, code?: string) {
+  const normalized = `${code || ""} ${name || ""}`.toLowerCase();
+  if (normalized.includes("manual")) {
+    return "manualForecast";
+  }
+  if (normalized.includes("mock")) {
+    return "mockForecast";
+  }
+  return null;
+}
+
+function translateProviderName(
+  name: string | undefined,
+  code: string | undefined,
+  t: Translate,
+  fallback: string,
+) {
+  if (!name) {
+    return fallback;
+  }
+
+  const displayKey = getProviderDisplayKey(name, code);
+  if (!displayKey) {
+    return name;
+  }
+
+  const key = `forecastProviders.demoNames.${displayKey}`;
+  const translated = t(key);
+  return translated === key ? name : translated;
+}
+
+function translateProviderType(providerType: string | undefined, t: Translate, fallback: string) {
+  return translateMachineValue("forecastProviders.providerTypes", providerType, t, fallback);
+}
+
+function translateMonitoringStatusValue(
+  status: string | undefined | null,
+  t: Translate,
+  fallback: string,
+) {
+  if (!status) {
+    return fallback;
+  }
+  return t(`systemHealth.status.${getMonitoringStatus(status)}`);
+}
+
+function formatCapacityMw(valueKw: number, fallback: string, locale: Locale = "en") {
+  return `${formatNumber(valueKw / 1000, 2, fallback, locale)} MW`;
+}
+
+function formatPlantLocation(plant: SolarPlant, fallback: string, locale: Locale = "en") {
   if (plant.latitude === null || plant.latitude === undefined) {
     return fallback;
   }
@@ -321,14 +424,21 @@ function formatPlantLocation(plant: SolarPlant, fallback: string) {
     return fallback;
   }
 
-  return `${formatNumber(plant.latitude, 4, fallback)}, ${formatNumber(
+  return `${formatNumber(plant.latitude, 4, fallback, locale)}, ${formatNumber(
     plant.longitude,
     4,
     fallback,
+    locale,
   )}`;
 }
 
-function formatDate(value: string | undefined, fallback: string) {
+function formatTimeParts(date: Date) {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+function formatDate(value: string | undefined, fallback: string, locale: Locale = "en") {
   if (!value) {
     return fallback;
   }
@@ -338,14 +448,22 @@ function formatDate(value: string | undefined, fallback: string) {
     return fallback;
   }
 
-  return date.toLocaleDateString("en-US", {
+  if (locale === "kz") {
+    return `${date.getDate()} ${compactKzMonths[date.getMonth()]} ${date.getFullYear()}`;
+  }
+
+  return date.toLocaleDateString(intlLocales[locale], {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 }
 
-function formatDateTime(value: string | null | undefined, fallback: string) {
+function formatDateTime(
+  value: string | null | undefined,
+  fallback: string,
+  locale: Locale = "en",
+) {
   if (!value) {
     return fallback;
   }
@@ -355,12 +473,19 @@ function formatDateTime(value: string | null | undefined, fallback: string) {
     return fallback;
   }
 
-  return date.toLocaleString("en-US", {
+  if (locale === "kz") {
+    return `${date.getDate()} ${compactKzMonths[date.getMonth()]} ${date.getFullYear()}, ${formatTimeParts(
+      date,
+    )}`;
+  }
+
+  return date.toLocaleString(intlLocales[locale], {
     year: "numeric",
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: locale === "en",
   });
 }
 
@@ -462,29 +587,18 @@ function translateEnvironment(value: string | undefined, t: Translate, fallback:
     return fallback;
   }
 
-  const key = `systemHealth.environments.${value}`;
+  const key = `systemHealth.environments.${normalizeMachineValue(value)}`;
   const translated = t(key);
   return translated === key ? value : translated;
 }
 
 function StatusBadge({ status, t }: { status?: string; t: Translate }) {
-  const normalized = status || "unknown";
-  const displayStatus = [
-    "ok",
-    "active",
-    "inactive",
-    "degraded",
-    "open",
-    "fixed",
-    "ignored",
-    "unknown",
-  ].includes(normalized)
-    ? t(`status.${normalized}`)
-    : normalized;
+  const normalized = normalizeMachineValue(status || "unknown");
+  const displayStatus = translateStatusLabel(normalized, t, normalized);
   const tone =
     normalized === "ok" || normalized === "active" || normalized === "fixed"
       ? "good"
-      : normalized === "degraded" || normalized === "open"
+      : normalized === "degraded" || normalized === "open" || normalized === "warning"
         ? "warning"
         : "muted";
 
@@ -563,10 +677,12 @@ function SectionPlaceholder({
 function SolarPlantsSection({
   plants,
   loading,
+  locale,
   t,
 }: {
   plants: SolarPlant[];
   loading: boolean;
+  locale: Locale;
   t: Translate;
 }) {
   const noData = t("common.noData");
@@ -581,23 +697,23 @@ function SolarPlantsSection({
           label={t("solarPlants.kpi.totalPlants")}
           loading={loading}
           t={t}
-          value={formatNumber(plants.length, 0, noData)}
+          value={formatNumber(plants.length, 0, noData, locale)}
         />
         <MetricCard
           helper={t("solarPlants.kpi.activePlantsHelper")}
           label={t("solarPlants.kpi.activePlants")}
           loading={loading}
           t={t}
-          value={formatNumber(activePlants, 0, noData)}
+          value={formatNumber(activePlants, 0, noData, locale)}
         />
         <MetricCard
-          helper={formatCapacityMw(totalCapacityKw, noData)}
+          helper={formatCapacityMw(totalCapacityKw, noData, locale)}
           label={t("solarPlants.kpi.totalCapacity")}
           loading={loading}
           t={t}
           value={t("solarPlants.kpi.capacityValue", {
-            kw: formatNumber(totalCapacityKw, 0, noData),
-            mw: formatNumber(totalCapacityKw / 1000, 2, noData),
+            kw: formatNumber(totalCapacityKw, 0, noData, locale),
+            mw: formatNumber(totalCapacityKw / 1000, 2, noData, locale),
           })}
         />
         <MetricCard
@@ -628,16 +744,16 @@ function SolarPlantsSection({
                   <strong>{plant.name}</strong>
                   <span>
                     {t("solarPlants.table.capacityValue", {
-                      kw: formatNumber(plant.capacity_kw, 0, noData),
-                      mw: formatNumber(plant.capacity_kw / 1000, 2, noData),
+                      kw: formatNumber(plant.capacity_kw, 0, noData, locale),
+                      mw: formatNumber(plant.capacity_kw / 1000, 2, noData, locale),
                     })}
                   </span>
                   <span>
                     <StatusBadge status={plant.status} t={t} />
                   </span>
                   <span>{plant.timezone || noData}</span>
-                  <span>{formatPlantLocation(plant, noData)}</span>
-                  <span>{formatDate(plant.created_at, noData)}</span>
+                  <span>{formatPlantLocation(plant, noData, locale)}</span>
+                  <span>{formatDate(plant.created_at, noData, locale)}</span>
                 </div>
               ))}
             </div>
@@ -707,11 +823,13 @@ function ForecastAccuracyLabSection({
   summary,
   ranking,
   loading,
+  locale,
   t,
 }: {
   summary: AccuracySummary | null;
   ranking: AccuracyProviderRankingResponse | null;
   loading: boolean;
+  locale: Locale;
   t: Translate;
 }) {
   const noData = t("common.noData");
@@ -734,42 +852,42 @@ function ForecastAccuracyLabSection({
           label={t("accuracyLab.kpi.avgMape")}
           loading={loading}
           t={t}
-          value={formatPercent(summary?.avg_mape, noData)}
+          value={formatPercent(summary?.avg_mape, noData, locale)}
         />
         <MetricCard
           helper={t("accuracyLab.kpi.avgRmseHelper")}
           label={t("accuracyLab.kpi.avgRmse")}
           loading={loading}
           t={t}
-          value={formatNumber(summary?.avg_rmse, 2, noData)}
+          value={formatNumber(summary?.avg_rmse, 2, noData, locale)}
         />
         <MetricCard
           helper={t("accuracyLab.kpi.avgMaeHelper")}
           label={t("accuracyLab.kpi.avgMae")}
           loading={loading}
           t={t}
-          value={formatNumber(summary?.avg_mae, 2, noData)}
+          value={formatNumber(summary?.avg_mae, 2, noData, locale)}
         />
         <MetricCard
           helper={t("accuracyLab.kpi.avgBiasHelper")}
           label={t("accuracyLab.kpi.avgBias")}
           loading={loading}
           t={t}
-          value={formatNumber(summary?.avg_bias, 2, noData)}
+          value={formatNumber(summary?.avg_bias, 2, noData, locale)}
         />
         <MetricCard
           helper={t("accuracyLab.kpi.samplesHelper")}
           label={t("accuracyLab.kpi.samples")}
           loading={loading}
           t={t}
-          value={formatNumber(summary?.samples_count, 0, noData)}
+          value={formatNumber(summary?.samples_count, 0, noData, locale)}
         />
         <MetricCard
           helper={t("accuracyLab.kpi.forecastRunsHelper")}
           label={t("accuracyLab.kpi.forecastRuns")}
           loading={loading}
           t={t}
-          value={formatNumber(summary?.forecast_runs_count, 0, noData)}
+          value={formatNumber(summary?.forecast_runs_count, 0, noData, locale)}
         />
       </section>
 
@@ -778,7 +896,7 @@ function ForecastAccuracyLabSection({
           <div className="target-card">
             <div className={`target-status ${targetStatus}`}>
               <span>{t("accuracyLab.target.currentMape")}</span>
-              <strong>{formatPercent(summary?.avg_mape, noData)}</strong>
+              <strong>{formatPercent(summary?.avg_mape, noData, locale)}</strong>
               <em>{t(`accuracyLab.target.status.${targetStatus}`)}</em>
             </div>
             <div className="target-grid">
@@ -831,15 +949,15 @@ function ForecastAccuracyLabSection({
                 <div className="ranking-table-row" key={provider.provider_id}>
                   <strong>#{provider.rank}</strong>
                   <span>
-                    <strong>{provider.provider_name}</strong>
+                    <strong>{translateProviderName(provider.provider_name, provider.provider_code, t, noData)}</strong>
                     <small>{provider.provider_code}</small>
                   </span>
-                  <span>{formatPercent(provider.avg_mape, noData)}</span>
-                  <span>{formatNumber(provider.avg_rmse, 2, noData)}</span>
-                  <span>{formatNumber(provider.avg_mae, 2, noData)}</span>
-                  <span>{formatNumber(provider.avg_bias, 2, noData)}</span>
-                  <span>{formatNumber(provider.samples_count, 0, noData)}</span>
-                  <span>{formatNumber(provider.forecast_runs_count, 0, noData)}</span>
+                  <span>{formatPercent(provider.avg_mape, noData, locale)}</span>
+                  <span>{formatNumber(provider.avg_rmse, 2, noData, locale)}</span>
+                  <span>{formatNumber(provider.avg_mae, 2, noData, locale)}</span>
+                  <span>{formatNumber(provider.avg_bias, 2, noData, locale)}</span>
+                  <span>{formatNumber(provider.samples_count, 0, noData, locale)}</span>
+                  <span>{formatNumber(provider.forecast_runs_count, 0, noData, locale)}</span>
                 </div>
               ))}
             </div>
@@ -921,11 +1039,13 @@ function ForecastProvidersSection({
   providers,
   ranking,
   loading,
+  locale,
   t,
 }: {
   providers: ForecastProvider[];
   ranking: AccuracyProviderRankingResponse | null;
   loading: boolean;
+  locale: Locale;
   t: Translate;
 }) {
   const noData = t("common.noData");
@@ -957,28 +1077,28 @@ function ForecastProvidersSection({
           label={t("forecastProviders.kpi.totalProviders")}
           loading={loading}
           t={t}
-          value={formatNumber(providers.length, 0, noData)}
+          value={formatNumber(providers.length, 0, noData, locale)}
         />
         <MetricCard
           helper={t("forecastProviders.kpi.activeProvidersHelper")}
           label={t("forecastProviders.kpi.activeProviders")}
           loading={loading}
           t={t}
-          value={formatNumber(activeProviders, 0, noData)}
+          value={formatNumber(activeProviders, 0, noData, locale)}
         />
         <MetricCard
           helper={t("forecastProviders.kpi.forecastRunsHelper")}
           label={t("forecastProviders.kpi.forecastRuns")}
           loading={loading}
           t={t}
-          value={formatNumber(totalForecastRuns, 0, noData)}
+          value={formatNumber(totalForecastRuns, 0, noData, locale)}
         />
         <MetricCard
           helper={t("forecastProviders.kpi.bestProviderHelper")}
           label={t("forecastProviders.kpi.bestProvider")}
           loading={loading}
           t={t}
-          value={bestProvider?.name || noData}
+          value={translateProviderName(bestProvider?.name, bestProvider?.code, t, noData)}
         />
       </section>
 
@@ -999,12 +1119,12 @@ function ForecastProvidersSection({
               </div>
               {rows.map((provider) => (
                 <div className="providers-table-row" key={provider.id}>
-                  <strong>{provider.name}</strong>
+                  <strong>{translateProviderName(provider.name, provider.code, t, noData)}</strong>
                   <span>{provider.code}</span>
                   <StatusBadge status={provider.isActive ? "active" : "inactive"} t={t} />
-                  <span>{formatPercent(provider.avgMape, noData)}</span>
-                  <span>{formatNumber(provider.avgRmse, 2, noData)}</span>
-                  <span>{formatNumber(provider.forecastRunsCount, 0, noData)}</span>
+                  <span>{formatPercent(provider.avgMape, noData, locale)}</span>
+                  <span>{formatNumber(provider.avgRmse, 2, noData, locale)}</span>
+                  <span>{formatNumber(provider.forecastRunsCount, 0, noData, locale)}</span>
                   <span>{provider.rank ? `#${provider.rank}` : noData}</span>
                 </div>
               ))}
@@ -1024,17 +1144,17 @@ function ForecastProvidersSection({
             <div className="provider-comparison-card">
               <div>
                 <span>{t("forecastProviders.comparison.bestProvider")}</span>
-                <strong>{bestProvider?.name || noData}</strong>
-                <small>{formatPercent(bestProvider?.avgMape, noData)}</small>
+                <strong>{translateProviderName(bestProvider?.name, bestProvider?.code, t, noData)}</strong>
+                <small>{formatPercent(bestProvider?.avgMape, noData, locale)}</small>
               </div>
               <div>
                 <span>{t("forecastProviders.comparison.worstProvider")}</span>
-                <strong>{worstProvider?.name || noData}</strong>
-                <small>{formatPercent(worstProvider?.avgMape, noData)}</small>
+                <strong>{translateProviderName(worstProvider?.name, worstProvider?.code, t, noData)}</strong>
+                <small>{formatPercent(worstProvider?.avgMape, noData, locale)}</small>
               </div>
               <div className="provider-delta">
                 <span>{t("forecastProviders.comparison.mapeDelta")}</span>
-                <strong>{formatPercent(mapeDelta, noData)}</strong>
+                <strong>{formatPercent(mapeDelta, noData, locale)}</strong>
               </div>
             </div>
           ) : (
@@ -1057,7 +1177,15 @@ function QualityStatusBadge({ status, t }: { status: DataQualityStatus; t: Trans
   );
 }
 
-function DataQualitySection({ plants, t }: { plants: SolarPlant[]; t: Translate }) {
+function DataQualitySection({
+  plants,
+  locale,
+  t,
+}: {
+  plants: SolarPlant[];
+  locale: Locale;
+  t: Translate;
+}) {
   const noData = t("common.noData");
   const [selectedPeriod, setSelectedPeriod] = useState<DataQualityPeriodKey>("7d");
   const [selectedAssetId, setSelectedAssetId] = useState("all");
@@ -1238,16 +1366,16 @@ function DataQualitySection({ plants, t }: { plants: SolarPlant[]; t: Translate 
           label={t("dataQuality.kpi.totalRejected")}
           loading={state.loading}
           t={t}
-          value={formatNumber(totalRejected, 0, noData)}
+          value={formatNumber(totalRejected, 0, noData, locale)}
         />
         <MetricCard
           helper={t("dataQuality.kpi.rejectionRateHelper", {
-            accepted: formatNumber(state.acceptedPoints, 0, noData),
+            accepted: formatNumber(state.acceptedPoints, 0, noData, locale),
           })}
           label={t("dataQuality.kpi.rejectionRate")}
           loading={state.loading}
           t={t}
-          value={formatPercent(rejectionRate, noData)}
+          value={formatPercent(rejectionRate, noData, locale)}
         />
         <MetricCard
           helper={t("dataQuality.kpi.topReasonHelper")}
@@ -1262,7 +1390,7 @@ function DataQualitySection({ plants, t }: { plants: SolarPlant[]; t: Translate 
           label={t("dataQuality.kpi.affectedAssets")}
           loading={state.loading}
           t={t}
-          value={formatNumber(affectedAssets, 0, noData)}
+          value={formatNumber(affectedAssets, 0, noData, locale)}
         />
       </section>
 
@@ -1279,9 +1407,9 @@ function DataQualitySection({ plants, t }: { plants: SolarPlant[]; t: Translate 
                 <div className="quality-reason-row" key={item.reason}>
                   <div>
                     <strong>{translateRejectionReason(item.reason, t, noData)}</strong>
-                    <span>{normalizeReason(item.reason)}</span>
+                    <span>{t("dataQuality.reasons.rawCode", { code: item.reason })}</span>
                   </div>
-                  <em>{formatNumber(item.count, 0, noData)}</em>
+                  <em>{formatNumber(item.count, 0, noData, locale)}</em>
                 </div>
               ))}
             </div>
@@ -1305,8 +1433,8 @@ function DataQualitySection({ plants, t }: { plants: SolarPlant[]; t: Translate 
               <strong>{t(`dataQuality.statusDetail.${qualityStatus}`)}</strong>
               <span>
                 {t("dataQuality.statusPanel.detail", {
-                  rejected: formatNumber(totalRejected, 0, noData),
-                  accepted: formatNumber(state.acceptedPoints, 0, noData),
+                  rejected: formatNumber(totalRejected, 0, noData, locale),
+                  accepted: formatNumber(state.acceptedPoints, 0, noData, locale),
                 })}
               </span>
             </div>
@@ -1331,13 +1459,13 @@ function DataQualitySection({ plants, t }: { plants: SolarPlant[]; t: Translate 
             </div>
             {state.records.slice(0, 25).map((record) => (
               <div className="rejected-records-row" key={record.id}>
-                <span>{formatDateTime(record.received_at, noData)}</span>
+                <span>{formatDateTime(record.received_at, noData, locale)}</span>
                 <span>
                   <strong>{translateRejectionReason(record.reason, t, noData)}</strong>
-                  <small>{record.error_message || normalizeReason(record.reason)}</small>
+                  <small>{t("dataQuality.table.rawReasonCode", { code: record.reason })}</small>
                 </span>
                 <span>
-                  <strong>{record.source || noData}</strong>
+                  <strong>{translateTelemetrySource(record.source, t, noData)}</strong>
                   <small>{record.topic || noData}</small>
                 </span>
                 <span>{getPlantName(plants, record.plant_id, noData)}</span>
@@ -1373,6 +1501,7 @@ function SystemHealthSection({
   summary,
   forecastRuns,
   loading,
+  locale,
   t,
 }: {
   health: HealthResponse | null;
@@ -1381,6 +1510,7 @@ function SystemHealthSection({
   summary: TelemetrySummary | null;
   forecastRuns: ForecastRun[];
   loading: boolean;
+  locale: Locale;
   t: Translate;
 }) {
   const noData = t("common.noData");
@@ -1519,7 +1649,7 @@ function SystemHealthSection({
           label={t("systemHealth.kpi.lastTelemetry")}
           loading={loading}
           t={t}
-          value={formatDateTime(lastTelemetryUpdate, noData)}
+          value={formatDateTime(lastTelemetryUpdate, noData, locale)}
         />
       </section>
 
@@ -1537,19 +1667,19 @@ function SystemHealthSection({
               <div className="platform-status-grid">
                 <div>
                   <span>{t("systemHealth.summary.healthy")}</span>
-                  <strong>{formatNumber(healthyCount, 0, noData)}</strong>
+                  <strong>{formatNumber(healthyCount, 0, noData, locale)}</strong>
                 </div>
                 <div>
                   <span>{t("systemHealth.summary.warning")}</span>
-                  <strong>{formatNumber(warningCount, 0, noData)}</strong>
+                  <strong>{formatNumber(warningCount, 0, noData, locale)}</strong>
                 </div>
                 <div>
                   <span>{t("systemHealth.summary.critical")}</span>
-                  <strong>{formatNumber(criticalCount, 0, noData)}</strong>
+                  <strong>{formatNumber(criticalCount, 0, noData, locale)}</strong>
                 </div>
                 <div>
                   <span>{t("systemHealth.summary.unknown")}</span>
-                  <strong>{formatNumber(unknownCount, 0, noData)}</strong>
+                  <strong>{formatNumber(unknownCount, 0, noData, locale)}</strong>
                 </div>
               </div>
             </div>
@@ -1566,7 +1696,7 @@ function SystemHealthSection({
             <div className="system-signal-list">
               <div>
                 <span>{t("systemHealth.signals.lastTelemetry")}</span>
-                <strong>{formatDateTime(lastTelemetryUpdate, noData)}</strong>
+                <strong>{formatDateTime(lastTelemetryUpdate, noData, locale)}</strong>
               </div>
               <div>
                 <span>{t("systemHealth.signals.dataFreshness")}</span>
@@ -1578,7 +1708,7 @@ function SystemHealthSection({
               </div>
               <div>
                 <span>{t("systemHealth.signals.lastForecast")}</span>
-                <strong>{formatDateTime(lastForecastUpdate, noData)}</strong>
+                <strong>{formatDateTime(lastForecastUpdate, noData, locale)}</strong>
               </div>
               <div>
                 <span>{t("systemHealth.signals.environment")}</span>
@@ -1617,7 +1747,7 @@ function SystemHealthSection({
                   {row.latency === null || row.latency === undefined
                     ? notAvailable
                     : t("common.milliseconds", {
-                        value: formatNumber(row.latency, 0, noData),
+                        value: formatNumber(row.latency, 0, noData, locale),
                       })}
                 </span>
                 <span>{row.detail}</span>
@@ -1641,9 +1771,11 @@ function FreshnessBadge({ status, t }: { status?: TelemetrySummary["data_freshne
 
 function PowerHistoryChart({
   points,
+  locale,
   t,
 }: {
   points: TelemetryPoint[];
+  locale: Locale;
   t: Translate;
 }) {
   const noData = t("common.noData");
@@ -1676,12 +1808,12 @@ function PowerHistoryChart({
       <div className="chart-meta">
         <span>
           {t("telemetry.history.points", {
-            count: formatNumber(points.length, 0, noData),
+            count: formatNumber(points.length, 0, noData, locale),
           })}
         </span>
         <span>
           {t("telemetry.history.maxPower", {
-            value: formatNumber(maxValue, 1, noData),
+            value: formatNumber(maxValue, 1, noData, locale),
           })}
         </span>
       </div>
@@ -1694,8 +1826,8 @@ function PowerHistoryChart({
         ))}
       </svg>
       <div className="chart-range">
-        <span>{formatDateTime(firstPoint?.timestamp, noData)}</span>
-        <span>{formatDateTime(lastPoint?.timestamp, noData)}</span>
+        <span>{formatDateTime(firstPoint?.timestamp, noData, locale)}</span>
+        <span>{formatDateTime(lastPoint?.timestamp, noData, locale)}</span>
       </div>
     </div>
   );
@@ -1708,6 +1840,7 @@ function TelemetrySection({
   summary,
   assetId,
   loading,
+  locale,
   t,
 }: {
   plants: SolarPlant[];
@@ -1716,6 +1849,7 @@ function TelemetrySection({
   summary: TelemetrySummary | null;
   assetId: string | null;
   loading: boolean;
+  locale: Locale;
   t: Translate;
 }) {
   const noData = t("common.noData");
@@ -1749,6 +1883,8 @@ function TelemetrySection({
             "telemetry.units.kw",
             t,
             noData,
+            1,
+            locale,
           )}
         />
         <MetricCard
@@ -1756,28 +1892,28 @@ function TelemetrySection({
           label={t("telemetry.kpi.energyToday")}
           loading={loading}
           t={t}
-          value={formatTranslatedUnit(summary?.energy_today_kwh, "telemetry.units.kwh", t, noData)}
+          value={formatTranslatedUnit(summary?.energy_today_kwh, "telemetry.units.kwh", t, noData, 1, locale)}
         />
         <MetricCard
           helper={t("telemetry.kpi.averagePowerHelper")}
           label={t("telemetry.kpi.averagePower")}
           loading={loading}
           t={t}
-          value={formatTranslatedUnit(summary?.avg_power_kw, "telemetry.units.kw", t, noData)}
+          value={formatTranslatedUnit(summary?.avg_power_kw, "telemetry.units.kw", t, noData, 1, locale)}
         />
         <MetricCard
           helper={t("telemetry.kpi.maxPowerHelper")}
           label={t("telemetry.kpi.maxPower")}
           loading={loading}
           t={t}
-          value={formatTranslatedUnit(summary?.max_power_kw, "telemetry.units.kw", t, noData)}
+          value={formatTranslatedUnit(summary?.max_power_kw, "telemetry.units.kw", t, noData, 1, locale)}
         />
         <MetricCard
           helper={t("telemetry.kpi.lastTelemetryHelper")}
           label={t("telemetry.kpi.lastTelemetry")}
           loading={loading}
           t={t}
-          value={formatDateTime(summary?.last_telemetry_time ?? latest?.timestamp, noData)}
+          value={formatDateTime(summary?.last_telemetry_time ?? latest?.timestamp, noData, locale)}
         />
         <MetricCard
           helper={t("telemetry.kpi.freshnessHelper")}
@@ -1791,7 +1927,7 @@ function TelemetrySection({
           label={t("telemetry.kpi.points")}
           loading={loading}
           t={t}
-          value={formatNumber(summary?.telemetry_points_count, 0, noData)}
+          value={formatNumber(summary?.telemetry_points_count, 0, noData, locale)}
         />
         <MetricCard
           helper={t("telemetry.kpi.gapHelper")}
@@ -1804,6 +1940,7 @@ function TelemetrySection({
             t,
             noData,
             0,
+            locale,
           )}
         />
         {summary?.estimated_revenue_today !== null && summary?.estimated_revenue_today !== undefined ? (
@@ -1812,7 +1949,7 @@ function TelemetrySection({
             label={t("telemetry.kpi.revenue")}
             loading={loading}
             t={t}
-            value={formatNumber(summary.estimated_revenue_today, 2, noData)}
+            value={formatNumber(summary.estimated_revenue_today, 2, noData, locale)}
           />
         ) : null}
       </section>
@@ -1825,7 +1962,7 @@ function TelemetrySection({
               title={t("telemetry.history.loadingTitle")}
             />
           ) : (
-            <PowerHistoryChart points={history} t={t} />
+            <PowerHistoryChart locale={locale} points={history} t={t} />
           )}
         </Panel>
 
@@ -1844,15 +1981,15 @@ function TelemetrySection({
               </div>
               <div>
                 <span>{t("telemetry.status.source")}</span>
-                <strong>{latest?.source || noData}</strong>
+                <strong>{translateTelemetrySource(latest?.source, t, noData)}</strong>
               </div>
               <div>
                 <span>{t("telemetry.status.quality")}</span>
-                <strong>{latest?.quality || noData}</strong>
+                <strong>{translateTelemetryQuality(latest?.quality, t, noData)}</strong>
               </div>
               <div>
                 <span>{t("telemetry.status.lastTelemetry")}</span>
-                <strong>{formatDateTime(summary?.last_telemetry_time ?? latest?.timestamp, noData)}</strong>
+                <strong>{formatDateTime(summary?.last_telemetry_time ?? latest?.timestamp, noData, locale)}</strong>
               </div>
             </div>
           )}
@@ -2067,39 +2204,39 @@ function DashboardOverview({
                 label={t("metrics.systemHealth")}
                 loading={state.loading}
                 t={t}
-                value={systemStatus || noData}
+                value={translateMonitoringStatusValue(systemStatus, t, noData)}
               />
               <MetricCard
                 helper={t("metrics.totalCapacity", {
-                  value: formatNumber(totalCapacity, 0, noData),
+                  value: formatNumber(totalCapacity, 0, noData, locale),
                 })}
                 label={t("metrics.solarPlants")}
                 loading={state.loading}
                 t={t}
-                value={formatNumber(state.data.plants.length, 0, noData)}
+                value={formatNumber(state.data.plants.length, 0, noData, locale)}
               />
               <MetricCard
                 helper={t("common.activeProviders", { count: activeProviders })}
                 label={t("metrics.forecastProviders")}
                 loading={state.loading}
                 t={t}
-                value={formatNumber(state.data.providers.length, 0, noData)}
+                value={formatNumber(state.data.providers.length, 0, noData, locale)}
               />
               <MetricCard
                 helper={t("common.samples", {
-                  count: formatNumber(state.data.accuracy?.samples_count, 0, noData),
+                  count: formatNumber(state.data.accuracy?.samples_count, 0, noData, locale),
                 })}
                 label={t("metrics.accuracyMape")}
                 loading={state.loading}
                 t={t}
-                value={formatPercent(state.data.accuracy?.avg_mape, noData)}
+                value={formatPercent(state.data.accuracy?.avg_mape, noData, locale)}
               />
               <MetricCard
                 helper={t("metrics.openTelemetryIssues")}
                 label={t("metrics.rejectedTelemetry")}
                 loading={state.loading}
                 t={t}
-                value={formatNumber(state.data.rejected?.total, 0, noData)}
+                value={formatNumber(state.data.rejected?.total, 0, noData, locale)}
               />
             </section>
 
@@ -2118,7 +2255,7 @@ function DashboardOverview({
                     <div className="dependency-meta">
                       <small>
                         {t("common.milliseconds", {
-                          value: formatNumber(dependency.latency_ms, 0, noData),
+                          value: formatNumber(dependency.latency_ms, 0, noData, locale),
                         })}
                       </small>
                       <StatusBadge status={dependency.status} t={t} />
@@ -2142,7 +2279,7 @@ function DashboardOverview({
                       <strong>{plant.name}</strong>
                       <span>
                         {t("common.kilowatts", {
-                          value: formatNumber(plant.capacity_kw, 0, noData),
+                          value: formatNumber(plant.capacity_kw, 0, noData, locale),
                         })}
                       </span>
                     </div>
@@ -2162,27 +2299,27 @@ function DashboardOverview({
               <div className="accuracy-grid">
                 <div>
                   <span>{t("accuracy.avgMape")}</span>
-                  <strong>{formatPercent(state.data.accuracy.avg_mape, noData)}</strong>
+                  <strong>{formatPercent(state.data.accuracy.avg_mape, noData, locale)}</strong>
                 </div>
                 <div>
                   <span>{t("accuracy.avgRmse")}</span>
-                  <strong>{formatNumber(state.data.accuracy.avg_rmse, 2, noData)}</strong>
+                  <strong>{formatNumber(state.data.accuracy.avg_rmse, 2, noData, locale)}</strong>
                 </div>
                 <div>
                   <span>{t("accuracy.avgMae")}</span>
-                  <strong>{formatNumber(state.data.accuracy.avg_mae, 2, noData)}</strong>
+                  <strong>{formatNumber(state.data.accuracy.avg_mae, 2, noData, locale)}</strong>
                 </div>
                 <div>
                   <span>{t("accuracy.avgBias")}</span>
-                  <strong>{formatNumber(state.data.accuracy.avg_bias, 2, noData)}</strong>
+                  <strong>{formatNumber(state.data.accuracy.avg_bias, 2, noData, locale)}</strong>
                 </div>
                 <div>
                   <span>{t("accuracy.forecastRuns")}</span>
-                  <strong>{formatNumber(state.data.accuracy.forecast_runs_count, 0, noData)}</strong>
+                  <strong>{formatNumber(state.data.accuracy.forecast_runs_count, 0, noData, locale)}</strong>
                 </div>
                 <div>
                   <span>{t("accuracy.aggregates")}</span>
-                  <strong>{formatNumber(state.data.accuracy.aggregates_count, 0, noData)}</strong>
+                  <strong>{formatNumber(state.data.accuracy.aggregates_count, 0, noData, locale)}</strong>
                 </div>
               </div>
             ) : (
@@ -2198,8 +2335,10 @@ function DashboardOverview({
                 {state.data.providers.map((provider) => (
                   <div className="table-row" key={provider.id}>
                     <div>
-                      <strong>{provider.name}</strong>
-                      <span>{provider.code} / {provider.provider_type}</span>
+                      <strong>{translateProviderName(provider.name, provider.code, t, noData)}</strong>
+                      <span>
+                        {provider.code} / {translateProviderType(provider.provider_type, t, noData)}
+                      </span>
                     </div>
                     <StatusBadge status={provider.is_active ? "active" : "inactive"} t={t} />
                   </div>
@@ -2219,15 +2358,15 @@ function DashboardOverview({
             ) : state.data.rejected ? (
               <div className="rejected-summary">
                 <div className="rejected-total">
-                  <strong>{formatNumber(state.data.rejected.total, 0, noData)}</strong>
+                  <strong>{formatNumber(state.data.rejected.total, 0, noData, locale)}</strong>
                   <span>{t("rejectedTelemetry.openMessages")}</span>
                 </div>
                 {topRejectedReasons.length > 0 ? (
                   <div className="reason-list">
                     {topRejectedReasons.map((item) => (
                       <div className="reason-row" key={item.reason}>
-                        <span>{normalizeReason(item.reason)}</span>
-                        <strong>{formatNumber(item.count, 0)}</strong>
+                        <span>{translateRejectionReason(item.reason, t, noData)}</span>
+                        <strong>{formatNumber(item.count, 0, noData, locale)}</strong>
                       </div>
                     ))}
                   </div>
@@ -2248,9 +2387,15 @@ function DashboardOverview({
             </section>
           </>
         ) : activeSection === "solar-plants" ? (
-          <SolarPlantsSection plants={state.data.plants} loading={state.loading} t={t} />
+          <SolarPlantsSection
+            locale={locale}
+            plants={state.data.plants}
+            loading={state.loading}
+            t={t}
+          />
         ) : activeSection === "forecast-accuracy-lab" ? (
           <ForecastAccuracyLabSection
+            locale={locale}
             loading={state.loading}
             ranking={state.data.accuracyRanking}
             summary={state.data.accuracy}
@@ -2258,6 +2403,7 @@ function DashboardOverview({
           />
         ) : activeSection === "forecast-providers" ? (
           <ForecastProvidersSection
+            locale={locale}
             loading={state.loading}
             providers={state.data.providers}
             ranking={state.data.accuracyRanking}
@@ -2268,18 +2414,20 @@ function DashboardOverview({
             assetId={state.data.telemetryAssetId}
             history={state.data.telemetryHistory}
             latest={state.data.telemetryLatest}
+            locale={locale}
             loading={state.loading}
             plants={state.data.plants}
             summary={state.data.telemetrySummary}
             t={t}
           />
         ) : activeSection === "rejected-telemetry" ? (
-          <DataQualitySection plants={state.data.plants} t={t} />
+          <DataQualitySection locale={locale} plants={state.data.plants} t={t} />
         ) : activeSection === "system-status" ? (
           <SystemHealthSection
             forecastRuns={state.data.forecastRuns}
             health={state.data.health}
             latest={state.data.telemetryLatest}
+            locale={locale}
             loading={state.loading}
             summary={state.data.telemetrySummary}
             system={state.data.system}
@@ -2527,6 +2675,9 @@ function DashboardOverview({
           margin: 0;
           color: rgba(245, 242, 237, 0.56);
           font-size: 13px;
+          line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .metric-card strong {
@@ -2714,6 +2865,9 @@ function DashboardOverview({
         .ranking-table-row span {
           color: rgba(245, 242, 237, 0.62);
           font-size: 13px;
+          min-width: 0;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .ranking-table-row small {
@@ -2721,6 +2875,8 @@ function DashboardOverview({
           margin-top: 4px;
           color: rgba(245, 242, 237, 0.44);
           font-size: 12px;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .providers-table {
@@ -2757,11 +2913,17 @@ function DashboardOverview({
         .providers-table-row strong {
           color: #fffaf4;
           font-size: 14px;
+          min-width: 0;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .providers-table-row span {
           color: rgba(245, 242, 237, 0.62);
           font-size: 13px;
+          min-width: 0;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .provider-comparison-card {
@@ -2795,6 +2957,9 @@ function DashboardOverview({
           color: #fffaf4;
           font-size: 20px;
           letter-spacing: -0.04em;
+          line-height: 1.15;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .provider-comparison-card small {
@@ -2972,6 +3137,8 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.58);
           font-size: 12px;
           min-width: 0;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .rejected-records-row strong {
@@ -3001,13 +3168,19 @@ function DashboardOverview({
         .monitoring-badge {
           display: inline-flex;
           width: fit-content;
+          max-width: 100%;
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 999px;
           color: #fffaf4;
           font-size: 12px;
           font-weight: 900;
+          line-height: 1.2;
+          overflow-wrap: anywhere;
           padding: 8px 11px;
+          text-align: center;
           text-transform: uppercase;
+          white-space: normal;
+          word-break: break-word;
         }
 
         .monitoring-badge.healthy {
@@ -3044,6 +3217,8 @@ function DashboardOverview({
           font-size: 18px;
           letter-spacing: -0.03em;
           line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .platform-status-grid {
@@ -3066,6 +3241,8 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.54);
           font-size: 12px;
           font-weight: 700;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .platform-status-grid strong,
@@ -3075,6 +3252,8 @@ function DashboardOverview({
           color: #fffaf4;
           font-size: 16px;
           line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .system-signal-list {
@@ -3127,13 +3306,19 @@ function DashboardOverview({
         .freshness-badge {
           display: inline-flex;
           width: fit-content;
+          max-width: 100%;
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 999px;
           color: #fffaf4;
           font-size: 12px;
           font-weight: 800;
+          line-height: 1.2;
+          overflow-wrap: anywhere;
           padding: 8px 11px;
+          text-align: center;
           text-transform: uppercase;
+          white-space: normal;
+          word-break: break-word;
         }
 
         .freshness-badge.fresh {
@@ -3163,6 +3348,7 @@ function DashboardOverview({
         .chart-meta,
         .chart-range {
           display: flex;
+          flex-wrap: wrap;
           justify-content: space-between;
           gap: 12px;
           color: rgba(245, 242, 237, 0.56);
@@ -3222,6 +3408,8 @@ function DashboardOverview({
           color: #fffaf4;
           font-size: 15px;
           line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .plants-table {
@@ -3480,14 +3668,20 @@ function DashboardOverview({
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          max-width: 100%;
           border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 999px;
           color: rgba(245, 242, 237, 0.72);
           font-size: 12px;
           font-weight: 800;
+          line-height: 1.2;
           min-width: 68px;
+          overflow-wrap: anywhere;
           padding: 7px 10px;
+          text-align: center;
           text-transform: uppercase;
+          white-space: normal;
+          word-break: break-word;
         }
 
         .status-badge.good {

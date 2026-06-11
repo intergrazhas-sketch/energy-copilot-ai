@@ -37,6 +37,16 @@
     "open": "Open",
     "fixed": "Fixed",
     "ignored": "Ignored",
+    "healthy": "Healthy",
+    "warning": "Warning",
+    "critical": "Critical",
+    "offline": "Offline",
+    "fresh": "Fresh",
+    "stale": "Stale",
+    "error": "Error",
+    "failed": "Failed",
+    "down": "Down",
+    "pending": "Pending",
     "unknown": "Unknown"
   },
   "metrics": {
@@ -189,6 +199,16 @@
     "emptyDetail": "No manual or mock providers were returned by the API."
   },
   "forecastProviders": {
+    "demoNames": {
+      "mockForecast": "Mock Forecast",
+      "manualForecast": "Manual Forecast"
+    },
+    "providerTypes": {
+      "mock": "Mock",
+      "manual": "Manual",
+      "api": "API",
+      "external": "External"
+    },
     "kpi": {
       "totalProviders": "Total providers",
       "totalProvidersHelper": "Providers returned by registry",
@@ -231,6 +251,25 @@
       "stale": "Stale",
       "offline": "Offline",
       "no_data": "No data"
+    },
+    "sources": {
+      "mqtt": "MQTT",
+      "manual": "Manual entry",
+      "measured": "Measured",
+      "scada": "SCADA",
+      "simulator": "Simulator",
+      "api": "API",
+      "imported": "Imported file"
+    },
+    "quality": {
+      "measured": "Measured",
+      "manual": "Manual",
+      "accepted": "Accepted",
+      "estimated": "Estimated",
+      "raw": "Raw",
+      "validated": "Validated",
+      "rejected": "Rejected",
+      "unknown": "Unknown"
     },
     "kpi": {
       "currentPower": "Current Power",
@@ -317,7 +356,8 @@
       "negative_energy": "Negative energy",
       "power_exceeds_capacity": "Power exceeds capacity",
       "db_error": "Database error",
-      "unknown_error": "Unknown error"
+      "unknown_error": "Unknown error",
+      "rawCode": "Code: {code}"
     },
     "status": {
       "clean": "Clean",
@@ -357,7 +397,8 @@
       "reason": "Reason",
       "source": "Source",
       "asset": "Asset / Plant",
-      "status": "Status"
+      "status": "Status",
+      "rawReasonCode": "Reason code: {code}"
     }
   },
   "systemHealth": {

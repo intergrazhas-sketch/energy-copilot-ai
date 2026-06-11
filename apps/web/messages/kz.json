@@ -30,13 +30,23 @@
     "samples": "үлгілер: {count}"
   },
   "status": {
-    "ok": "OK",
+    "ok": "Қалыпты",
     "active": "Белсенді",
     "inactive": "Белсенді емес",
     "degraded": "Нашарлаған",
     "open": "Ашық",
     "fixed": "Түзетілді",
     "ignored": "Еленбейді",
+    "healthy": "Қалыпты",
+    "warning": "Ескерту",
+    "critical": "Критикалық",
+    "offline": "Байланыс жоқ",
+    "fresh": "Жаңа дерек",
+    "stale": "Ескіріп жатыр",
+    "error": "Қате",
+    "failed": "Сәтсіз",
+    "down": "Қолжетімсіз",
+    "pending": "Күтуде",
     "unknown": "Белгісіз"
   },
   "metrics": {
@@ -49,7 +59,7 @@
     "openTelemetryIssues": "Ашық телеметрия мәселелері"
   },
   "panels": {
-    "runtime": "Runtime",
+    "runtime": "Орындау ортасы",
     "assets": "Активтер",
     "forecast": "Болжам",
     "providers": "Провайдерлер",
@@ -82,7 +92,7 @@
       "totalPlants": "Барлық станциялар",
       "totalPlantsHelper": "/api/v1/solar-plants қайтарған активтер",
       "activePlants": "Белсенді станциялар",
-      "activePlantsHelper": "active статусы бар станциялар",
+      "activePlantsHelper": "«Белсенді» статусы бар станциялар",
       "totalCapacity": "Жалпы қуат",
       "capacityValue": "{kw} кВт / {mw} МВт",
       "telemetryTarget": "Телеметрия мақсатты интервалы",
@@ -153,7 +163,7 @@
       "eyebrow": "Пилот мақсаты",
       "title": "Болжам тиімділігі",
       "currentMape": "API-дан ағымдағы MAPE",
-      "baseline": "Baseline",
+      "baseline": "Базалық деңгей",
       "target": "Мақсат",
       "excellent": "Өте жақсы",
       "status": {
@@ -171,7 +181,7 @@
       "unavailableTitle": "Провайдер рейтингі API қолжетімсіз",
       "unavailableDetail": "Dashboard провайдер рейтингі деректерін жүктей алмады.",
       "emptyTitle": "Провайдер рейтингі әлі жоқ",
-      "emptyDetail": "Рейтинг forecast runs нақты генерациямен салыстырылғаннан кейін пайда болады.",
+      "emptyDetail": "Рейтинг болжам іске қосулары нақты генерациямен салыстырылғаннан кейін пайда болады.",
       "rank": "Ранг",
       "provider": "Провайдер",
       "avgMape": "Орташа MAPE",
@@ -184,23 +194,33 @@
   },
   "providers": {
     "loadingTitle": "Болжам провайдерлері жүктелуде",
-    "loadingDetail": "Провайдер registry жүктелуде.",
+    "loadingDetail": "Провайдерлер реестрі жүктелуде.",
     "emptyTitle": "Провайдерлер әлі жоқ",
-    "emptyDetail": "API manual немесе mock providers қайтармады."
+    "emptyDetail": "API қолмен енгізілетін немесе тест провайдерлерін қайтармады."
   },
   "forecastProviders": {
+    "demoNames": {
+      "mockForecast": "Тест болжам",
+      "manualForecast": "Қолмен енгізілген болжам"
+    },
+    "providerTypes": {
+      "mock": "Тест",
+      "manual": "Қолмен",
+      "api": "API",
+      "external": "Сыртқы"
+    },
     "kpi": {
       "totalProviders": "Барлық провайдерлер",
-      "totalProvidersHelper": "Registry қайтарған провайдерлер",
+      "totalProvidersHelper": "Тізілім қайтарған провайдерлер",
       "activeProviders": "Белсенді провайдерлер",
-      "activeProvidersHelper": "active статусы бар провайдерлер",
+      "activeProvidersHelper": "«Белсенді» статусы бар провайдерлер",
       "forecastRuns": "Барлық болжам іске қосулары",
       "forecastRunsHelper": "Провайдер рейтингіндегі іске қосулар",
       "bestProvider": "MAPE бойынша үздік провайдер",
       "bestProviderHelper": "Ең төмен орташа MAPE"
     },
     "table": {
-      "eyebrow": "Registry + дәлдік",
+      "eyebrow": "Тізілім + дәлдік",
       "title": "Болжам провайдерлері",
       "name": "Провайдер атауы",
       "code": "Провайдер коды",
@@ -232,6 +252,25 @@
       "offline": "Байланыс жоқ",
       "no_data": "Дерек жоқ"
     },
+    "sources": {
+      "mqtt": "MQTT",
+      "manual": "Қолмен енгізу",
+      "measured": "Өлшенген дерек",
+      "scada": "SCADA",
+      "simulator": "Симулятор",
+      "api": "API",
+      "imported": "Импортталған файл"
+    },
+    "quality": {
+      "measured": "Өлшенген",
+      "manual": "Қолмен",
+      "accepted": "Қабылданды",
+      "estimated": "Бағаланған",
+      "raw": "Шикі дерек",
+      "validated": "Тексерілді",
+      "rejected": "Қабылданбады",
+      "unknown": "Белгісіз"
+    },
     "kpi": {
       "currentPower": "Ағымдағы қуат",
       "energyToday": "Бүгінгі энергия",
@@ -249,7 +288,7 @@
       "gap": "Мүмкін дерек үзілісі",
       "gapHelper": "Соңғы қабылданған нүктеден өткен минуттар",
       "revenue": "Бүгінгі болжамды кіріс",
-      "revenueHelper": "Backend кіріс мәнін қайтарса ғана көрсетіледі"
+      "revenueHelper": "Сервер кіріс мәнін қайтарса ғана көрсетіледі"
     },
     "history": {
       "eyebrow": "Телеметрия тарихы",
@@ -275,7 +314,7 @@
       "noAssetTitle": "Қолжетімді актив жоқ",
       "noAssetDetail": "Telemetry dashboard үшін API-дан кемінде бір күн станциясы қажет.",
       "unavailableTitle": "Telemetry API қолжетімсіз",
-      "unavailableDetail": "Dashboard таңдалған актив үшін telemetry summary жүктей алмады."
+      "unavailableDetail": "Dashboard таңдалған актив үшін телеметрия жиынтығын жүктей алмады."
     }
   },
   "dataQuality": {
@@ -306,8 +345,8 @@
     "reasons": {
       "eyebrow": "Себептер",
       "title": "Негізгі қабылданбау себептері",
-      "invalid_topic": "Қате topic",
-      "invalid_plant_id": "Қате plant ID",
+      "invalid_topic": "Қате MQTT топигі",
+      "invalid_plant_id": "Қате станция ID-і",
       "plant_not_found": "Станция табылмады",
       "invalid_json": "Қате JSON",
       "invalid_timestamp": "Қате уақыт",
@@ -317,7 +356,8 @@
       "negative_energy": "Теріс энергия",
       "power_exceeds_capacity": "Қуат орнатылған шектен жоғары",
       "db_error": "Дерекқор қатесі",
-      "unknown_error": "Белгісіз қате"
+      "unknown_error": "Белгісіз қате",
+      "rawCode": "Код: {code}"
     },
     "status": {
       "clean": "Таза",
@@ -356,13 +396,14 @@
       "receivedAt": "Пайда болған уақыт",
       "reason": "Себеп",
       "source": "Дереккөзі",
-      "asset": "Asset / Plant",
-      "status": "Статус"
+      "asset": "Актив / Станция",
+      "status": "Статус",
+      "rawReasonCode": "Себеп коды: {code}"
     }
   },
   "systemHealth": {
     "notAvailable": "Қолжетімсіз",
-    "mqttUnavailable": "MQTT дайындық статусы backend арқылы әлі берілмейді.",
+    "mqttUnavailable": "MQTT дайындық статусы сервер арқылы әлі берілмейді.",
     "status": {
       "healthy": "Қалыпты",
       "warning": "Ескерту",
@@ -371,27 +412,27 @@
     },
     "environments": {
       "development": "Әзірлеу",
-      "production": "Продакшн",
-      "staging": "Стейджинг"
+      "production": "Өндірістік орта",
+      "staging": "Сынақ стенді"
     },
     "statusDetail": {
       "healthy": "Платформаның негізгі сервистері қалыпты жауап беріп тұр.",
       "warning": "Бір немесе бірнеше сигнал оператор назарын қажет етеді.",
       "critical": "Платформаның маңызды тәуелділігі қолжетімсіз.",
-      "unknown": "Кейбір платформа сигналдары backend health деректерінде жоқ."
+      "unknown": "Кейбір платформа сигналдары сервер жағдайы деректерінде жоқ."
     },
     "kpi": {
       "overall": "Платформаның жалпы статусы",
-      "overallHelper": "Қолжетімді live health сигналдары бойынша есептеледі",
+      "overallHelper": "Қолжетімді өзекті жүйе жағдайы сигналдары бойынша есептеледі",
       "api": "API статусы",
       "database": "Дерекқор статусы",
       "databaseHelper": "PostgreSQL / TimescaleDB дайындығы",
       "redis": "Redis статусы",
-      "redisHelper": "Cache dependency дайындығы",
+      "redisHelper": "Кэш тәуелділігінің дайындығы",
       "qdrant": "Qdrant статусы",
-      "qdrantHelper": "Vector store dependency дайындығы",
+      "qdrantHelper": "Векторлық сақтау тәуелділігінің дайындығы",
       "mqtt": "MQTT статусы",
-      "mqttHelper": "Қазіргі backend статусы арқылы берілмейді",
+      "mqttHelper": "Қазіргі сервер статусы арқылы берілмейді",
       "dataFreshness": "Дерек жаңалығы",
       "freshnessHelper": "Соңғы телеметрия жиынтығы негізінде",
       "lastTelemetry": "Соңғы телеметрия жаңаруы",
@@ -425,18 +466,18 @@
       "service": "Сервис",
       "status": "Статус",
       "latency": "Кідіріс",
-      "detail": "Деталь"
+      "detail": "Мәліметтер"
     },
     "loading": {
       "summaryTitle": "Сервис жиынтығы жүктелуде",
-      "summaryDetail": "Платформаның live status деректері оқылуда.",
+      "summaryDetail": "Платформаның өзекті статус деректері оқылуда.",
       "signalsTitle": "Операциялық сигналдар жүктелуде",
-      "signalsDetail": "Телеметрия және болжам timestamps тексерілуде.",
+      "signalsDetail": "Телеметрия және болжам уақыт белгілері тексерілуде.",
       "servicesTitle": "Сервис тәуелділіктері жүктелуде",
       "servicesDetail": "/api/v1/system/status арқылы тәуелділік статустары оқылуда."
     },
     "empty": {
-      "unavailableTitle": "System health қолжетімсіз",
+      "unavailableTitle": "Жүйе жағдайы қолжетімсіз",
       "unavailableDetail": "Dashboard /health немесе /api/v1/system/status жүктей алмады."
     }
   },
@@ -451,6 +492,6 @@
   },
   "errors": {
     "apiUnavailableTitle": "API қолжетімсіз. Dashboard нақты деректерді күтуде.",
-    "apiUnavailableDetail": "Backend stack іске қосылса, dashboard API жауаптарымен толады."
+    "apiUnavailableDetail": "Серверлік стек іске қосылса, dashboard API жауаптарымен толады."
   }
 }

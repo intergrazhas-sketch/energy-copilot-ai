@@ -30,13 +30,23 @@
     "samples": "выборок: {count}"
   },
   "status": {
-    "ok": "OK",
+    "ok": "Исправно",
     "active": "Активен",
     "inactive": "Неактивен",
     "degraded": "Деградация",
     "open": "Открыто",
     "fixed": "Исправлено",
     "ignored": "Игнорируется",
+    "healthy": "Исправно",
+    "warning": "Предупреждение",
+    "critical": "Критично",
+    "offline": "Нет связи",
+    "fresh": "Свежие данные",
+    "stale": "Устаревает",
+    "error": "Ошибка",
+    "failed": "Сбой",
+    "down": "Недоступно",
+    "pending": "Ожидает",
     "unknown": "Неизвестно"
   },
   "metrics": {
@@ -49,7 +59,7 @@
     "openTelemetryIssues": "Открытые проблемы телеметрии"
   },
   "panels": {
-    "runtime": "Runtime",
+    "runtime": "Среда выполнения",
     "assets": "Активы",
     "forecast": "Прогноз",
     "providers": "Провайдеры",
@@ -82,7 +92,7 @@
       "totalPlants": "Всего станций",
       "totalPlantsHelper": "Активы из /api/v1/solar-plants",
       "activePlants": "Активные станции",
-      "activePlantsHelper": "Станции со статусом active",
+      "activePlantsHelper": "Станции со статусом «Активен»",
       "totalCapacity": "Общая мощность",
       "capacityValue": "{kw} кВт / {mw} МВт",
       "telemetryTarget": "Целевой интервал телеметрии",
@@ -153,7 +163,7 @@
       "eyebrow": "Цель пилота",
       "title": "Эффективность прогноза",
       "currentMape": "Текущий MAPE из API",
-      "baseline": "Baseline",
+      "baseline": "Базовый уровень",
       "target": "Цель",
       "excellent": "Отлично",
       "status": {
@@ -184,23 +194,33 @@
   },
   "providers": {
     "loadingTitle": "Загружаем провайдеров прогноза",
-    "loadingDetail": "Получаем registry провайдеров.",
+    "loadingDetail": "Получаем реестр провайдеров.",
     "emptyTitle": "Провайдеров пока нет",
-    "emptyDetail": "API не вернул manual или mock providers."
+    "emptyDetail": "API не вернул ручных или тестовых провайдеров."
   },
   "forecastProviders": {
+    "demoNames": {
+      "mockForecast": "Тестовый прогноз",
+      "manualForecast": "Ручной прогноз"
+    },
+    "providerTypes": {
+      "mock": "Тестовый",
+      "manual": "Ручной",
+      "api": "API",
+      "external": "Внешний"
+    },
     "kpi": {
       "totalProviders": "Всего провайдеров",
-      "totalProvidersHelper": "Провайдеры из registry",
+      "totalProvidersHelper": "Провайдеры из реестра",
       "activeProviders": "Активные провайдеры",
-      "activeProvidersHelper": "Провайдеры со статусом active",
+      "activeProvidersHelper": "Провайдеры со статусом «Активен»",
       "forecastRuns": "Всего запусков прогноза",
       "forecastRunsHelper": "Запуски в рейтинге провайдеров",
       "bestProvider": "Лучший провайдер по MAPE",
       "bestProviderHelper": "Минимальный средний MAPE"
     },
     "table": {
-      "eyebrow": "Registry + точность",
+      "eyebrow": "Реестр + точность",
       "title": "Провайдеры прогноза",
       "name": "Название провайдера",
       "code": "Код провайдера",
@@ -232,6 +252,25 @@
       "offline": "Нет связи",
       "no_data": "Нет данных"
     },
+    "sources": {
+      "mqtt": "MQTT",
+      "manual": "Ручной ввод",
+      "measured": "Измерение",
+      "scada": "SCADA",
+      "simulator": "Симулятор",
+      "api": "API",
+      "imported": "Импортированный файл"
+    },
+    "quality": {
+      "measured": "Измерено",
+      "manual": "Вручную",
+      "accepted": "Принято",
+      "estimated": "Оценочно",
+      "raw": "Сырые данные",
+      "validated": "Проверено",
+      "rejected": "Отклонено",
+      "unknown": "Неизвестно"
+    },
     "kpi": {
       "currentPower": "Текущая мощность",
       "energyToday": "Энергия сегодня",
@@ -249,7 +288,7 @@
       "gap": "Возможный разрыв данных",
       "gapHelper": "Минуты с последней принятой точки",
       "revenue": "Оценочная выручка сегодня",
-      "revenueHelper": "Показывается только если backend вернул выручку"
+      "revenueHelper": "Показывается только если сервер вернул выручку"
     },
     "history": {
       "eyebrow": "История телеметрии",
@@ -275,7 +314,7 @@
       "noAssetTitle": "Нет доступного актива",
       "noAssetDetail": "Telemetry dashboard требует хотя бы одну солнечную станцию из API.",
       "unavailableTitle": "Telemetry API недоступен",
-      "unavailableDetail": "Dashboard не смог загрузить telemetry summary для выбранного актива."
+      "unavailableDetail": "Dashboard не смог загрузить сводку телеметрии для выбранного актива."
     }
   },
   "dataQuality": {
@@ -305,9 +344,9 @@
     },
     "reasons": {
       "eyebrow": "Причины",
-      "title": "Top причин отклонения",
-      "invalid_topic": "Некорректный topic",
-      "invalid_plant_id": "Некорректный plant ID",
+      "title": "Основные причины отклонения",
+      "invalid_topic": "Некорректный топик MQTT",
+      "invalid_plant_id": "Некорректный ID станции",
       "plant_not_found": "Станция не найдена",
       "invalid_json": "Некорректный JSON",
       "invalid_timestamp": "Некорректное время",
@@ -317,7 +356,8 @@
       "negative_energy": "Отрицательная энергия",
       "power_exceeds_capacity": "Мощность выше установленной",
       "db_error": "Ошибка базы данных",
-      "unknown_error": "Неизвестная ошибка"
+      "unknown_error": "Неизвестная ошибка",
+      "rawCode": "Код: {code}"
     },
     "status": {
       "clean": "Чисто",
@@ -356,13 +396,14 @@
       "receivedAt": "Время возникновения",
       "reason": "Причина",
       "source": "Источник",
-      "asset": "Asset / Plant",
-      "status": "Статус"
+      "asset": "Актив / Станция",
+      "status": "Статус",
+      "rawReasonCode": "Код причины: {code}"
     }
   },
   "systemHealth": {
     "notAvailable": "Недоступно",
-    "mqttUnavailable": "Готовность MQTT пока не отдаётся backend status.",
+    "mqttUnavailable": "Готовность MQTT пока не отдаётся статусом сервера.",
     "status": {
       "healthy": "Исправно",
       "warning": "Предупреждение",
@@ -371,27 +412,27 @@
     },
     "environments": {
       "development": "Разработка",
-      "production": "Продакшн",
-      "staging": "Стейджинг"
+      "production": "Рабочая среда",
+      "staging": "Стенд"
     },
     "statusDetail": {
       "healthy": "Ключевые сервисы платформы отвечают штатно.",
       "warning": "Один или несколько сигналов требуют внимания оператора.",
       "critical": "Критическая зависимость платформы недоступна.",
-      "unknown": "Часть сигналов платформы недоступна в данных backend health."
+      "unknown": "Часть сигналов платформы недоступна в данных здоровья сервера."
     },
     "kpi": {
       "overall": "Общий статус платформы",
-      "overallHelper": "Рассчитан по доступным live-сигналам здоровья",
+      "overallHelper": "Рассчитан по доступным актуальным сигналам здоровья",
       "api": "Статус API",
       "database": "Статус базы данных",
       "databaseHelper": "Готовность PostgreSQL / TimescaleDB",
       "redis": "Статус Redis",
-      "redisHelper": "Готовность cache dependency",
+      "redisHelper": "Готовность зависимости кэша",
       "qdrant": "Статус Qdrant",
-      "qdrantHelper": "Готовность vector store dependency",
+      "qdrantHelper": "Готовность векторного хранилища",
       "mqtt": "Статус MQTT",
-      "mqttHelper": "Не отдаётся текущим статусом backend",
+      "mqttHelper": "Не отдаётся текущим статусом сервера",
       "dataFreshness": "Свежесть данных",
       "freshnessHelper": "Из последней сводки телеметрии",
       "lastTelemetry": "Последнее обновление телеметрии",
@@ -429,14 +470,14 @@
     },
     "loading": {
       "summaryTitle": "Загружаем сводку сервисов",
-      "summaryDetail": "Получаем live status платформы.",
+      "summaryDetail": "Получаем актуальный статус платформы.",
       "signalsTitle": "Загружаем операционные сигналы",
-      "signalsDetail": "Проверяем timestamps телеметрии и прогнозов.",
+      "signalsDetail": "Проверяем временные метки телеметрии и прогнозов.",
       "servicesTitle": "Загружаем зависимости сервисов",
       "servicesDetail": "Читаем статусы зависимостей из /api/v1/system/status."
     },
     "empty": {
-      "unavailableTitle": "System health недоступен",
+      "unavailableTitle": "Здоровье системы недоступно",
       "unavailableDetail": "Dashboard не смог загрузить /health или /api/v1/system/status."
     }
   },
@@ -451,6 +492,6 @@
   },
   "errors": {
     "apiUnavailableTitle": "API недоступен. Dashboard ожидает живые данные.",
-    "apiUnavailableDetail": "Запустите backend stack, и dashboard заполнится ответами API."
+    "apiUnavailableDetail": "Запустите серверный стек, и dashboard заполнится ответами API."
   }
 }
