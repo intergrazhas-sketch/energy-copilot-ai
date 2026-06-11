@@ -227,9 +227,9 @@
       "minutes": "{value} мин"
     },
     "freshness": {
-      "fresh": "Fresh",
-      "stale": "Stale",
-      "offline": "Offline",
+      "fresh": "Жаңа дерек",
+      "stale": "Ескіріп жатыр",
+      "offline": "Байланыс жоқ",
       "no_data": "Дерек жоқ"
     },
     "kpi": {
@@ -243,7 +243,7 @@
       "lastTelemetry": "Соңғы телеметрия уақыты",
       "lastTelemetryHelper": "Соңғы қабылданған телеметрия нүктесі",
       "freshness": "Дерек жаңалығы статусы",
-      "freshnessHelper": "Fresh, stale немесе offline",
+      "freshnessHelper": "Жаңа, ескіріп жатқан дерек немесе байланыс жоқ",
       "points": "Телеметрия нүктелерінің саны",
       "pointsHelper": "Таңдалған кезеңдегі қабылданған нүктелер",
       "gap": "Мүмкін дерек үзілісі",
@@ -364,20 +364,25 @@
     "notAvailable": "Қолжетімсіз",
     "mqttUnavailable": "MQTT дайындық статусы backend арқылы әлі берілмейді.",
     "status": {
-      "healthy": "Healthy",
-      "warning": "Warning",
-      "critical": "Critical",
-      "unknown": "Unknown"
+      "healthy": "Қалыпты",
+      "warning": "Ескерту",
+      "critical": "Критикалық",
+      "unknown": "Белгісіз"
+    },
+    "environments": {
+      "development": "Әзірлеу",
+      "production": "Продакшн",
+      "staging": "Стейджинг"
     },
     "statusDetail": {
       "healthy": "Платформаның негізгі сервистері қалыпты жауап беріп тұр.",
       "warning": "Бір немесе бірнеше сигнал оператор назарын қажет етеді.",
       "critical": "Платформаның маңызды тәуелділігі қолжетімсіз.",
-      "unknown": "Кейбір платформа сигналдары backend health data ішінде жоқ."
+      "unknown": "Кейбір платформа сигналдары backend health деректерінде жоқ."
     },
     "kpi": {
       "overall": "Платформаның жалпы статусы",
-      "overallHelper": "Қолжетімді live health signals бойынша есептеледі",
+      "overallHelper": "Қолжетімді live health сигналдары бойынша есептеледі",
       "api": "API статусы",
       "database": "Дерекқор статусы",
       "databaseHelper": "PostgreSQL / TimescaleDB дайындығы",
@@ -386,19 +391,19 @@
       "qdrant": "Qdrant статусы",
       "qdrantHelper": "Vector store dependency дайындығы",
       "mqtt": "MQTT статусы",
-      "mqttHelper": "Қазіргі backend status арқылы берілмейді",
+      "mqttHelper": "Қазіргі backend статусы арқылы берілмейді",
       "dataFreshness": "Дерек жаңалығы",
-      "freshnessHelper": "Соңғы telemetry summary негізінде",
+      "freshnessHelper": "Соңғы телеметрия жиынтығы негізінде",
       "lastTelemetry": "Соңғы телеметрия жаңаруы",
       "telemetryHelper": "Соңғы қабылданған нүкте уақыты"
     },
     "summary": {
       "eyebrow": "Платформа",
       "title": "Сервистер жағдайының жиынтығы",
-      "healthy": "Healthy",
-      "warning": "Warning",
-      "critical": "Critical",
-      "unknown": "Unknown"
+      "healthy": "Қалыпты",
+      "warning": "Ескерту",
+      "critical": "Критикалық",
+      "unknown": "Белгісіз"
     },
     "signals": {
       "eyebrow": "Операциялар",

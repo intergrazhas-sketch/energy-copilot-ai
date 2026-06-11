@@ -369,6 +369,11 @@
       "critical": "Critical",
       "unknown": "Unknown"
     },
+    "environments": {
+      "development": "Development",
+      "production": "Production",
+      "staging": "Staging"
+    },
     "statusDetail": {
       "healthy": "Core platform services are responding normally.",
       "warning": "One or more signals need operator attention.",

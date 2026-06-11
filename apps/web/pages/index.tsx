@@ -457,6 +457,16 @@ function getLatestForecastUpdate(forecastRuns: ForecastRun[]) {
   return new Date(Math.max(...timestamps)).toISOString();
 }
 
+function translateEnvironment(value: string | undefined, t: Translate, fallback: string) {
+  if (!value) {
+    return fallback;
+  }
+
+  const key = `systemHealth.environments.${value}`;
+  const translated = t(key);
+  return translated === key ? value : translated;
+}
+
 function StatusBadge({ status, t }: { status?: string; t: Translate }) {
   const normalized = status || "unknown";
   const displayStatus = [
@@ -487,17 +497,19 @@ function MetricCard({
   helper,
   loading,
   t,
+  valueClassName = "",
 }: {
   label: string;
   value: string;
   helper: string;
   loading: boolean;
   t: Translate;
+  valueClassName?: string;
 }) {
   return (
     <section className="metric-card">
       <p>{label}</p>
-      <strong>{loading ? t("common.loading") : value}</strong>
+      <strong className={loading ? "" : valueClassName}>{loading ? t("common.loading") : value}</strong>
       <span>{loading ? t("common.fetchingLiveData") : helper}</span>
     </section>
   );
@@ -1243,6 +1255,7 @@ function DataQualitySection({ plants, t }: { plants: SolarPlant[]; t: Translate 
           loading={state.loading}
           t={t}
           value={translateRejectionReason(topReason?.reason, t, noData)}
+          valueClassName="metric-value-text"
         />
         <MetricCard
           helper={t("dataQuality.kpi.affectedAssetsHelper")}
@@ -1569,7 +1582,7 @@ function SystemHealthSection({
               </div>
               <div>
                 <span>{t("systemHealth.signals.environment")}</span>
-                <strong>{system?.environment || health?.environment || notAvailable}</strong>
+                <strong>{translateEnvironment(system?.environment || health?.environment, t, notAvailable)}</strong>
               </div>
               <div>
                 <span>{t("systemHealth.signals.version")}</span>
@@ -2523,6 +2536,16 @@ function DashboardOverview({
           font-size: clamp(24px, 3vw, 34px);
           letter-spacing: -0.05em;
           line-height: 1;
+          max-width: 100%;
+          overflow-wrap: anywhere;
+          white-space: normal;
+          word-break: break-word;
+        }
+
+        .metric-card strong.metric-value-text {
+          font-size: clamp(17px, 1.5vw, 22px);
+          letter-spacing: -0.025em;
+          line-height: 1.12;
           max-width: 100%;
           overflow-wrap: anywhere;
           white-space: normal;

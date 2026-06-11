@@ -227,9 +227,9 @@
       "minutes": "{value} мин"
     },
     "freshness": {
-      "fresh": "Fresh",
-      "stale": "Stale",
-      "offline": "Offline",
+      "fresh": "Свежие данные",
+      "stale": "Устаревает",
+      "offline": "Нет связи",
       "no_data": "Нет данных"
     },
     "kpi": {
@@ -243,7 +243,7 @@
       "lastTelemetry": "Время последней телеметрии",
       "lastTelemetryHelper": "Последняя принятая точка телеметрии",
       "freshness": "Статус свежести данных",
-      "freshnessHelper": "Fresh, stale или offline",
+      "freshnessHelper": "Свежие, устаревающие данные или нет связи",
       "points": "Количество точек телеметрии",
       "pointsHelper": "Принятые точки за выбранный период",
       "gap": "Возможный разрыв данных",
@@ -364,20 +364,25 @@
     "notAvailable": "Недоступно",
     "mqttUnavailable": "Готовность MQTT пока не отдаётся backend status.",
     "status": {
-      "healthy": "Healthy",
-      "warning": "Warning",
-      "critical": "Critical",
-      "unknown": "Unknown"
+      "healthy": "Исправно",
+      "warning": "Предупреждение",
+      "critical": "Критично",
+      "unknown": "Неизвестно"
+    },
+    "environments": {
+      "development": "Разработка",
+      "production": "Продакшн",
+      "staging": "Стейджинг"
     },
     "statusDetail": {
       "healthy": "Ключевые сервисы платформы отвечают штатно.",
       "warning": "Один или несколько сигналов требуют внимания оператора.",
       "critical": "Критическая зависимость платформы недоступна.",
-      "unknown": "Часть сигналов платформы не доступна в backend health data."
+      "unknown": "Часть сигналов платформы недоступна в данных backend health."
     },
     "kpi": {
       "overall": "Общий статус платформы",
-      "overallHelper": "Рассчитан по доступным live health signals",
+      "overallHelper": "Рассчитан по доступным live-сигналам здоровья",
       "api": "Статус API",
       "database": "Статус базы данных",
       "databaseHelper": "Готовность PostgreSQL / TimescaleDB",
@@ -386,19 +391,19 @@
       "qdrant": "Статус Qdrant",
       "qdrantHelper": "Готовность vector store dependency",
       "mqtt": "Статус MQTT",
-      "mqttHelper": "Не отдаётся текущим backend status",
+      "mqttHelper": "Не отдаётся текущим статусом backend",
       "dataFreshness": "Свежесть данных",
-      "freshnessHelper": "Из последней telemetry summary",
+      "freshnessHelper": "Из последней сводки телеметрии",
       "lastTelemetry": "Последнее обновление телеметрии",
       "telemetryHelper": "Время последней принятой точки"
     },
     "summary": {
       "eyebrow": "Платформа",
       "title": "Сводка здоровья сервисов",
-      "healthy": "Healthy",
-      "warning": "Warning",
-      "critical": "Critical",
-      "unknown": "Unknown"
+      "healthy": "Исправно",
+      "warning": "Предупреждение",
+      "critical": "Критично",
+      "unknown": "Неизвестно"
     },
     "signals": {
       "eyebrow": "Операции",
