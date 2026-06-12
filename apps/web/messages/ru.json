@@ -7,6 +7,7 @@
   "navigation": {
     "overview": "Обзор",
     "solarPlants": "Солнечные станции",
+    "solarPlantProfile": "Профиль станции",
     "forecastInsights": "Инсайты прогноза",
     "alertsCenter": "Центр алертов",
     "forecastAccuracyLab": "Лаборатория точности",
@@ -128,6 +129,69 @@
       "baselineValue": "~14%",
       "targetLabel": "Целевое качество",
       "targetValue": "<10% цель, <5% отлично"
+    }
+  },
+  "solarPlantProfile": {
+    "selector": {
+      "eyebrow": "Выбор станции",
+      "title": "Профиль солнечной станции",
+      "label": "Выбранная станция",
+      "helper": "Данные профиля загружаются для выбранной станции из существующих API."
+    },
+    "general": {
+      "eyebrow": "Общее",
+      "title": "Общая информация",
+      "name": "Название станции",
+      "id": "ID",
+      "status": "Статус",
+      "capacity": "Установленная мощность",
+      "dataProvider": "Провайдер данных"
+    },
+    "operational": {
+      "eyebrow": "Операции",
+      "title": "Операционная сводка",
+      "lastTelemetry": "Последняя телеметрия",
+      "currentPower": "Текущая мощность",
+      "telemetryPoints": "Точки телеметрии",
+      "freshness": "Свежесть данных"
+    },
+    "forecast": {
+      "eyebrow": "Прогноз",
+      "title": "Сводка прогноза",
+      "currentMape": "Текущий MAPE",
+      "bestProvider": "Лучший провайдер",
+      "baselineMape": "Базовый MAPE",
+      "targetMape": "Целевой MAPE"
+    },
+    "dataQuality": {
+      "eyebrow": "Качество данных",
+      "title": "Сводка качества данных",
+      "rejectedCount": "Количество отклонённой телеметрии",
+      "topReason": "Главная причина отклонения"
+    },
+    "alerts": {
+      "eyebrow": "Алерты",
+      "title": "Сводка алертов",
+      "activeAlerts": "Активные алерты",
+      "criticalAlerts": "Критичные алерты"
+    },
+    "timeline": {
+      "eyebrow": "Таймлайн",
+      "title": "Таймлайн станции",
+      "placeholderTitle": "Исторические события станции будут добавлены в Phase 2",
+      "placeholderDetail": "В этом MVP таймлайн остаётся placeholder, пока нет сохранённых событий станции."
+    },
+    "empty": {
+      "noPlantsTitle": "Станций нет",
+      "noPlantsDetail": "Для профиля нужна хотя бы одна станция из /api/v1/solar-plants.",
+      "profileUnavailableTitle": "Данные профиля станции недоступны",
+      "profileUnavailableDetail": "Dashboard не смог загрузить телеметрию, прогноз или качество данных для выбранной станции.",
+      "telemetryTitle": "Нет сводки телеметрии для этой станции",
+      "telemetryDetail": "Операционная сводка требует телеметрии для выбранной станции.",
+      "forecastTitle": "Нет данных точности прогноза для этой станции",
+      "forecastDetail": "Сводка прогноза требует агрегаты точности для выбранной станции.",
+      "dataQualityTitle": "Нет сводки качества данных для этой станции",
+      "dataQualityDetail": "Сводка качества данных требует отклонённую телеметрию для выбранной станции."
     }
   },
   "accuracy": {

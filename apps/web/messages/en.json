@@ -7,6 +7,7 @@
   "navigation": {
     "overview": "Overview",
     "solarPlants": "Solar Plants",
+    "solarPlantProfile": "Solar Plant Profile",
     "forecastInsights": "Forecast Insights",
     "alertsCenter": "Alerts Center",
     "forecastAccuracyLab": "Forecast Accuracy Lab",
@@ -128,6 +129,69 @@
       "baselineValue": "~14%",
       "targetLabel": "Target quality",
       "targetValue": "<10% target, <5% excellent"
+    }
+  },
+  "solarPlantProfile": {
+    "selector": {
+      "eyebrow": "Station Selector",
+      "title": "Solar Plant Profile",
+      "label": "Selected station",
+      "helper": "Profile data is loaded for the selected station from existing APIs."
+    },
+    "general": {
+      "eyebrow": "General",
+      "title": "General Information",
+      "name": "Station name",
+      "id": "ID",
+      "status": "Status",
+      "capacity": "Installed capacity",
+      "dataProvider": "Data provider"
+    },
+    "operational": {
+      "eyebrow": "Operations",
+      "title": "Operational Summary",
+      "lastTelemetry": "Last telemetry",
+      "currentPower": "Current power",
+      "telemetryPoints": "Telemetry points",
+      "freshness": "Data freshness"
+    },
+    "forecast": {
+      "eyebrow": "Forecast",
+      "title": "Forecast Summary",
+      "currentMape": "Current MAPE",
+      "bestProvider": "Best provider",
+      "baselineMape": "Baseline MAPE",
+      "targetMape": "Target MAPE"
+    },
+    "dataQuality": {
+      "eyebrow": "Data Quality",
+      "title": "Data Quality Summary",
+      "rejectedCount": "Rejected telemetry count",
+      "topReason": "Top rejection reason"
+    },
+    "alerts": {
+      "eyebrow": "Alerts",
+      "title": "Alerts Summary",
+      "activeAlerts": "Active alerts",
+      "criticalAlerts": "Critical alerts"
+    },
+    "timeline": {
+      "eyebrow": "Timeline",
+      "title": "Station Timeline",
+      "placeholderTitle": "Historical station events will be added in Phase 2",
+      "placeholderDetail": "This MVP keeps the timeline as a placeholder until persisted station events are available."
+    },
+    "empty": {
+      "noPlantsTitle": "No stations available",
+      "noPlantsDetail": "The profile requires at least one station returned by /api/v1/solar-plants.",
+      "profileUnavailableTitle": "Station profile data unavailable",
+      "profileUnavailableDetail": "The dashboard could not load telemetry, forecast, or data quality details for the selected station.",
+      "telemetryTitle": "No telemetry summary for this station",
+      "telemetryDetail": "Operational summary requires telemetry data for the selected station.",
+      "forecastTitle": "No forecast accuracy data for this station",
+      "forecastDetail": "Forecast summary requires accuracy aggregates for the selected station.",
+      "dataQualityTitle": "No data quality summary for this station",
+      "dataQualityDetail": "Data quality summary requires rejected telemetry data for the selected station."
     }
   },
   "accuracy": {

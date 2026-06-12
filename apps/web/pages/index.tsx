@@ -172,6 +172,15 @@ type DerivedAlert = {
   recommendedAction: string;
   priority: number;
 };
+type SolarPlantProfileState = {
+  loading: boolean;
+  error: string | null;
+  latest: TelemetryPoint | null;
+  summary: TelemetrySummary | null;
+  rejected: RejectedTelemetrySummary | null;
+  accuracy: AccuracySummary | null;
+  ranking: AccuracyProviderRankingResponse | null;
+};
 type MessageValue = string | number;
 type Translate = (key: string, values?: Record<string, MessageValue>) => string;
 
@@ -180,6 +189,7 @@ const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "";
 const navigationItems = [
   { key: "overview", labelKey: "overview" },
   { key: "solar-plants", labelKey: "solarPlants" },
+  { key: "solar-plant-profile", labelKey: "solarPlantProfile" },
   { key: "forecast-insights", labelKey: "forecastInsights" },
   { key: "alerts-center", labelKey: "alertsCenter" },
   { key: "forecast-accuracy-lab", labelKey: "forecastAccuracyLab" },
@@ -1311,6 +1321,343 @@ function AlertsCenterSection({
           <EmptyState detail={t("alertsCenter.empty.tableDetail")} title={t("alertsCenter.empty.tableTitle")} />
         )}
       </Panel>
+    </section>
+  );
+}
+
+function SolarPlantProfileSection({
+  plants,
+  forecastRuns,
+  system,
+  loading,
+  period,
+  locale,
+  t,
+}: {
+  plants: SolarPlant[];
+  forecastRuns: ForecastRun[];
+  system: SystemStatusResponse | null;
+  loading: boolean;
+  period: { from: string; to: string };
+  locale: Locale;
+  t: Translate;
+}) {
+  const noData = t("common.noData");
+  const [selectedPlantId, setSelectedPlantId] = useState("");
+  const [profileState, setProfileState] = useState<SolarPlantProfileState>({
+    loading: false,
+    error: null,
+    latest: null,
+    summary: null,
+    rejected: null,
+    accuracy: null,
+    ranking: null,
+  });
+
+  useEffect(() => {
+    if (plants.length === 0) {
+      setSelectedPlantId("");
+      return;
+    }
+
+    if (!selectedPlantId || !plants.some((plant) => plant.id === selectedPlantId)) {
+      setSelectedPlantId(plants[0].id);
+    }
+  }, [plants, selectedPlantId]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadPlantProfile() {
+      if (!selectedPlantId) {
+        setProfileState({
+          loading: false,
+          error: null,
+          latest: null,
+          summary: null,
+          rejected: null,
+          accuracy: null,
+          ranking: null,
+        });
+        return;
+      }
+
+      setProfileState((current) => ({
+        ...current,
+        loading: true,
+        error: null,
+      }));
+
+      const [latest, summary, rejected, accuracy, ranking] = await Promise.allSettled([
+        fetchJson<TelemetryPoint>("/api/v1/telemetry/latest", {
+          asset_id: selectedPlantId,
+        }),
+        fetchJson<TelemetrySummary>("/api/v1/telemetry/summary", {
+          asset_id: selectedPlantId,
+          from: period.from,
+          to: period.to,
+        }),
+        fetchJson<RejectedTelemetrySummary>("/api/v1/telemetry/rejected/summary", {
+          from: period.from,
+          to: period.to,
+          plant_id: selectedPlantId,
+          resolution_status: "open",
+        }),
+        fetchJson<AccuracySummary>("/api/v1/accuracy-lab/summary", {
+          from: period.from,
+          to: period.to,
+          bucket: "day",
+          solar_plant_id: selectedPlantId,
+        }),
+        fetchJson<AccuracyProviderRankingResponse>("/api/v1/accuracy-lab/providers/ranking", {
+          from: period.from,
+          to: period.to,
+          bucket: "day",
+          solar_plant_id: selectedPlantId,
+        }),
+      ]);
+
+      if (!mounted) {
+        return;
+      }
+
+      const nextState: SolarPlantProfileState = {
+        loading: false,
+        error: null,
+        latest: latest.status === "fulfilled" ? latest.value : null,
+        summary: summary.status === "fulfilled" ? summary.value : null,
+        rejected: rejected.status === "fulfilled" ? rejected.value : null,
+        accuracy: accuracy.status === "fulfilled" ? accuracy.value : null,
+        ranking: ranking.status === "fulfilled" ? ranking.value : null,
+      };
+
+      const hasAnyProfileData =
+        Boolean(nextState.latest) ||
+        Boolean(nextState.summary) ||
+        Boolean(nextState.rejected) ||
+        Boolean(nextState.accuracy) ||
+        Boolean(nextState.ranking);
+
+      setProfileState({
+        ...nextState,
+        error: hasAnyProfileData ? null : "profileUnavailable",
+      });
+    }
+
+    loadPlantProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedPlantId, period.from, period.to]);
+
+  const selectedPlant = plants.find((plant) => plant.id === selectedPlantId) || null;
+  const rankingProviders = profileState.ranking?.providers || [];
+  const rankedProviders = rankingProviders.filter(
+    (provider) => provider.avg_mape !== null && !Number.isNaN(provider.avg_mape),
+  );
+  const bestProvider = rankedProviders[0];
+  const topRejectedReason = profileState.rejected?.items
+    ? [...profileState.rejected.items].sort((first, second) => second.count - first.count)[0]
+    : undefined;
+  const profileAlerts = useMemo(() => {
+    if (!selectedPlant) {
+      return [];
+    }
+
+    return deriveAlertsFromDashboardData(
+      {
+        ...emptyData,
+        system,
+        plants: [selectedPlant],
+        forecastRuns: forecastRuns.filter((run) => run.solar_plant_id === selectedPlant.id),
+        accuracy: profileState.accuracy,
+        accuracyRanking: profileState.ranking,
+        rejected: profileState.rejected,
+        telemetryLatest: profileState.latest,
+        telemetrySummary: profileState.summary,
+        telemetryAssetId: selectedPlant.id,
+      },
+      locale,
+      t,
+    );
+  }, [forecastRuns, locale, profileState, selectedPlant, system, t]);
+  const activeAlerts = profileAlerts.length;
+  const criticalAlerts = profileAlerts.filter((alert) => alert.severity === "critical").length;
+  const sectionLoading = loading || profileState.loading;
+
+  return (
+    <section className="section-stack">
+      {plants.length === 0 && !loading ? (
+        <EmptyState
+          detail={t("solarPlantProfile.empty.noPlantsDetail")}
+          title={t("solarPlantProfile.empty.noPlantsTitle")}
+        />
+      ) : null}
+
+      <Panel eyebrow={t("solarPlantProfile.selector.eyebrow")} title={t("solarPlantProfile.selector.title")}>
+        <div className="plant-profile-selector">
+          <label>
+            <span>{t("solarPlantProfile.selector.label")}</span>
+            <select
+              disabled={plants.length === 0}
+              onChange={(event) => setSelectedPlantId(event.target.value)}
+              value={selectedPlantId}
+            >
+              {plants.map((plant) => (
+                <option key={plant.id} value={plant.id}>
+                  {plant.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <small>{t("solarPlantProfile.selector.helper")}</small>
+        </div>
+      </Panel>
+
+      {profileState.error ? (
+        <EmptyState
+          detail={t("solarPlantProfile.empty.profileUnavailableDetail")}
+          title={t("solarPlantProfile.empty.profileUnavailableTitle")}
+        />
+      ) : null}
+
+      <section className="plant-profile-layout">
+        <Panel eyebrow={t("solarPlantProfile.general.eyebrow")} title={t("solarPlantProfile.general.title")}>
+          <div className="profile-detail-grid">
+            <div>
+              <span>{t("solarPlantProfile.general.name")}</span>
+              <strong>{selectedPlant?.name || noData}</strong>
+            </div>
+            <div>
+              <span>{t("solarPlantProfile.general.id")}</span>
+              <strong>{selectedPlant?.id || noData}</strong>
+            </div>
+            <div>
+              <span>{t("solarPlantProfile.general.status")}</span>
+              <strong>{translateStatusLabel(selectedPlant?.status, t, noData)}</strong>
+            </div>
+            <div>
+              <span>{t("solarPlantProfile.general.capacity")}</span>
+              <strong>{selectedPlant ? formatCapacityMw(selectedPlant.capacity_kw, noData, locale) : noData}</strong>
+            </div>
+            <div>
+              <span>{t("solarPlantProfile.general.dataProvider")}</span>
+              <strong>{translateTelemetrySource(profileState.latest?.source, t, noData)}</strong>
+            </div>
+          </div>
+        </Panel>
+
+        <Panel eyebrow={t("solarPlantProfile.operational.eyebrow")} title={t("solarPlantProfile.operational.title")}>
+          <div className="profile-detail-grid">
+            <div>
+              <span>{t("solarPlantProfile.operational.lastTelemetry")}</span>
+              <strong>{formatDateTime(profileState.summary?.last_telemetry_time ?? profileState.latest?.timestamp, noData, locale)}</strong>
+            </div>
+            <div>
+              <span>{t("solarPlantProfile.operational.currentPower")}</span>
+              <strong>
+                {formatTranslatedUnit(
+                  profileState.summary?.current_power_kw ?? profileState.latest?.actual_power_kw,
+                  "telemetry.units.kw",
+                  t,
+                  noData,
+                  1,
+                  locale,
+                )}
+              </strong>
+            </div>
+            <div>
+              <span>{t("solarPlantProfile.operational.telemetryPoints")}</span>
+              <strong>{formatNumber(profileState.summary?.telemetry_points_count, 0, noData, locale)}</strong>
+            </div>
+            <div>
+              <span>{t("solarPlantProfile.operational.freshness")}</span>
+              <strong>
+                {profileState.summary?.data_freshness_status
+                  ? t(`telemetry.freshness.${profileState.summary.data_freshness_status}`)
+                  : noData}
+              </strong>
+            </div>
+          </div>
+          {!sectionLoading && selectedPlant && !profileState.summary ? (
+            <EmptyState
+              detail={t("solarPlantProfile.empty.telemetryDetail")}
+              title={t("solarPlantProfile.empty.telemetryTitle")}
+            />
+          ) : null}
+        </Panel>
+      </section>
+
+      <section className="plant-profile-layout">
+        <Panel eyebrow={t("solarPlantProfile.forecast.eyebrow")} title={t("solarPlantProfile.forecast.title")}>
+          <div className="profile-detail-grid">
+            <div>
+              <span>{t("solarPlantProfile.forecast.currentMape")}</span>
+              <strong>{formatPercent(profileState.accuracy?.avg_mape, noData, locale)}</strong>
+            </div>
+            <div>
+              <span>{t("solarPlantProfile.forecast.bestProvider")}</span>
+              <strong>{translateProviderName(bestProvider?.provider_name, bestProvider?.provider_code, t, noData)}</strong>
+            </div>
+            <div>
+              <span>{t("solarPlantProfile.forecast.baselineMape")}</span>
+              <strong>{t("forecastInsights.kpi.baselineValue")}</strong>
+            </div>
+            <div>
+              <span>{t("solarPlantProfile.forecast.targetMape")}</span>
+              <strong>{t("forecastInsights.kpi.targetValue")}</strong>
+            </div>
+          </div>
+          {!sectionLoading && selectedPlant && !profileState.accuracy ? (
+            <EmptyState
+              detail={t("solarPlantProfile.empty.forecastDetail")}
+              title={t("solarPlantProfile.empty.forecastTitle")}
+            />
+          ) : null}
+        </Panel>
+
+        <Panel eyebrow={t("solarPlantProfile.dataQuality.eyebrow")} title={t("solarPlantProfile.dataQuality.title")}>
+          <div className="profile-detail-grid">
+            <div>
+              <span>{t("solarPlantProfile.dataQuality.rejectedCount")}</span>
+              <strong>{formatNumber(profileState.rejected?.total, 0, noData, locale)}</strong>
+            </div>
+            <div>
+              <span>{t("solarPlantProfile.dataQuality.topReason")}</span>
+              <strong>{translateRejectionReason(topRejectedReason?.reason, t, noData)}</strong>
+            </div>
+          </div>
+          {!sectionLoading && selectedPlant && !profileState.rejected ? (
+            <EmptyState
+              detail={t("solarPlantProfile.empty.dataQualityDetail")}
+              title={t("solarPlantProfile.empty.dataQualityTitle")}
+            />
+          ) : null}
+        </Panel>
+      </section>
+
+      <section className="plant-profile-layout">
+        <Panel eyebrow={t("solarPlantProfile.alerts.eyebrow")} title={t("solarPlantProfile.alerts.title")}>
+          <div className="profile-detail-grid">
+            <div>
+              <span>{t("solarPlantProfile.alerts.activeAlerts")}</span>
+              <strong>{formatNumber(activeAlerts, 0, noData, locale)}</strong>
+            </div>
+            <div>
+              <span>{t("solarPlantProfile.alerts.criticalAlerts")}</span>
+              <strong>{formatNumber(criticalAlerts, 0, noData, locale)}</strong>
+            </div>
+          </div>
+        </Panel>
+
+        <Panel eyebrow={t("solarPlantProfile.timeline.eyebrow")} title={t("solarPlantProfile.timeline.title")}>
+          <EmptyState
+            detail={t("solarPlantProfile.timeline.placeholderDetail")}
+            title={t("solarPlantProfile.timeline.placeholderTitle")}
+          />
+        </Panel>
+      </section>
     </section>
   );
 }
@@ -3109,6 +3456,16 @@ function DashboardOverview({
             loading={state.loading}
             t={t}
           />
+        ) : activeSection === "solar-plant-profile" ? (
+          <SolarPlantProfileSection
+            forecastRuns={state.data.forecastRuns}
+            loading={state.loading}
+            locale={locale}
+            period={period}
+            plants={state.data.plants}
+            system={state.data.system}
+            t={t}
+          />
         ) : activeSection === "forecast-insights" ? (
           <ForecastInsightsSection
             forecastRuns={state.data.forecastRuns}
@@ -3461,6 +3818,13 @@ function DashboardOverview({
         .solar-layout {
           display: grid;
           grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
+          gap: 18px;
+          align-items: start;
+        }
+
+        .plant-profile-layout {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 18px;
           align-items: start;
         }
@@ -4499,6 +4863,76 @@ function DashboardOverview({
           gap: 16px;
         }
 
+        .plant-profile-selector {
+          display: grid;
+          gap: 10px;
+        }
+
+        .plant-profile-selector label {
+          display: grid;
+          gap: 8px;
+        }
+
+        .plant-profile-selector span {
+          color: rgba(245, 242, 237, 0.54);
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
+
+        .plant-profile-selector select {
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.24);
+          color: #fffaf4;
+          font: inherit;
+          min-width: 0;
+          padding: 12px 14px;
+        }
+
+        .plant-profile-selector small {
+          color: rgba(245, 242, 237, 0.52);
+          font-size: 12px;
+          line-height: 1.45;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .profile-detail-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .profile-detail-grid div {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          min-width: 0;
+          padding: 14px;
+        }
+
+        .profile-detail-grid span {
+          display: block;
+          color: rgba(245, 242, 237, 0.54);
+          font-size: 12px;
+          font-weight: 800;
+          line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .profile-detail-grid strong {
+          display: block;
+          margin-top: 8px;
+          color: #fffaf4;
+          font-size: 15px;
+          line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
         .pilot-hero {
           border: 1px solid rgba(255, 122, 24, 0.2);
           border-radius: 18px;
@@ -4748,6 +5182,7 @@ function DashboardOverview({
 
           .panel-grid,
           .solar-layout,
+          .plant-profile-layout,
           .accuracy-lab-layout,
           .providers-layout,
           .forecast-insights-layout,
@@ -4807,7 +5242,8 @@ function DashboardOverview({
           }
 
           .pilot-grid,
-          .target-grid {
+          .target-grid,
+          .profile-detail-grid {
             grid-template-columns: 1fr;
           }
 

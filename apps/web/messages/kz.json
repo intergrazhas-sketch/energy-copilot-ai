@@ -7,6 +7,7 @@
   "navigation": {
     "overview": "Шолу",
     "solarPlants": "Күн станциялары",
+    "solarPlantProfile": "Станция профилі",
     "forecastInsights": "Болжам талдауы",
     "alertsCenter": "Ескертулер орталығы",
     "forecastAccuracyLab": "Дәлдік зертханасы",
@@ -128,6 +129,69 @@
       "baselineValue": "~14%",
       "targetLabel": "Мақсатты сапа",
       "targetValue": "<10% мақсат, <5% өте жақсы"
+    }
+  },
+  "solarPlantProfile": {
+    "selector": {
+      "eyebrow": "Станция таңдау",
+      "title": "Күн станциясы профилі",
+      "label": "Таңдалған станция",
+      "helper": "Профиль деректері таңдалған станция үшін қолданыстағы API арқылы жүктеледі."
+    },
+    "general": {
+      "eyebrow": "Жалпы",
+      "title": "Жалпы ақпарат",
+      "name": "Станция атауы",
+      "id": "ID",
+      "status": "Статус",
+      "capacity": "Орнатылған қуат",
+      "dataProvider": "Дерек провайдері"
+    },
+    "operational": {
+      "eyebrow": "Операциялар",
+      "title": "Операциялық жиынтық",
+      "lastTelemetry": "Соңғы телеметрия",
+      "currentPower": "Ағымдағы қуат",
+      "telemetryPoints": "Телеметрия нүктелері",
+      "freshness": "Дерек жаңалығы"
+    },
+    "forecast": {
+      "eyebrow": "Болжам",
+      "title": "Болжам жиынтығы",
+      "currentMape": "Ағымдағы MAPE",
+      "bestProvider": "Үздік провайдер",
+      "baselineMape": "Базалық MAPE",
+      "targetMape": "Мақсатты MAPE"
+    },
+    "dataQuality": {
+      "eyebrow": "Дерек сапасы",
+      "title": "Дерек сапасы жиынтығы",
+      "rejectedCount": "Қабылданбаған телеметрия саны",
+      "topReason": "Негізгі қабылдамау себебі"
+    },
+    "alerts": {
+      "eyebrow": "Ескертулер",
+      "title": "Ескертулер жиынтығы",
+      "activeAlerts": "Белсенді ескертулер",
+      "criticalAlerts": "Критикалық ескертулер"
+    },
+    "timeline": {
+      "eyebrow": "Таймлайн",
+      "title": "Станция таймлайны",
+      "placeholderTitle": "Станцияның тарихи оқиғалары Phase 2 кезеңінде қосылады",
+      "placeholderDetail": "Бұл MVP-де сақталған станция оқиғалары жоқ болғандықтан, таймлайн placeholder ретінде қалады."
+    },
+    "empty": {
+      "noPlantsTitle": "Станциялар жоқ",
+      "noPlantsDetail": "Профиль үшін /api/v1/solar-plants қайтарған кемінде бір станция қажет.",
+      "profileUnavailableTitle": "Станция профилі деректері қолжетімсіз",
+      "profileUnavailableDetail": "Dashboard таңдалған станция үшін телеметрия, болжам немесе дерек сапасы деректерін жүктей алмады.",
+      "telemetryTitle": "Бұл станция үшін телеметрия жиынтығы жоқ",
+      "telemetryDetail": "Операциялық жиынтық таңдалған станцияның телеметриясын қажет етеді.",
+      "forecastTitle": "Бұл станция үшін болжам дәлдігі деректері жоқ",
+      "forecastDetail": "Болжам жиынтығы таңдалған станция үшін дәлдік агрегаттарын қажет етеді.",
+      "dataQualityTitle": "Бұл станция үшін дерек сапасы жиынтығы жоқ",
+      "dataQualityDetail": "Дерек сапасы жиынтығы таңдалған станция үшін қабылданбаған телеметрияны қажет етеді."
     }
   },
   "accuracy": {
