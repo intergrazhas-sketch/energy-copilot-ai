@@ -33,6 +33,15 @@ type SolarPlant = {
   created_at?: string;
 };
 
+type SolarPlantFormState = {
+  name: string;
+  capacityKw: string;
+  latitude: string;
+  longitude: string;
+  timezone: string;
+  status: string;
+};
+
 type ForecastProvider = {
   id: string;
   code: string;
@@ -737,16 +746,88 @@ function SolarPlantsSection({
   plants,
   loading,
   locale,
+  onPlantCreated,
+  onSelectPlant,
   t,
 }: {
   plants: SolarPlant[];
   loading: boolean;
   locale: Locale;
+  onPlantCreated: (plant: SolarPlant) => void;
+  onSelectPlant: (plantId: string) => void;
   t: Translate;
 }) {
   const noData = t("common.noData");
   const totalCapacityKw = plants.reduce((sum, plant) => sum + plant.capacity_kw, 0);
   const activePlants = plants.filter((plant) => plant.status === "active").length;
+  const [form, setForm] = useState<SolarPlantFormState>({
+    name: "",
+    capacityKw: "",
+    latitude: "",
+    longitude: "",
+    timezone: "Asia/Almaty",
+    status: "active",
+  });
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [formMessage, setFormMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const updateForm = (field: keyof SolarPlantFormState, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleAddPlant = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFormMessage(null);
+
+    const capacityKw = Number(form.capacityKw);
+    const latitude = form.latitude.trim() ? Number(form.latitude) : null;
+    const longitude = form.longitude.trim() ? Number(form.longitude) : null;
+
+    if (!form.name.trim() || !Number.isFinite(capacityKw) || capacityKw <= 0) {
+      setFormMessage({ type: "error", text: t("solarPlants.addForm.validationError") });
+      return;
+    }
+
+    setFormSubmitting(true);
+    try {
+      const response = await fetch(buildUrl("/api/v1/solar-plants"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          capacity_kw: capacityKw,
+          latitude,
+          longitude,
+          timezone: form.timezone.trim() || "Asia/Almaty",
+          status: form.status,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Create solar plant returned ${response.status}`);
+      }
+
+      const createdPlant = (await response.json()) as SolarPlant;
+      onPlantCreated(createdPlant);
+      setForm((current) => ({
+        ...current,
+        name: "",
+        capacityKw: "",
+        latitude: "",
+        longitude: "",
+      }));
+      setFormMessage({
+        type: "success",
+        text: t("solarPlants.addForm.success", { name: createdPlant.name }),
+      });
+    } catch {
+      setFormMessage({ type: "error", text: t("solarPlants.addForm.error") });
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
 
   return (
     <section className="section-stack">
@@ -786,34 +867,128 @@ function SolarPlantsSection({
 
       <section className="solar-layout">
         <Panel eyebrow={t("solarPlants.assetListEyebrow")} title={t("solarPlants.assetListTitle")}>
+          <form className="solar-plant-form" onSubmit={handleAddPlant}>
+            <div className="solar-plant-form-heading">
+              <div>
+                <span>{t("solarPlants.addForm.eyebrow")}</span>
+                <strong>{t("solarPlants.addForm.title")}</strong>
+              </div>
+              <p>{t("solarPlants.addForm.helper")}</p>
+            </div>
+            <div className="solar-plant-form-grid">
+              <label>
+                <span>{t("solarPlants.addForm.name")}</span>
+                <input
+                  disabled={formSubmitting}
+                  onChange={(event) => updateForm("name", event.target.value)}
+                  required
+                  type="text"
+                  value={form.name}
+                />
+              </label>
+              <label>
+                <span>{t("solarPlants.addForm.capacityKw")}</span>
+                <input
+                  disabled={formSubmitting}
+                  min="0"
+                  onChange={(event) => updateForm("capacityKw", event.target.value)}
+                  required
+                  step="0.01"
+                  type="number"
+                  value={form.capacityKw}
+                />
+              </label>
+              <label>
+                <span>{t("solarPlants.addForm.latitude")}</span>
+                <input
+                  disabled={formSubmitting}
+                  max="90"
+                  min="-90"
+                  onChange={(event) => updateForm("latitude", event.target.value)}
+                  step="0.000001"
+                  type="number"
+                  value={form.latitude}
+                />
+              </label>
+              <label>
+                <span>{t("solarPlants.addForm.longitude")}</span>
+                <input
+                  disabled={formSubmitting}
+                  max="180"
+                  min="-180"
+                  onChange={(event) => updateForm("longitude", event.target.value)}
+                  step="0.000001"
+                  type="number"
+                  value={form.longitude}
+                />
+              </label>
+              <label>
+                <span>{t("solarPlants.addForm.timezone")}</span>
+                <input
+                  disabled={formSubmitting}
+                  onChange={(event) => updateForm("timezone", event.target.value)}
+                  type="text"
+                  value={form.timezone}
+                />
+              </label>
+              <label>
+                <span>{t("solarPlants.addForm.status")}</span>
+                <select
+                  disabled={formSubmitting}
+                  onChange={(event) => updateForm("status", event.target.value)}
+                  value={form.status}
+                >
+                  <option value="active">{t("status.active")}</option>
+                  <option value="inactive">{t("status.inactive")}</option>
+                </select>
+              </label>
+            </div>
+            {formMessage ? (
+              <div className={`solar-plant-form-message ${formMessage.type}`}>{formMessage.text}</div>
+            ) : null}
+            <button className="solar-plant-form-submit" disabled={formSubmitting} type="submit">
+              {formSubmitting ? t("solarPlants.addForm.submitting") : t("solarPlants.addForm.submit")}
+            </button>
+          </form>
+
           {loading ? (
             <EmptyState detail={t("solarPlants.loadingDetail")} title={t("solarPlants.loadingTitle")} />
           ) : plants.length > 0 ? (
-            <div className="plants-table">
-              <div className="plants-table-head">
-                <span>{t("solarPlants.table.name")}</span>
-                <span>{t("solarPlants.table.capacity")}</span>
-                <span>{t("solarPlants.table.status")}</span>
-                <span>{t("solarPlants.table.timezone")}</span>
-                <span>{t("solarPlants.table.location")}</span>
-                <span>{t("solarPlants.table.createdAt")}</span>
-              </div>
+            <div className="plants-list">
               {plants.map((plant) => (
-                <div className="plants-table-row" key={plant.id}>
-                  <strong>{plant.name}</strong>
-                  <span>
-                    {t("solarPlants.table.capacityValue", {
-                      kw: formatNumber(plant.capacity_kw, 0, noData, locale),
-                      mw: formatNumber(plant.capacity_kw / 1000, 2, noData, locale),
-                    })}
-                  </span>
-                  <span>
+                <button
+                  aria-label={plant.name}
+                  className="plant-list-card"
+                  key={plant.id}
+                  onClick={() => onSelectPlant(plant.id)}
+                  type="button"
+                >
+                  <div className="plant-list-card-main">
+                    <strong>{plant.name}</strong>
                     <StatusBadge status={plant.status} t={t} />
-                  </span>
-                  <span>{plant.timezone || noData}</span>
-                  <span>{formatPlantLocation(plant, noData, locale)}</span>
-                  <span>{formatDate(plant.created_at, noData, locale)}</span>
-                </div>
+                  </div>
+                  <div className="plant-list-card-meta">
+                    <span>
+                      <small>{t("solarPlants.table.capacity")}</small>
+                      {t("solarPlants.table.capacityValue", {
+                        kw: formatNumber(plant.capacity_kw, 0, noData, locale),
+                        mw: formatNumber(plant.capacity_kw / 1000, 2, noData, locale),
+                      })}
+                    </span>
+                    <span>
+                      <small>{t("solarPlants.table.timezone")}</small>
+                      {plant.timezone || noData}
+                    </span>
+                    <span>
+                      <small>{t("solarPlants.table.location")}</small>
+                      {formatPlantLocation(plant, noData, locale)}
+                    </span>
+                    <span>
+                      <small>{t("solarPlants.table.createdAt")}</small>
+                      {formatDate(plant.created_at, noData, locale)}
+                    </span>
+                  </div>
+                </button>
               ))}
             </div>
           ) : (
@@ -1327,6 +1502,8 @@ function AlertsCenterSection({
 
 function SolarPlantProfileSection({
   plants,
+  selectedPlantId,
+  onSelectedPlantIdChange,
   forecastRuns,
   system,
   loading,
@@ -1335,6 +1512,8 @@ function SolarPlantProfileSection({
   t,
 }: {
   plants: SolarPlant[];
+  selectedPlantId: string;
+  onSelectedPlantIdChange: (plantId: string) => void;
   forecastRuns: ForecastRun[];
   system: SystemStatusResponse | null;
   loading: boolean;
@@ -1343,7 +1522,6 @@ function SolarPlantProfileSection({
   t: Translate;
 }) {
   const noData = t("common.noData");
-  const [selectedPlantId, setSelectedPlantId] = useState("");
   const [profileState, setProfileState] = useState<SolarPlantProfileState>({
     loading: false,
     error: null,
@@ -1353,17 +1531,18 @@ function SolarPlantProfileSection({
     accuracy: null,
     ranking: null,
   });
+  const [stationDataFile, setStationDataFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (plants.length === 0) {
-      setSelectedPlantId("");
+      onSelectedPlantIdChange("");
       return;
     }
 
     if (!selectedPlantId || !plants.some((plant) => plant.id === selectedPlantId)) {
-      setSelectedPlantId(plants[0].id);
+      onSelectedPlantIdChange(plants[0].id);
     }
-  }, [plants, selectedPlantId]);
+  }, [onSelectedPlantIdChange, plants, selectedPlantId]);
 
   useEffect(() => {
     let mounted = true;
@@ -1485,6 +1664,13 @@ function SolarPlantProfileSection({
   const activeAlerts = profileAlerts.length;
   const criticalAlerts = profileAlerts.filter((alert) => alert.severity === "critical").length;
   const sectionLoading = loading || profileState.loading;
+  const stationDataFileSize =
+    stationDataFile?.size !== undefined
+      ? t("solarPlantProfile.upload.fileSizeValue", {
+          value: formatNumber(stationDataFile.size / 1024, 1, noData, locale),
+        })
+      : noData;
+  const stationDataFileType = stationDataFile?.type || t("solarPlantProfile.upload.unknownType");
 
   return (
     <section className="section-stack">
@@ -1501,7 +1687,7 @@ function SolarPlantProfileSection({
             <span>{t("solarPlantProfile.selector.label")}</span>
             <select
               disabled={plants.length === 0}
-              onChange={(event) => setSelectedPlantId(event.target.value)}
+              onChange={(event) => onSelectedPlantIdChange(event.target.value)}
               value={selectedPlantId}
             >
               {plants.map((plant) => (
@@ -1648,6 +1834,41 @@ function SolarPlantProfileSection({
               <span>{t("solarPlantProfile.alerts.criticalAlerts")}</span>
               <strong>{formatNumber(criticalAlerts, 0, noData, locale)}</strong>
             </div>
+          </div>
+        </Panel>
+
+        <Panel eyebrow={t("solarPlantProfile.upload.eyebrow")} title={t("solarPlantProfile.upload.title")}>
+          <div className="station-upload-card">
+            <p>{t("solarPlantProfile.upload.helper")}</p>
+            <label className="station-upload-button">
+              <span>{t("solarPlantProfile.upload.button")}</span>
+              <input
+                accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={(event) => setStationDataFile(event.target.files?.[0] || null)}
+                type="file"
+              />
+            </label>
+            {stationDataFile ? (
+              <div className="station-upload-file">
+                <div>
+                  <span>{t("solarPlantProfile.upload.fileName")}</span>
+                  <strong>{stationDataFile.name}</strong>
+                </div>
+                <div>
+                  <span>{t("solarPlantProfile.upload.fileSize")}</span>
+                  <strong>{stationDataFileSize}</strong>
+                </div>
+                <div>
+                  <span>{t("solarPlantProfile.upload.fileType")}</span>
+                  <strong>{stationDataFileType}</strong>
+                </div>
+              </div>
+            ) : (
+              <EmptyState
+                detail={t("solarPlantProfile.upload.emptyDetail")}
+                title={t("solarPlantProfile.upload.emptyTitle")}
+              />
+            )}
           </div>
         </Panel>
 
@@ -3077,6 +3298,22 @@ function DashboardOverview({
     data: emptyData,
   });
   const [activeSection, setActiveSection] = useState<SectionKey>("overview");
+  const [selectedProfilePlantId, setSelectedProfilePlantId] = useState("");
+
+  const openPlantProfile = (plantId: string) => {
+    setSelectedProfilePlantId(plantId);
+    setActiveSection("solar-plant-profile");
+  };
+
+  const addCreatedPlant = (plant: SolarPlant) => {
+    setState((current) => ({
+      ...current,
+      data: {
+        ...current.data,
+        plants: [plant, ...current.data.plants.filter((item) => item.id !== plant.id)],
+      },
+    }));
+  };
 
   const period = useMemo(() => {
     const periodTo = new Date();
@@ -3454,6 +3691,8 @@ function DashboardOverview({
             locale={locale}
             plants={state.data.plants}
             loading={state.loading}
+            onPlantCreated={addCreatedPlant}
+            onSelectPlant={openPlantProfile}
             t={t}
           />
         ) : activeSection === "solar-plant-profile" ? (
@@ -3461,8 +3700,10 @@ function DashboardOverview({
             forecastRuns={state.data.forecastRuns}
             loading={state.loading}
             locale={locale}
+            onSelectedPlantIdChange={setSelectedProfilePlantId}
             period={period}
             plants={state.data.plants}
+            selectedPlantId={selectedProfilePlantId}
             system={state.data.system}
             t={t}
           />
@@ -4817,45 +5058,183 @@ function DashboardOverview({
           word-break: break-word;
         }
 
-        .plants-table {
+        .plants-list {
           display: grid;
-          gap: 10px;
-          overflow-x: auto;
-        }
-
-        .plants-table-head,
-        .plants-table-row {
-          display: grid;
-          grid-template-columns: minmax(180px, 1.4fr) minmax(130px, 1fr) minmax(100px, 0.7fr) minmax(130px, 1fr) minmax(150px, 1fr) minmax(120px, 0.9fr);
           gap: 12px;
-          min-width: 920px;
-          align-items: center;
+          max-width: 100%;
         }
 
-        .plants-table-head {
-          color: rgba(245, 242, 237, 0.46);
+        .solar-plant-form {
+          display: grid;
+          gap: 14px;
+          margin-bottom: 18px;
+          border: 1px solid rgba(255, 122, 24, 0.16);
+          border-radius: 16px;
+          background: rgba(255, 122, 24, 0.06);
+          padding: 16px;
+        }
+
+        .solar-plant-form-heading {
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+          justify-content: space-between;
+        }
+
+        .solar-plant-form-heading div {
+          display: grid;
+          gap: 4px;
+        }
+
+        .solar-plant-form-heading span,
+        .solar-plant-form-grid span {
+          color: rgba(245, 242, 237, 0.52);
           font-size: 11px;
           font-weight: 800;
           letter-spacing: 0.08em;
-          padding: 0 12px;
           text-transform: uppercase;
         }
 
-        .plants-table-row {
+        .solar-plant-form-heading strong {
+          color: #fffaf4;
+          font-size: 17px;
+          line-height: 1.3;
+        }
+
+        .solar-plant-form-heading p {
+          margin: 0;
+          max-width: 280px;
+          color: rgba(245, 242, 237, 0.56);
+          font-size: 12px;
+          line-height: 1.45;
+          text-align: right;
+        }
+
+        .solar-plant-form-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .solar-plant-form-grid label {
+          display: grid;
+          gap: 7px;
+          min-width: 0;
+        }
+
+        .solar-plant-form-grid input,
+        .solar-plant-form-grid select {
+          width: 100%;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          background: rgba(0, 0, 0, 0.22);
+          color: #fffaf4;
+          font: inherit;
+          min-width: 0;
+          padding: 10px 12px;
+        }
+
+        .solar-plant-form-message {
+          border-radius: 12px;
+          font-size: 13px;
+          line-height: 1.4;
+          padding: 10px 12px;
+        }
+
+        .solar-plant-form-message.success {
+          border: 1px solid rgba(107, 226, 190, 0.24);
+          background: rgba(107, 226, 190, 0.09);
+          color: #adf4df;
+        }
+
+        .solar-plant-form-message.error {
+          border: 1px solid rgba(255, 111, 111, 0.28);
+          background: rgba(255, 111, 111, 0.1);
+          color: #ffb9b9;
+        }
+
+        .solar-plant-form-submit {
+          justify-self: start;
+          border: none;
+          border-radius: 999px;
+          background: linear-gradient(135deg, #ff7a18, #ffb347);
+          color: #1b120a;
+          cursor: pointer;
+          font: inherit;
+          font-weight: 900;
+          padding: 10px 18px;
+        }
+
+        .solar-plant-form-submit:disabled {
+          cursor: not-allowed;
+          opacity: 0.62;
+        }
+
+        .plant-list-card {
+          display: grid;
+          gap: 14px;
           border: 1px solid rgba(255, 255, 255, 0.07);
           border-radius: 14px;
           background: rgba(0, 0, 0, 0.18);
-          padding: 12px;
+          color: inherit;
+          cursor: pointer;
+          font: inherit;
+          min-width: 0;
+          padding: 14px;
+          text-align: left;
+          transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+          width: 100%;
         }
 
-        .plants-table-row strong {
+        .plant-list-card:hover,
+        .plant-list-card:focus-visible {
+          border-color: rgba(255, 122, 24, 0.42);
+          background: rgba(255, 122, 24, 0.08);
+          outline: none;
+          transform: translateY(-1px);
+        }
+
+        .plant-list-card-main {
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+          justify-content: space-between;
+          min-width: 0;
+        }
+
+        .plant-list-card-main strong {
           color: #fffaf4;
-          font-size: 14px;
+          font-size: 15px;
+          line-height: 1.35;
+          min-width: 0;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
-        .plants-table-row span {
+        .plant-list-card-meta {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          min-width: 0;
+        }
+
+        .plant-list-card-meta span {
           color: rgba(245, 242, 237, 0.58);
+          display: grid;
+          gap: 4px;
           font-size: 13px;
+          line-height: 1.4;
+          min-width: 0;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .plant-list-card-meta small {
+          color: rgba(245, 242, 237, 0.44);
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
         }
 
         .pilot-card {
@@ -4928,6 +5307,74 @@ function DashboardOverview({
           margin-top: 8px;
           color: #fffaf4;
           font-size: 15px;
+          line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .station-upload-card {
+          display: grid;
+          gap: 14px;
+        }
+
+        .station-upload-card p {
+          margin: 0;
+          color: rgba(245, 242, 237, 0.58);
+          font-size: 13px;
+          line-height: 1.45;
+        }
+
+        .station-upload-button {
+          display: inline-flex;
+          width: fit-content;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          background: linear-gradient(135deg, #ff7a18, #ffb347);
+          color: #1b120a;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 900;
+          padding: 10px 16px;
+        }
+
+        .station-upload-button input {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .station-upload-file {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .station-upload-file div {
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.18);
+          min-width: 0;
+          padding: 14px;
+        }
+
+        .station-upload-file span {
+          display: block;
+          color: rgba(245, 242, 237, 0.54);
+          font-size: 12px;
+          font-weight: 800;
+          line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .station-upload-file strong {
+          display: block;
+          margin-top: 8px;
+          color: #fffaf4;
+          font-size: 14px;
           line-height: 1.35;
           overflow-wrap: anywhere;
           word-break: break-word;
@@ -5237,12 +5684,24 @@ function DashboardOverview({
           .data-quality-filters,
           .accuracy-grid,
           .forecast-thresholds,
+          .solar-plant-form-grid,
           .platform-status-grid {
             grid-template-columns: 1fr;
           }
 
+          .solar-plant-form-heading {
+            flex-direction: column;
+          }
+
+          .solar-plant-form-heading p {
+            max-width: none;
+            text-align: left;
+          }
+
           .pilot-grid,
           .target-grid,
+          .plant-list-card-meta,
+          .station-upload-file,
           .profile-detail-grid {
             grid-template-columns: 1fr;
           }

@@ -91,6 +91,22 @@
     "emptyDetail": "The pilot asset will be connected here after the Varvarinskaya SPP onboarding data is available.",
     "assetListEyebrow": "Portfolio",
     "assetListTitle": "Solar Plants",
+    "addForm": {
+      "eyebrow": "Create asset",
+      "title": "Add Solar Plant",
+      "helper": "Creates a new station through /api/v1/solar-plants.",
+      "name": "Name",
+      "capacityKw": "Capacity, kW",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "timezone": "Timezone",
+      "status": "Status",
+      "submit": "Add station",
+      "submitting": "Adding...",
+      "success": "{name} was added.",
+      "error": "Could not add solar plant. Check the API response and try again.",
+      "validationError": "Name and positive capacity are required."
+    },
     "kpi": {
       "totalPlants": "Total plants",
       "totalPlantsHelper": "Assets returned by /api/v1/solar-plants",
@@ -174,6 +190,19 @@
       "title": "Alerts Summary",
       "activeAlerts": "Active alerts",
       "criticalAlerts": "Critical alerts"
+    },
+    "upload": {
+      "eyebrow": "Station Data",
+      "title": "Data Upload",
+      "helper": "Select a CSV or XLSX file for review. Files are not uploaded or processed in this MVP.",
+      "button": "Upload Station Data",
+      "emptyTitle": "No file selected",
+      "emptyDetail": "Choose a CSV or XLSX file to preview basic file metadata.",
+      "fileName": "File name",
+      "fileSize": "File size",
+      "fileSizeValue": "{value} KB",
+      "fileType": "File type",
+      "unknownType": "Unknown type"
     },
     "timeline": {
       "eyebrow": "Timeline",
