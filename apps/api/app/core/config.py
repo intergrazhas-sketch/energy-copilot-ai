@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     mqtt_reconnect_seconds: float = 5.0
     mqtt_enabled: bool = True
     telemetry_revenue_per_kwh: float | None = None
+    alert_telemetry_critical_minutes: int = 120
 
     model_config = SettingsConfigDict(extra="ignore")
 

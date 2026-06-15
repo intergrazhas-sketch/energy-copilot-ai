@@ -143,6 +143,38 @@ type TelemetrySummary = {
   possible_data_gap_minutes: number | null;
 };
 
+type TelemetryCsvImportResponse = {
+  imported_rows: number;
+  rejected_rows: number;
+  errors: Array<{
+    row_number: number | null;
+    message: string;
+  }>;
+};
+
+type BackendAlertSeverity = "healthy" | "warning" | "critical" | "unknown";
+type BackendAlert = {
+  id: string;
+  type: string;
+  severity: BackendAlertSeverity;
+  title?: string;
+  message?: string;
+  source: string;
+  plant_id: string | null;
+  detected_at: string;
+  metadata?: Record<string, unknown>;
+};
+type AlertsSummaryResponse = {
+  generated_at: string;
+  total: number;
+  active_alerts: number;
+  healthy: number;
+  warning: number;
+  critical: number;
+  unknown: number;
+  alerts: BackendAlert[];
+};
+
 type DashboardData = {
   health: HealthResponse | null;
   system: SystemStatusResponse | null;
@@ -156,6 +188,7 @@ type DashboardData = {
   telemetryHistory: TelemetryPoint[];
   telemetrySummary: TelemetrySummary | null;
   telemetryAssetId: string | null;
+  alertsSummary: AlertsSummaryResponse | null;
 };
 
 type DashboardState = {
@@ -168,12 +201,14 @@ type Locale = "en" | "ru" | "kz";
 type DataQualityPeriodKey = "24h" | "7d" | "30d";
 type DataQualityStatus = "clean" | "watch" | "attention";
 type MonitoringStatus = "healthy" | "warning" | "critical" | "unknown";
-type AlertSeverity = "critical" | "warning" | "info";
+type AlertSeverity = BackendAlertSeverity | "info";
 type AlertCategory = "telemetry" | "dataQuality" | "forecast" | "system" | "asset";
 type DerivedAlert = {
   id: string;
   severity: AlertSeverity;
   category: AlertCategory;
+  title?: string;
+  message?: string;
   type: string;
   entity: string;
   signalValue: string;
@@ -189,6 +224,7 @@ type SolarPlantProfileState = {
   rejected: RejectedTelemetrySummary | null;
   accuracy: AccuracySummary | null;
   ranking: AccuracyProviderRankingResponse | null;
+  alertsSummary: AlertsSummaryResponse | null;
 };
 type MessageValue = string | number;
 type Translate = (key: string, values?: Record<string, MessageValue>) => string;
@@ -267,7 +303,9 @@ const criticalRejectionReasons = new Set([
 const alertSeverityRank: Record<AlertSeverity, number> = {
   critical: 0,
   warning: 1,
-  info: 2,
+  unknown: 2,
+  healthy: 3,
+  info: 4,
 };
 
 const messages = {
@@ -309,6 +347,7 @@ const emptyData: DashboardData = {
   telemetryHistory: [],
   telemetrySummary: null,
   telemetryAssetId: null,
+  alertsSummary: null,
 };
 
 function getApiBaseUrl() {
@@ -1067,6 +1106,89 @@ function getHighestAlertSeverity(alerts: DerivedAlert[]): AlertSeverity | null {
   return sortAlerts(alerts)[0]?.severity || null;
 }
 
+function getBackendAlertCategory(type: string): AlertCategory {
+  if (type === "telemetry_freshness") {
+    return "telemetry";
+  }
+  if (type === "rejected_telemetry") {
+    return "dataQuality";
+  }
+  if (type === "system_health") {
+    return "system";
+  }
+  if (["forecast_accuracy", "forecast_runs", "provider_performance"].includes(type)) {
+    return "forecast";
+  }
+  return "system";
+}
+
+function getAlertMetadataString(alert: BackendAlert, key: string, fallback: string) {
+  const value = alert.metadata?.[key];
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value.join(", ") : fallback;
+  }
+  return String(value);
+}
+
+function getAlertMetadataNumber(alert: BackendAlert, key: string) {
+  const value = alert.metadata?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function translateBackendAlertTitle(alert: BackendAlert, t: Translate) {
+  const key = `alertsCenter.backendAlerts.${alert.type}.title`;
+  const translated = t(key);
+  return translated === key ? alert.title : translated;
+}
+
+function translateBackendAlertMessage(
+  alert: BackendAlert,
+  t: Translate,
+  locale: Locale,
+  fallback: string,
+) {
+  const key = `alertsCenter.backendAlerts.${alert.type}.message.${alert.severity}`;
+  const plant = getAlertMetadataString(alert, "plant_name", alert.plant_id || fallback);
+  const count = getAlertMetadataNumber(alert, "count") ?? getAlertMetadataNumber(alert, "recent_runs_count");
+  const minutes = getAlertMetadataNumber(alert, "age_minutes");
+  const threshold = getAlertMetadataNumber(alert, "threshold_minutes");
+  const mape = getAlertMetadataNumber(alert, "avg_mape") ?? getAlertMetadataNumber(alert, "best_mape");
+  const target = getAlertMetadataNumber(alert, "target_mape");
+  const translated = t(key, {
+    plant,
+    count: formatNumber(count, 0, fallback, locale),
+    minutes: formatNumber(minutes, 0, fallback, locale),
+    threshold: formatNumber(threshold, 0, fallback, locale),
+    mape: formatPercent(mape, fallback, locale),
+    target: formatPercent(target, fallback, locale),
+    reason: getAlertMetadataString(alert, "top_reason", fallback),
+    status: getAlertMetadataString(alert, "status", fallback),
+    dependencies: getAlertMetadataString(alert, "failed_dependencies", fallback),
+  });
+  return translated === key ? alert.message : translated;
+}
+
+function mapBackendAlert(alert: BackendAlert, locale: Locale, t: Translate): DerivedAlert {
+  const noData = t("common.noData");
+  const category = getBackendAlertCategory(alert.type);
+  return {
+    id: alert.id,
+    severity: alert.severity,
+    category,
+    type: alert.type,
+    title: translateBackendAlertTitle(alert, t),
+    message: translateBackendAlertMessage(alert, t, locale, noData),
+    entity: getAlertMetadataString(alert, "plant_name", alert.plant_id || t(`alertsCenter.categories.${category}`)),
+    signalValue: translateBackendAlertMessage(alert, t, locale, noData),
+    sourceApi: alert.source,
+    recommendedAction: t(`alertsCenter.backendAlerts.${alert.type}.action`),
+    priority: alertSeverityRank[alert.severity],
+  };
+}
+
 function deriveAlertsFromDashboardData(data: DashboardData, locale: Locale, t: Translate): DerivedAlert[] {
   const noData = t("common.noData");
   const alerts: DerivedAlert[] = [];
@@ -1340,23 +1462,21 @@ function AlertsCenterSection({
   t: Translate;
 }) {
   const noData = t("common.noData");
-  const alerts = useMemo(() => deriveAlertsFromDashboardData(data, locale, t), [data, locale, t]);
-  const activeAlerts = alerts.length;
-  const criticalAlerts = alerts.filter((alert) => alert.severity === "critical").length;
-  const warningAlerts = alerts.filter((alert) => alert.severity === "warning").length;
+  const alerts = useMemo(
+    () => sortAlerts((data.alertsSummary?.alerts || []).map((alert) => mapBackendAlert(alert, locale, t))),
+    [data.alertsSummary, locale, t],
+  );
+  const activeAlerts = data.alertsSummary?.active_alerts ?? 0;
+  const criticalAlerts = data.alertsSummary?.critical ?? 0;
+  const warningAlerts = data.alertsSummary?.warning ?? 0;
   const forecastAlerts = alerts.filter((alert) => alert.category === "forecast").length;
   const dataQualityAlerts = alerts.filter((alert) => alert.category === "dataQuality").length;
   const systemAlerts = alerts.filter((alert) => alert.category === "system").length;
   const highestSeverity = getHighestAlertSeverity(alerts);
-  const priorityAlerts = alerts.slice(0, 5);
+  const priorityAlerts = alerts.filter((alert) => ["critical", "warning"].includes(alert.severity)).slice(0, 5);
 
   return (
     <section className="section-stack">
-      <div className="alerts-mvp-note">
-        <strong>{t("alertsCenter.mvpLimit.title")}</strong>
-        <span>{t("alertsCenter.mvpLimit.detail")}</span>
-      </div>
-
       <section className="metric-grid alerts-metric-grid">
         <MetricCard
           helper={t("alertsCenter.kpi.activeAlertsHelper")}
@@ -1423,8 +1543,8 @@ function AlertsCenterSection({
                 <div className={`operator-priority-item ${alert.severity}`} key={alert.id}>
                   <AlertSeverityBadge severity={alert.severity} t={t} />
                   <div>
-                    <strong>{alert.type}</strong>
-                    <span>{alert.entity}</span>
+                    <strong>{alert.title || alert.type}</strong>
+                    <span>{alert.message || alert.signalValue}</span>
                     <small>{alert.recommendedAction}</small>
                   </div>
                 </div>
@@ -1441,24 +1561,20 @@ function AlertsCenterSection({
         <Panel eyebrow={t("alertsCenter.summary.eyebrow")} title={t("alertsCenter.summary.title")}>
           <div className="alerts-summary-card">
             <div>
-              <span>{t("alertsCenter.summary.telemetry")}</span>
-              <strong>
-                {data.telemetrySummary?.data_freshness_status
-                  ? t(`telemetry.freshness.${data.telemetrySummary.data_freshness_status}`)
-                  : noData}
-              </strong>
+              <span>{t("alertsCenter.summary.active")}</span>
+              <strong>{formatNumber(activeAlerts, 0, noData, locale)}</strong>
             </div>
             <div>
-              <span>{t("alertsCenter.summary.rejected")}</span>
-              <strong>{formatNumber(data.rejected?.total, 0, noData, locale)}</strong>
+              <span>{t("alertsCenter.summary.healthy")}</span>
+              <strong>{formatNumber(data.alertsSummary?.healthy, 0, noData, locale)}</strong>
             </div>
             <div>
-              <span>{t("alertsCenter.summary.mape")}</span>
-              <strong>{formatPercent(data.accuracy?.avg_mape, noData, locale)}</strong>
+              <span>{t("alertsCenter.summary.unknown")}</span>
+              <strong>{formatNumber(data.alertsSummary?.unknown, 0, noData, locale)}</strong>
             </div>
             <div>
-              <span>{t("alertsCenter.summary.dependencies")}</span>
-              <strong>{formatNumber(Object.keys(data.system?.dependencies || {}).length, 0, noData, locale)}</strong>
+              <span>{t("alertsCenter.summary.generatedAt")}</span>
+              <strong>{formatDateTime(data.alertsSummary?.generated_at, noData, locale)}</strong>
             </div>
           </div>
         </Panel>
@@ -1483,10 +1599,10 @@ function AlertsCenterSection({
               <div className="alerts-table-row" key={alert.id}>
                 <span><AlertSeverityBadge severity={alert.severity} t={t} /></span>
                 <span>{t(`alertsCenter.categories.${alert.category}`)}</span>
-                <strong>{alert.type}</strong>
+                <strong>{alert.title || alert.type}</strong>
                 <span>{alert.entity}</span>
-                <span>{alert.signalValue}</span>
-                <span>{t("alertsCenter.status.open")}</span>
+                <span>{alert.message || alert.signalValue}</span>
+                <span>{t(`alertsCenter.severity.${alert.severity}`)}</span>
                 <span>{alert.sourceApi}</span>
                 <span>{alert.recommendedAction}</span>
               </div>
@@ -1530,8 +1646,14 @@ function SolarPlantProfileSection({
     rejected: null,
     accuracy: null,
     ranking: null,
+    alertsSummary: null,
   });
   const [stationDataFile, setStationDataFile] = useState<File | null>(null);
+  const [uploadingTelemetry, setUploadingTelemetry] = useState(false);
+  const [uploadResult, setUploadResult] = useState<TelemetryCsvImportResponse | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadMessage, setUploadMessage] = useState<{ type: "info" | "success"; text: string } | null>(null);
+  const [profileRefreshToken, setProfileRefreshToken] = useState(0);
 
   useEffect(() => {
     if (plants.length === 0) {
@@ -1557,6 +1679,7 @@ function SolarPlantProfileSection({
           rejected: null,
           accuracy: null,
           ranking: null,
+          alertsSummary: null,
         });
         return;
       }
@@ -1567,7 +1690,7 @@ function SolarPlantProfileSection({
         error: null,
       }));
 
-      const [latest, summary, rejected, accuracy, ranking] = await Promise.allSettled([
+      const [latest, summary, rejected, accuracy, ranking, alertsSummary] = await Promise.allSettled([
         fetchJson<TelemetryPoint>("/api/v1/telemetry/latest", {
           asset_id: selectedPlantId,
         }),
@@ -1594,6 +1717,11 @@ function SolarPlantProfileSection({
           bucket: "day",
           solar_plant_id: selectedPlantId,
         }),
+        fetchJson<AlertsSummaryResponse>("/api/v1/alerts/summary", {
+          from: period.from,
+          to: period.to,
+          plant_id: selectedPlantId,
+        }),
       ]);
 
       if (!mounted) {
@@ -1608,6 +1736,7 @@ function SolarPlantProfileSection({
         rejected: rejected.status === "fulfilled" ? rejected.value : null,
         accuracy: accuracy.status === "fulfilled" ? accuracy.value : null,
         ranking: ranking.status === "fulfilled" ? ranking.value : null,
+        alertsSummary: alertsSummary.status === "fulfilled" ? alertsSummary.value : null,
       };
 
       const hasAnyProfileData =
@@ -1615,7 +1744,8 @@ function SolarPlantProfileSection({
         Boolean(nextState.summary) ||
         Boolean(nextState.rejected) ||
         Boolean(nextState.accuracy) ||
-        Boolean(nextState.ranking);
+        Boolean(nextState.ranking) ||
+        Boolean(nextState.alertsSummary);
 
       setProfileState({
         ...nextState,
@@ -1628,7 +1758,7 @@ function SolarPlantProfileSection({
     return () => {
       mounted = false;
     };
-  }, [selectedPlantId, period.from, period.to]);
+  }, [selectedPlantId, period.from, period.to, profileRefreshToken]);
 
   const selectedPlant = plants.find((plant) => plant.id === selectedPlantId) || null;
   const rankingProviders = profileState.ranking?.providers || [];
@@ -1639,30 +1769,8 @@ function SolarPlantProfileSection({
   const topRejectedReason = profileState.rejected?.items
     ? [...profileState.rejected.items].sort((first, second) => second.count - first.count)[0]
     : undefined;
-  const profileAlerts = useMemo(() => {
-    if (!selectedPlant) {
-      return [];
-    }
-
-    return deriveAlertsFromDashboardData(
-      {
-        ...emptyData,
-        system,
-        plants: [selectedPlant],
-        forecastRuns: forecastRuns.filter((run) => run.solar_plant_id === selectedPlant.id),
-        accuracy: profileState.accuracy,
-        accuracyRanking: profileState.ranking,
-        rejected: profileState.rejected,
-        telemetryLatest: profileState.latest,
-        telemetrySummary: profileState.summary,
-        telemetryAssetId: selectedPlant.id,
-      },
-      locale,
-      t,
-    );
-  }, [forecastRuns, locale, profileState, selectedPlant, system, t]);
-  const activeAlerts = profileAlerts.length;
-  const criticalAlerts = profileAlerts.filter((alert) => alert.severity === "critical").length;
+  const activeAlerts = profileState.alertsSummary?.active_alerts ?? 0;
+  const criticalAlerts = profileState.alertsSummary?.critical ?? 0;
   const sectionLoading = loading || profileState.loading;
   const stationDataFileSize =
     stationDataFile?.size !== undefined
@@ -1671,6 +1779,51 @@ function SolarPlantProfileSection({
         })
       : noData;
   const stationDataFileType = stationDataFile?.type || t("solarPlantProfile.upload.unknownType");
+
+  const handleTelemetryCsvImport = async () => {
+    if (!selectedPlantId || !stationDataFile) {
+      setUploadError(t("solarPlantProfile.upload.validationError"));
+      return;
+    }
+
+    setUploadingTelemetry(true);
+    setUploadResult(null);
+    setUploadError(null);
+    setUploadMessage({ type: "info", text: t("solarPlantProfile.upload.started") });
+
+    const formData = new FormData();
+    formData.append("file", stationDataFile);
+    formData.append("solar_plant_id", selectedPlantId);
+
+    try {
+      const response = await fetch(buildUrl("/api/v1/actual-generation/import-csv"), {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        let detail = t("solarPlantProfile.upload.error");
+        try {
+          const payload = (await response.json()) as { detail?: string };
+          detail = payload.detail ? `${t("solarPlantProfile.upload.error")}: ${payload.detail}` : detail;
+        } catch {
+          detail = t("solarPlantProfile.upload.error");
+        }
+        throw new Error(detail);
+      }
+
+      const result = (await response.json()) as TelemetryCsvImportResponse;
+      setUploadResult(result);
+      setUploadMessage({ type: "success", text: t("solarPlantProfile.upload.success") });
+      setStationDataFile(null);
+      setProfileRefreshToken((current) => current + 1);
+    } catch (error) {
+      setUploadMessage(null);
+      setUploadError(error instanceof Error ? error.message : t("solarPlantProfile.upload.error"));
+    } finally {
+      setUploadingTelemetry(false);
+    }
+  };
 
   return (
     <section className="section-stack">
@@ -1844,7 +1997,13 @@ function SolarPlantProfileSection({
               <span>{t("solarPlantProfile.upload.button")}</span>
               <input
                 accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                onChange={(event) => setStationDataFile(event.target.files?.[0] || null)}
+                disabled={uploadingTelemetry}
+                onChange={(event) => {
+                  setStationDataFile(event.target.files?.[0] || null);
+                  setUploadResult(null);
+                  setUploadError(null);
+                  setUploadMessage(null);
+                }}
                 type="file"
               />
             </label>
@@ -1869,6 +2028,44 @@ function SolarPlantProfileSection({
                 title={t("solarPlantProfile.upload.emptyTitle")}
               />
             )}
+            {stationDataFile ? (
+              <div className="station-upload-actions">
+                <button
+                  className="station-upload-submit"
+                  disabled={!selectedPlant || uploadingTelemetry}
+                  onClick={handleTelemetryCsvImport}
+                  type="button"
+                >
+                  {uploadingTelemetry ? t("solarPlantProfile.upload.importing") : t("solarPlantProfile.upload.import")}
+                </button>
+              </div>
+            ) : null}
+            {uploadMessage ? (
+              <div className={`station-upload-message ${uploadMessage.type}`}>{uploadMessage.text}</div>
+            ) : null}
+            {uploadResult ? (
+              <div className="station-upload-message success">
+                {t("solarPlantProfile.upload.resultSummary", {
+                  imported: formatNumber(uploadResult.imported_rows, 0, noData, locale),
+                  rejected: formatNumber(uploadResult.rejected_rows, 0, noData, locale),
+                })}
+              </div>
+            ) : null}
+            {uploadError ? <div className="station-upload-message error">{uploadError}</div> : null}
+            {uploadResult?.errors.length ? (
+              <div className="station-upload-message warning">
+                {uploadResult.errors.slice(0, 3).map((error) => (
+                  <span key={`${error.row_number}-${error.message}`}>
+                    {error.row_number
+                      ? t("solarPlantProfile.upload.rowError", {
+                          row: error.row_number,
+                          message: error.message,
+                        })
+                      : error.message}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
         </Panel>
 
@@ -3336,7 +3533,7 @@ function DashboardOverview({
         error: null,
       }));
 
-      const [health, system, plants, providers, forecastRuns, accuracy, accuracyRanking, rejected] =
+      const [health, system, plants, providers, forecastRuns, accuracy, accuracyRanking, rejected, alertsSummary] =
         await Promise.allSettled([
         fetchJson<HealthResponse>("/health"),
         fetchJson<SystemStatusResponse>("/api/v1/system/status"),
@@ -3357,6 +3554,10 @@ function DashboardOverview({
           from: period.from,
           to: period.to,
           resolution_status: "open",
+        }),
+        fetchJson<AlertsSummaryResponse>("/api/v1/alerts/summary", {
+          from: period.from,
+          to: period.to,
         }),
       ]);
 
@@ -3398,6 +3599,7 @@ function DashboardOverview({
         telemetryHistory: telemetryHistory?.status === "fulfilled" ? telemetryHistory.value : [],
         telemetrySummary: telemetrySummary?.status === "fulfilled" ? telemetrySummary.value : null,
         telemetryAssetId,
+        alertsSummary: alertsSummary.status === "fulfilled" ? alertsSummary.value : null,
       };
 
       const hasAnyData =
@@ -3409,6 +3611,7 @@ function DashboardOverview({
         Boolean(nextData.accuracy) ||
         Boolean(nextData.accuracyRanking) ||
         Boolean(nextData.rejected) ||
+        Boolean(nextData.alertsSummary) ||
         Boolean(nextData.telemetrySummary) ||
         nextData.telemetryHistory.length > 0;
 
@@ -4476,6 +4679,18 @@ function DashboardOverview({
           color: #ffd08a;
         }
 
+        .alert-severity-badge.healthy {
+          border-color: rgba(50, 213, 131, 0.38);
+          background: rgba(50, 213, 131, 0.12);
+          color: #7cf2b4;
+        }
+
+        .alert-severity-badge.unknown {
+          border-color: rgba(255, 255, 255, 0.14);
+          background: rgba(255, 255, 255, 0.05);
+          color: rgba(245, 242, 237, 0.72);
+        }
+
         .alert-severity-badge.info {
           border-color: rgba(255, 255, 255, 0.14);
           background: rgba(255, 255, 255, 0.05);
@@ -4511,6 +4726,16 @@ function DashboardOverview({
         .operator-priority-item.warning {
           border-color: rgba(255, 183, 77, 0.24);
           background: rgba(255, 183, 77, 0.07);
+        }
+
+        .operator-priority-item.healthy {
+          border-color: rgba(50, 213, 131, 0.24);
+          background: rgba(50, 213, 131, 0.07);
+        }
+
+        .operator-priority-item.unknown {
+          border-color: rgba(255, 255, 255, 0.12);
+          background: rgba(255, 255, 255, 0.04);
         }
 
         .operator-priority-item strong,
@@ -5380,6 +5605,93 @@ function DashboardOverview({
           word-break: break-word;
         }
 
+        .station-upload-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+
+        .station-upload-submit {
+          min-height: 44px;
+          border: 0;
+          border-radius: 999px;
+          background: #ff7a18;
+          color: #1b120a;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 900;
+          padding: 10px 16px;
+        }
+
+        .station-upload-submit:disabled {
+          cursor: not-allowed;
+          opacity: 0.55;
+        }
+
+        .station-upload-result {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .station-upload-result div {
+          border: 1px solid rgba(50, 213, 131, 0.26);
+          border-radius: 14px;
+          background: rgba(50, 213, 131, 0.08);
+          padding: 14px;
+        }
+
+        .station-upload-result span,
+        .station-upload-message span {
+          display: block;
+          color: rgba(245, 242, 237, 0.62);
+          font-size: 12px;
+          font-weight: 800;
+          line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .station-upload-result strong {
+          display: block;
+          margin-top: 8px;
+          color: #fffaf4;
+          font-size: 18px;
+          line-height: 1.35;
+        }
+
+        .station-upload-message {
+          display: grid;
+          gap: 6px;
+          border-radius: 14px;
+          font-size: 13px;
+          line-height: 1.45;
+          padding: 12px;
+        }
+
+        .station-upload-message.info {
+          border: 1px solid rgba(255, 122, 24, 0.3);
+          background: rgba(255, 122, 24, 0.08);
+          color: #ffad66;
+        }
+
+        .station-upload-message.success {
+          border: 1px solid rgba(50, 213, 131, 0.3);
+          background: rgba(50, 213, 131, 0.08);
+          color: #7cf2b4;
+        }
+
+        .station-upload-message.error {
+          border: 1px solid rgba(255, 95, 86, 0.3);
+          background: rgba(255, 95, 86, 0.08);
+          color: #ffb4ad;
+        }
+
+        .station-upload-message.warning {
+          border: 1px solid rgba(255, 183, 77, 0.3);
+          background: rgba(255, 183, 77, 0.08);
+        }
+
         .pilot-hero {
           border: 1px solid rgba(255, 122, 24, 0.2);
           border-radius: 18px;
@@ -5702,6 +6014,7 @@ function DashboardOverview({
           .target-grid,
           .plant-list-card-meta,
           .station-upload-file,
+          .station-upload-result,
           .profile-detail-grid {
             grid-template-columns: 1fr;
           }

@@ -47,6 +47,17 @@ class TelemetrySummaryRead(BaseModel):
     possible_data_gap_minutes: int | None
 
 
+class TelemetryCsvImportError(BaseModel):
+    row_number: int | None
+    message: str
+
+
+class TelemetryCsvImportSummary(BaseModel):
+    imported_rows: int
+    rejected_rows: int
+    errors: list[TelemetryCsvImportError]
+
+
 class RejectedTelemetryReason(StrEnum):
     invalid_topic = "invalid_topic"
     invalid_plant_id = "invalid_plant_id"

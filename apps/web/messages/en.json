@@ -194,10 +194,21 @@
     "upload": {
       "eyebrow": "Station Data",
       "title": "Data Upload",
-      "helper": "Select a CSV or XLSX file for review. Files are not uploaded or processed in this MVP.",
-      "button": "Upload Station Data",
+      "helper": "Choose a CSV telemetry file and import data for the selected station.",
+      "button": "Choose CSV",
+      "import": "Import Data",
+      "importing": "Importing...",
+      "started": "Import started",
+      "success": "Import successful",
+      "importedRows": "Imported rows",
+      "importedRowsMessage": "Imported {count} rows",
+      "resultSummary": "Imported rows: {imported}, rejected rows: {rejected}",
+      "rejectedRows": "Rejected rows",
+      "validationError": "Choose a station and CSV file.",
+      "error": "Import failed",
+      "rowError": "Row {row}: {message}",
       "emptyTitle": "No file selected",
-      "emptyDetail": "Choose a CSV or XLSX file to preview basic file metadata.",
+      "emptyDetail": "Choose a CSV file to upload telemetry into the station profile.",
       "fileName": "File name",
       "fileSize": "File size",
       "fileSizeValue": "{value} KB",
@@ -371,8 +382,10 @@
       "detail": "Alerts are computed from current API responses. Persistence, acknowledgement and history will be added later."
     },
     "severity": {
+      "healthy": "Healthy",
       "critical": "Critical",
       "warning": "Warning",
+      "unknown": "Unknown",
       "info": "Info"
     },
     "categories": {
@@ -424,8 +437,12 @@
       "title": "Top Alerts"
     },
     "summary": {
-      "eyebrow": "Current Signals",
-      "title": "Alert Inputs",
+      "eyebrow": "Backend Signals",
+      "title": "Alert Summary",
+      "active": "Active alerts",
+      "healthy": "Healthy signals",
+      "unknown": "Unknown signals",
+      "generatedAt": "Generated at",
       "telemetry": "Telemetry freshness",
       "rejected": "Rejected telemetry",
       "mape": "Current MAPE",
@@ -442,6 +459,68 @@
       "status": "Status",
       "sourceApi": "Source API",
       "recommendedAction": "Recommended Action"
+    },
+    "backendAlerts": {
+      "telemetry_freshness": {
+        "title": "Telemetry freshness",
+        "action": "Check telemetry ingestion and the latest accepted point.",
+        "message": {
+          "healthy": "{plant}: latest telemetry is recent ({minutes} min, threshold {threshold} min).",
+          "warning": "{plant}: telemetry needs attention.",
+          "critical": "{plant}: telemetry is missing or older than {threshold} min.",
+          "unknown": "Telemetry freshness cannot be checked because no plant data is available."
+        }
+      },
+      "rejected_telemetry": {
+        "title": "Rejected telemetry",
+        "action": "Review Rejected Telemetry and fix the top rejection reason.",
+        "message": {
+          "healthy": "No open rejected telemetry rows in the selected period.",
+          "warning": "{count} rejected telemetry rows found. Top reason: {reason}.",
+          "critical": "{count} rejected telemetry rows found with a critical reason: {reason}.",
+          "unknown": "Rejected telemetry status is unknown."
+        }
+      },
+      "system_health": {
+        "title": "System health",
+        "action": "Check System Status dependencies.",
+        "message": {
+          "healthy": "Core platform dependencies are healthy.",
+          "warning": "System health needs attention.",
+          "critical": "System dependency issue: {dependencies}.",
+          "unknown": "System health is unknown."
+        }
+      },
+      "forecast_accuracy": {
+        "title": "Forecast accuracy",
+        "action": "Open Forecast Insights and review current MAPE.",
+        "message": {
+          "healthy": "Current MAPE {mape} is at or below target {target}.",
+          "warning": "Current MAPE {mape} is above target {target}.",
+          "critical": "Forecast accuracy is critical.",
+          "unknown": "No real accuracy aggregates are available for this period."
+        }
+      },
+      "forecast_runs": {
+        "title": "Forecast runs",
+        "action": "Check forecast run scheduler and recent runs.",
+        "message": {
+          "healthy": "{count} recent forecast runs found.",
+          "warning": "No recent forecast runs found.",
+          "critical": "Forecast runs are failing.",
+          "unknown": "Forecast run status is unknown."
+        }
+      },
+      "provider_performance": {
+        "title": "Provider performance",
+        "action": "Review provider ranking when real provider accuracy data is available.",
+        "message": {
+          "healthy": "Best provider MAPE {mape} is at or below target {target}.",
+          "warning": "Best provider MAPE {mape} is above target {target}.",
+          "critical": "Provider performance is critical.",
+          "unknown": "Provider ranking is not connected to real accuracy data yet."
+        }
+      }
     },
     "alertTypes": {
       "telemetryOffline": "Telemetry offline",
@@ -557,12 +636,16 @@
       "scada": "SCADA",
       "simulator": "Simulator",
       "api": "API",
+      "csv": "CSV",
       "imported": "Imported file"
     },
     "quality": {
       "measured": "Measured",
       "manual": "Manual",
       "accepted": "Accepted",
+      "good": "Good",
+      "imported": "Imported",
+      "valid": "Valid",
       "estimated": "Estimated",
       "raw": "Raw",
       "validated": "Validated",
