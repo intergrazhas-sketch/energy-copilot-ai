@@ -48,6 +48,27 @@ class ForecastProviderRead(ForecastProviderCreate):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ForecastProviderOverviewRead(BaseModel):
+    id: uuid.UUID
+    code: str
+    name: str
+    provider_type: Literal["external", "internal", "baseline"]
+    status: Literal["active", "inactive", "unknown"]
+    data_status: Literal["connected", "not_connected", "simulated", "unknown"]
+    latest_forecast_at: datetime | None = None
+    latest_accuracy_mape: float | None = None
+    baseline_mape: float | None = None
+    target_mape: float
+    notes: str
+    recommended_action: Literal[
+        "no_data",
+        "no_recent_forecast",
+        "ready_for_connection",
+        "needs_configuration",
+    ]
+    forecast_runs_count: int = 0
+
+
 class ForecastRunCreate(BaseModel):
     solar_plant_id: uuid.UUID
     provider_id: uuid.UUID

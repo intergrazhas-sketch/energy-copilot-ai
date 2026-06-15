@@ -571,50 +571,85 @@
   },
   "providers": {
     "loadingTitle": "Загружаем провайдеров прогноза",
-    "loadingDetail": "Получаем реестр провайдеров.",
+    "loadingDetail": "Получаем обзор провайдеров из API.",
     "emptyTitle": "Провайдеров пока нет",
-    "emptyDetail": "API не вернул ручных или тестовых провайдеров."
+    "emptyDetail": "API пока не вернул записи провайдеров прогноза."
   },
   "forecastProviders": {
     "demoNames": {
       "mockForecast": "Тестовый прогноз",
-      "manualForecast": "Ручной прогноз"
+      "manualForecast": "Ручной прогноз",
+      "internalBaseline": "Внутренний базовый прогноз",
+      "manualCsvActuals": "CSV-факт / эталон фактических данных"
     },
     "providerTypes": {
       "mock": "Тестовый",
       "manual": "Ручной",
       "api": "API",
-      "external": "Внешний"
+      "external": "Внешний",
+      "internal": "Внутренний",
+      "baseline": "Базовый"
+    },
+    "statuses": {
+      "active": "Активен",
+      "inactive": "Неактивен",
+      "unknown": "Неизвестно"
+    },
+    "dataStatuses": {
+      "connected": "Подключён",
+      "not_connected": "Не подключён",
+      "simulated": "Симуляция",
+      "unknown": "Неизвестно"
+    },
+    "actions": {
+      "no_data": "Добавить данные",
+      "no_recent_forecast": "Создать свежий прогноз",
+      "ready_for_connection": "Готово к пилотной проверке",
+      "needs_configuration": "Нужна настройка"
+    },
+    "notes": {
+      "external_not_configured": "Внешняя интеграция прогноза ещё не настроена. Успешное подключение не показываем.",
+      "pilot_baseline": "Пилотный базовый уровень использует известный ориентир MAPE 14%, пока нет реальной точности провайдеров.",
+      "actuals_reference_connected": "CSV-факт доступен и может использоваться как эталонный сигнал.",
+      "actuals_reference_empty": "CSV-факт для эталонного сигнала пока не загружен."
+    },
+    "values": {
+      "targetMape": "<{value}%"
     },
     "kpi": {
       "totalProviders": "Всего провайдеров",
-      "totalProvidersHelper": "Провайдеры из реестра",
+      "totalProvidersHelper": "Провайдеры из серверного обзора",
       "activeProviders": "Активные провайдеры",
       "activeProvidersHelper": "Провайдеры со статусом «Активен»",
+      "connectedProviders": "Подключённые источники",
+      "connectedProvidersHelper": "Провайдеры с реальными подключёнными данными",
       "forecastRuns": "Всего запусков прогноза",
-      "forecastRunsHelper": "Запуски в рейтинге провайдеров",
+      "forecastRunsHelper": "Запуски прогноза или строки эталонного факта",
       "bestProvider": "Лучший провайдер по MAPE",
       "bestProviderHelper": "Минимальный средний MAPE"
     },
     "table": {
-      "eyebrow": "Реестр + точность",
+      "eyebrow": "Обзор провайдеров",
       "title": "Провайдеры прогноза",
       "name": "Название провайдера",
-      "code": "Код провайдера",
+      "type": "Тип",
       "status": "Статус",
-      "avgMape": "Средний MAPE",
-      "avgRmse": "Средний RMSE",
+      "dataStatus": "Статус данных",
+      "latestForecast": "Последний прогноз",
+      "latestMape": "Последний MAPE",
       "forecastRuns": "Запуски прогноза",
-      "rank": "Ранг"
+      "targetMape": "Цель MAPE"
     },
-    "comparison": {
-      "eyebrow": "Сравнение",
-      "title": "Эффективность провайдеров",
-      "bestProvider": "Лучший провайдер",
-      "worstProvider": "Худший провайдер",
-      "mapeDelta": "Разница MAPE",
-      "emptyTitle": "Сравнения провайдеров пока нет",
-      "emptyDetail": "Сравнение появится после того, как рейтинг провайдеров вернёт метрики точности."
+    "cards": {
+      "eyebrow": "Карточки провайдеров",
+      "title": "Подключение и точность",
+      "latestForecast": "Последний прогноз",
+      "latestMape": "Последний MAPE",
+      "baselineMape": "Базовый MAPE",
+      "forecastRuns": "Запуски прогноза",
+      "targetMape": "Цель MAPE",
+      "emptyTitle": "Карточек провайдеров пока нет",
+      "emptyDetail": "Карточки появятся, когда серверный обзор вернёт записи провайдеров."
     }
   },
   "telemetry": {

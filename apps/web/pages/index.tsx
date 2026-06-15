@@ -47,7 +47,16 @@ type ForecastProvider = {
   code: string;
   name: string;
   provider_type: string;
-  is_active: boolean;
+  status: string;
+  data_status: string;
+  latest_forecast_at?: string | null;
+  latest_accuracy_mape?: number | null;
+  baseline_mape?: number | null;
+  target_mape: number;
+  notes: string;
+  recommended_action: string;
+  forecast_runs_count: number;
+  is_active?: boolean;
 };
 
 type ForecastRun = {
@@ -470,6 +479,12 @@ function translateTelemetryQuality(quality: string | undefined, t: Translate, fa
 
 function getProviderDisplayKey(name: string | undefined, code?: string) {
   const normalized = `${code || ""} ${name || ""}`.toLowerCase();
+  if (normalized.includes("internal_baseline") || normalized.includes("internal baseline")) {
+    return "internalBaseline";
+  }
+  if (normalized.includes("manual_csv_actuals") || normalized.includes("actuals reference")) {
+    return "manualCsvActuals";
+  }
   if (normalized.includes("manual")) {
     return "manualForecast";
   }
@@ -501,6 +516,33 @@ function translateProviderName(
 
 function translateProviderType(providerType: string | undefined, t: Translate, fallback: string) {
   return translateMachineValue("forecastProviders.providerTypes", providerType, t, fallback);
+}
+
+function translateProviderStatus(status: string | undefined, t: Translate, fallback: string) {
+  return translateMachineValue("forecastProviders.statuses", status, t, fallback);
+}
+
+function translateProviderDataStatus(status: string | undefined, t: Translate, fallback: string) {
+  return translateMachineValue("forecastProviders.dataStatuses", status, t, fallback);
+}
+
+function translateProviderAction(action: string | undefined, t: Translate, fallback: string) {
+  return translateMachineValue("forecastProviders.actions", action, t, fallback);
+}
+
+function translateProviderNote(note: string | undefined, t: Translate, fallback: string) {
+  return translateMachineValue("forecastProviders.notes", note, t, fallback);
+}
+
+function getProviderBadgeTone(value: string | undefined) {
+  const normalized = normalizeMachineValue(value || "unknown");
+  if (normalized === "active" || normalized === "connected" || normalized === "ready_for_connection") {
+    return "good";
+  }
+  if (normalized === "simulated" || normalized === "needs_configuration" || normalized === "no_recent_forecast") {
+    return "warning";
+  }
+  return "muted";
 }
 
 function translateMonitoringStatusValue(
@@ -706,6 +748,16 @@ function StatusBadge({ status, t }: { status?: string; t: Translate }) {
         : "muted";
 
   return <span className={`status-badge ${tone}`}>{displayStatus}</span>;
+}
+
+function ProviderBadge({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | undefined;
+}) {
+  return <span className={`status-badge ${getProviderBadgeTone(value)}`}>{label}</span>;
 }
 
 function AlertSeverityBadge({ severity, t }: { severity: AlertSeverity; t: Translate }) {
@@ -2458,93 +2510,67 @@ type ForecastProviderRow = {
   id: string;
   name: string;
   code: string;
-  isActive?: boolean;
-  avgMape: number | null;
-  avgRmse: number | null;
-  forecastRunsCount: number | null;
-  rank: number | null;
+  providerType: string;
+  status: string;
+  dataStatus: string;
+  latestForecastAt: string | null;
+  latestAccuracyMape: number | null;
+  baselineMape: number | null;
+  targetMape: number;
+  notes: string;
+  recommendedAction: string;
+  forecastRunsCount: number;
 };
 
-function buildForecastProviderRows(
-  providers: ForecastProvider[],
-  ranking: AccuracyProviderRankingResponse | null,
-) {
-  const rankingProviders = ranking?.providers || [];
-  const rankingById = new Map(rankingProviders.map((provider) => [provider.provider_id, provider]));
-  const rankingByCode = new Map(rankingProviders.map((provider) => [provider.provider_code, provider]));
-  const rows = providers.map<ForecastProviderRow>((provider) => {
-    const providerRanking = rankingById.get(provider.id) || rankingByCode.get(provider.code);
+function buildForecastProviderRows(providers: ForecastProvider[]) {
+  return providers.map<ForecastProviderRow>((provider) => {
+    const status = provider.status || (provider.is_active ? "active" : "inactive");
     return {
       id: provider.id,
       name: provider.name,
       code: provider.code,
-      isActive: provider.is_active,
-      avgMape: providerRanking?.avg_mape ?? null,
-      avgRmse: providerRanking?.avg_rmse ?? null,
-      forecastRunsCount: providerRanking?.forecast_runs_count ?? null,
-      rank: providerRanking?.rank ?? null,
+      providerType: provider.provider_type || "unknown",
+      status,
+      dataStatus: provider.data_status || "unknown",
+      latestForecastAt: provider.latest_forecast_at || null,
+      latestAccuracyMape: provider.latest_accuracy_mape ?? null,
+      baselineMape: provider.baseline_mape ?? null,
+      targetMape: provider.target_mape ?? forecastTargetMape,
+      notes: provider.notes || "actuals_reference_empty",
+      recommendedAction: provider.recommended_action || "no_data",
+      forecastRunsCount: provider.forecast_runs_count ?? 0,
     };
-  });
-
-  const providerIds = new Set(providers.map((provider) => provider.id));
-  rankingProviders.forEach((provider) => {
-    if (providerIds.has(provider.provider_id)) {
-      return;
-    }
-    rows.push({
-      id: provider.provider_id,
-      name: provider.provider_name,
-      code: provider.provider_code,
-      avgMape: provider.avg_mape,
-      avgRmse: provider.avg_rmse,
-      forecastRunsCount: provider.forecast_runs_count,
-      rank: provider.rank,
-    });
-  });
-
-  return rows.sort((first, second) => {
-    if (first.rank !== null && second.rank !== null) {
-      return first.rank - second.rank;
-    }
-    if (first.rank !== null) {
-      return -1;
-    }
-    if (second.rank !== null) {
-      return 1;
-    }
-    return first.name.localeCompare(second.name);
   });
 }
 
 function ForecastProvidersSection({
   providers,
-  ranking,
   loading,
   locale,
   t,
 }: {
   providers: ForecastProvider[];
-  ranking: AccuracyProviderRankingResponse | null;
   loading: boolean;
   locale: Locale;
   t: Translate;
 }) {
   const noData = t("common.noData");
-  const rows = buildForecastProviderRows(providers, ranking);
-  const rankedRows = rows.filter(
-    (provider) => provider.avgMape !== null && !Number.isNaN(provider.avgMape),
-  );
-  const bestProvider = rankedRows[0];
-  const worstProvider = rankedRows[rankedRows.length - 1];
-  const mapeDelta =
-    bestProvider && worstProvider && bestProvider.avgMape !== null && worstProvider.avgMape !== null
-      ? worstProvider.avgMape - bestProvider.avgMape
-      : null;
-  const activeProviders = providers.filter((provider) => provider.is_active).length;
+  const rows = buildForecastProviderRows(providers);
+  const activeProviders = rows.filter(
+    (provider) => normalizeMachineValue(provider.status) === "active",
+  ).length;
   const totalForecastRuns = rows.reduce(
     (sum, provider) => sum + (provider.forecastRunsCount || 0),
     0,
   );
+  const bestProvider = rows
+    .filter(
+      (provider) =>
+        normalizeMachineValue(provider.dataStatus) === "connected" &&
+        provider.latestAccuracyMape !== null &&
+        !Number.isNaN(provider.latestAccuracyMape),
+    )
+    .sort((first, second) => (first.latestAccuracyMape || 0) - (second.latestAccuracyMape || 0))[0];
 
   return (
     <section className="section-stack">
@@ -2591,22 +2617,26 @@ function ForecastProvidersSection({
             <div className="providers-table">
               <div className="providers-table-head">
                 <span>{t("forecastProviders.table.name")}</span>
-                <span>{t("forecastProviders.table.code")}</span>
+                <span>{t("forecastProviders.table.type")}</span>
                 <span>{t("forecastProviders.table.status")}</span>
-                <span>{t("forecastProviders.table.avgMape")}</span>
-                <span>{t("forecastProviders.table.avgRmse")}</span>
+                <span>{t("forecastProviders.table.dataStatus")}</span>
+                <span>{t("forecastProviders.table.latestForecast")}</span>
+                <span>{t("forecastProviders.table.latestMape")}</span>
                 <span>{t("forecastProviders.table.forecastRuns")}</span>
-                <span>{t("forecastProviders.table.rank")}</span>
+                <span>{t("forecastProviders.table.targetMape")}</span>
               </div>
               {rows.map((provider) => (
                 <div className="providers-table-row" key={provider.id}>
                   <strong>{translateProviderName(provider.name, provider.code, t, noData)}</strong>
-                  <span>{provider.code}</span>
-                  <StatusBadge status={provider.isActive ? "active" : "inactive"} t={t} />
-                  <span>{formatPercent(provider.avgMape, noData, locale)}</span>
-                  <span>{formatNumber(provider.avgRmse, 2, noData, locale)}</span>
+                  <span>{translateProviderType(provider.providerType, t, noData)}</span>
+                  <span>{translateProviderStatus(provider.status, t, noData)}</span>
+                  <span>{translateProviderDataStatus(provider.dataStatus, t, noData)}</span>
+                  <span>{formatDateTime(provider.latestForecastAt, noData, locale)}</span>
+                  <span>{formatPercent(provider.latestAccuracyMape, noData, locale)}</span>
                   <span>{formatNumber(provider.forecastRunsCount, 0, noData, locale)}</span>
-                  <span>{provider.rank ? `#${provider.rank}` : noData}</span>
+                  <span>{t("forecastProviders.values.targetMape", {
+                    value: formatNumber(provider.targetMape, 0, noData, locale),
+                  })}</span>
                 </div>
               ))}
             </div>
@@ -2616,32 +2646,67 @@ function ForecastProvidersSection({
         </Panel>
 
         <Panel
-          eyebrow={t("forecastProviders.comparison.eyebrow")}
-          title={t("forecastProviders.comparison.title")}
+          eyebrow={t("forecastProviders.cards.eyebrow")}
+          title={t("forecastProviders.cards.title")}
         >
           {loading ? (
             <EmptyState detail={t("providers.loadingDetail")} title={t("providers.loadingTitle")} />
-          ) : rankedRows.length > 0 ? (
-            <div className="provider-comparison-card">
-              <div>
-                <span>{t("forecastProviders.comparison.bestProvider")}</span>
-                <strong>{translateProviderName(bestProvider?.name, bestProvider?.code, t, noData)}</strong>
-                <small>{formatPercent(bestProvider?.avgMape, noData, locale)}</small>
-              </div>
-              <div>
-                <span>{t("forecastProviders.comparison.worstProvider")}</span>
-                <strong>{translateProviderName(worstProvider?.name, worstProvider?.code, t, noData)}</strong>
-                <small>{formatPercent(worstProvider?.avgMape, noData, locale)}</small>
-              </div>
-              <div className="provider-delta">
-                <span>{t("forecastProviders.comparison.mapeDelta")}</span>
-                <strong>{formatPercent(mapeDelta, noData, locale)}</strong>
-              </div>
+          ) : rows.length > 0 ? (
+            <div className="provider-card-grid">
+              {rows.map((provider) => (
+                <article className="provider-card" key={provider.id}>
+                  <div className="provider-card-header">
+                    <div>
+                      <span>{translateProviderType(provider.providerType, t, noData)}</span>
+                      <strong>{translateProviderName(provider.name, provider.code, t, noData)}</strong>
+                    </div>
+                    <ProviderBadge
+                      label={translateProviderDataStatus(provider.dataStatus, t, noData)}
+                      value={provider.dataStatus}
+                    />
+                  </div>
+                  <div className="provider-card-badges">
+                    <ProviderBadge
+                      label={translateProviderStatus(provider.status, t, noData)}
+                      value={provider.status}
+                    />
+                    <ProviderBadge
+                      label={translateProviderAction(provider.recommendedAction, t, noData)}
+                      value={provider.recommendedAction}
+                    />
+                  </div>
+                  <dl className="provider-card-metrics">
+                    <div>
+                      <dt>{t("forecastProviders.cards.latestForecast")}</dt>
+                      <dd>{formatDateTime(provider.latestForecastAt, noData, locale)}</dd>
+                    </div>
+                    <div>
+                      <dt>{t("forecastProviders.cards.latestMape")}</dt>
+                      <dd>{formatPercent(provider.latestAccuracyMape, noData, locale)}</dd>
+                    </div>
+                    <div>
+                      <dt>{t("forecastProviders.cards.baselineMape")}</dt>
+                      <dd>{formatPercent(provider.baselineMape, noData, locale)}</dd>
+                    </div>
+                    <div>
+                      <dt>{t("forecastProviders.cards.forecastRuns")}</dt>
+                      <dd>{formatNumber(provider.forecastRunsCount, 0, noData, locale)}</dd>
+                    </div>
+                    <div>
+                      <dt>{t("forecastProviders.cards.targetMape")}</dt>
+                      <dd>{t("forecastProviders.values.targetMape", {
+                        value: formatNumber(provider.targetMape, 0, noData, locale),
+                      })}</dd>
+                    </div>
+                  </dl>
+                  <p>{translateProviderNote(provider.notes, t, noData)}</p>
+                </article>
+              ))}
             </div>
           ) : (
             <EmptyState
-              detail={t("forecastProviders.comparison.emptyDetail")}
-              title={t("forecastProviders.comparison.emptyTitle")}
+              detail={t("forecastProviders.cards.emptyDetail")}
+              title={t("forecastProviders.cards.emptyTitle")}
             />
           )}
         </Panel>
@@ -3633,7 +3698,9 @@ function DashboardOverview({
     (sum, plant) => sum + plant.capacity_kw,
     0,
   );
-  const activeProviders = state.data.providers.filter((provider) => provider.is_active).length;
+  const activeProviders = state.data.providers.filter(
+    (provider) => normalizeMachineValue(provider.status || (provider.is_active ? "active" : "inactive")) === "active",
+  ).length;
   const systemStatus = state.data.system?.status || state.data.health?.status;
   const dependencies = Object.entries(state.data.system?.dependencies || {});
   const topRejectedReasons = state.data.rejected?.items.slice(0, 4) || [];
@@ -3840,10 +3907,11 @@ function DashboardOverview({
                     <div>
                       <strong>{translateProviderName(provider.name, provider.code, t, noData)}</strong>
                       <span>
-                        {provider.code} / {translateProviderType(provider.provider_type, t, noData)}
+                        {translateProviderType(provider.provider_type, t, noData)} /{" "}
+                        {translateProviderDataStatus(provider.data_status, t, noData)}
                       </span>
                     </div>
-                    <StatusBadge status={provider.is_active ? "active" : "inactive"} t={t} />
+                    <StatusBadge status={provider.status} t={t} />
                   </div>
                 ))}
               </div>
@@ -3941,7 +4009,6 @@ function DashboardOverview({
             locale={locale}
             loading={state.loading}
             providers={state.data.providers}
-            ranking={state.data.accuracyRanking}
             t={t}
           />
         ) : activeSection === "telemetry" ? (
@@ -4454,9 +4521,9 @@ function DashboardOverview({
         .providers-table-head,
         .providers-table-row {
           display: grid;
-          grid-template-columns: minmax(170px, 1.3fr) minmax(110px, 0.8fr) minmax(110px, 0.8fr) repeat(4, minmax(100px, 0.8fr));
+          grid-template-columns: minmax(170px, 1.3fr) repeat(7, minmax(100px, 0.8fr));
           gap: 12px;
-          min-width: 880px;
+          min-width: 980px;
           align-items: center;
         }
 
@@ -4531,6 +4598,78 @@ function DashboardOverview({
         .provider-comparison-card small {
           margin-top: 8px;
           color: #ffad66;
+        }
+
+        .provider-card-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 12px;
+        }
+
+        .provider-card {
+          display: grid;
+          gap: 14px;
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 18px;
+          background: rgba(0, 0, 0, 0.18);
+          padding: 16px;
+        }
+
+        .provider-card-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .provider-card-header span,
+        .provider-card-metrics dt {
+          color: rgba(245, 242, 237, 0.52);
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .provider-card-header strong {
+          display: block;
+          margin-top: 6px;
+          color: #fffaf4;
+          font-size: 18px;
+          line-height: 1.15;
+          overflow-wrap: anywhere;
+        }
+
+        .provider-card-badges {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .provider-card-metrics {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin: 0;
+        }
+
+        .provider-card-metrics div {
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 14px;
+          padding: 10px;
+        }
+
+        .provider-card-metrics dd {
+          margin: 4px 0 0;
+          color: #fffaf4;
+          font-size: 14px;
+          font-weight: 800;
+          overflow-wrap: anywhere;
+        }
+
+        .provider-card p {
+          margin: 0;
+          color: rgba(245, 242, 237, 0.68);
+          font-size: 13px;
+          line-height: 1.5;
         }
 
         .forecast-thresholds {

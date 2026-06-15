@@ -571,50 +571,85 @@
   },
   "providers": {
     "loadingTitle": "Болжам провайдерлері жүктелуде",
-    "loadingDetail": "Провайдерлер реестрі жүктелуде.",
+    "loadingDetail": "API арқылы провайдер шолуы жүктелуде.",
     "emptyTitle": "Провайдерлер әлі жоқ",
-    "emptyDetail": "API қолмен енгізілетін немесе тест провайдерлерін қайтармады."
+    "emptyDetail": "API әзірге болжам провайдері жазбаларын қайтармады."
   },
   "forecastProviders": {
     "demoNames": {
       "mockForecast": "Тест болжам",
-      "manualForecast": "Қолмен енгізілген болжам"
+      "manualForecast": "Қолмен енгізілген болжам",
+      "internalBaseline": "Ішкі базалық болжам",
+      "manualCsvActuals": "CSV факт / нақты дерек тірегі"
     },
     "providerTypes": {
       "mock": "Тест",
       "manual": "Қолмен",
       "api": "API",
-      "external": "Сыртқы"
+      "external": "Сыртқы",
+      "internal": "Ішкі",
+      "baseline": "Базалық"
+    },
+    "statuses": {
+      "active": "Белсенді",
+      "inactive": "Белсенді емес",
+      "unknown": "Белгісіз"
+    },
+    "dataStatuses": {
+      "connected": "Қосылған",
+      "not_connected": "Қосылмаған",
+      "simulated": "Симуляцияланған",
+      "unknown": "Белгісіз"
+    },
+    "actions": {
+      "no_data": "Дерек қосу",
+      "no_recent_forecast": "Жаңа болжам жасау",
+      "ready_for_connection": "Пилотқа дайын",
+      "needs_configuration": "Баптау керек"
+    },
+    "notes": {
+      "external_not_configured": "Сыртқы болжам интеграциясы әлі бапталмаған. Сәтті қосылым көрсетілмейді.",
+      "pilot_baseline": "Пилоттық базалық деңгей нақты провайдер дәлдігі шыққанша MAPE 14% бағдарын қолданады.",
+      "actuals_reference_connected": "CSV нақты дерегі қолжетімді және тірек сигнал ретінде қолданыла алады.",
+      "actuals_reference_empty": "Тірек сигналға арналған CSV нақты дерегі әлі жүктелмеген."
+    },
+    "values": {
+      "targetMape": "<{value}%"
     },
     "kpi": {
       "totalProviders": "Барлық провайдерлер",
-      "totalProvidersHelper": "Тізілім қайтарған провайдерлер",
+      "totalProvidersHelper": "Серверлік шолу қайтарған провайдерлер",
       "activeProviders": "Белсенді провайдерлер",
       "activeProvidersHelper": "«Белсенді» статусы бар провайдерлер",
+      "connectedProviders": "Қосылған дерек көздері",
+      "connectedProvidersHelper": "Нақты дерегі қосылған провайдерлер",
       "forecastRuns": "Барлық болжам іске қосулары",
-      "forecastRunsHelper": "Провайдер рейтингіндегі іске қосулар",
+      "forecastRunsHelper": "Болжам іске қосулары немесе нақты дерек жолдары",
       "bestProvider": "MAPE бойынша үздік провайдер",
       "bestProviderHelper": "Ең төмен орташа MAPE"
     },
     "table": {
-      "eyebrow": "Тізілім + дәлдік",
+      "eyebrow": "Провайдер шолуы",
       "title": "Болжам провайдерлері",
       "name": "Провайдер атауы",
-      "code": "Провайдер коды",
+      "type": "Түрі",
       "status": "Статус",
-      "avgMape": "Орташа MAPE",
-      "avgRmse": "Орташа RMSE",
+      "dataStatus": "Дерек статусы",
+      "latestForecast": "Соңғы болжам",
+      "latestMape": "Соңғы MAPE",
       "forecastRuns": "Болжам іске қосулары",
-      "rank": "Ранг"
+      "targetMape": "MAPE мақсаты"
     },
-    "comparison": {
-      "eyebrow": "Салыстыру",
-      "title": "Провайдер тиімділігі",
-      "bestProvider": "Үздік провайдер",
-      "worstProvider": "Ең нашар провайдер",
-      "mapeDelta": "MAPE айырмасы",
-      "emptyTitle": "Провайдер салыстыруы әлі жоқ",
-      "emptyDetail": "Провайдер рейтингі дәлдік метрикаларын қайтарғаннан кейін салыстыру пайда болады."
+    "cards": {
+      "eyebrow": "Провайдер карталары",
+      "title": "Қосылым және дәлдік",
+      "latestForecast": "Соңғы болжам",
+      "latestMape": "Соңғы MAPE",
+      "baselineMape": "Базалық MAPE",
+      "forecastRuns": "Болжам іске қосулары",
+      "targetMape": "MAPE мақсаты",
+      "emptyTitle": "Провайдер карталары әлі жоқ",
+      "emptyDetail": "Серверлік шолу провайдер жазбаларын қайтарғанда карталар пайда болады."
     }
   },
   "telemetry": {

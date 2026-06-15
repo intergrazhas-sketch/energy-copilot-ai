@@ -571,50 +571,85 @@
   },
   "providers": {
     "loadingTitle": "Loading forecast providers",
-    "loadingDetail": "Loading provider registry.",
+    "loadingDetail": "Loading provider overview from the API.",
     "emptyTitle": "No providers yet",
-    "emptyDetail": "No manual or mock providers were returned by the API."
+    "emptyDetail": "The API did not return forecast provider records yet."
   },
   "forecastProviders": {
     "demoNames": {
       "mockForecast": "Mock Forecast",
-      "manualForecast": "Manual Forecast"
+      "manualForecast": "Manual Forecast",
+      "internalBaseline": "Internal Baseline",
+      "manualCsvActuals": "Manual CSV / Actuals reference"
     },
     "providerTypes": {
       "mock": "Mock",
       "manual": "Manual",
       "api": "API",
-      "external": "External"
+      "external": "External",
+      "internal": "Internal",
+      "baseline": "Baseline"
+    },
+    "statuses": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "unknown": "Unknown"
+    },
+    "dataStatuses": {
+      "connected": "Connected",
+      "not_connected": "Not connected",
+      "simulated": "Simulated",
+      "unknown": "Unknown"
+    },
+    "actions": {
+      "no_data": "Add data",
+      "no_recent_forecast": "Create a recent forecast",
+      "ready_for_connection": "Ready for pilot review",
+      "needs_configuration": "Needs configuration"
+    },
+    "notes": {
+      "external_not_configured": "External forecast integration is not configured yet. No successful connection is shown.",
+      "pilot_baseline": "Pilot baseline uses the known 14% MAPE reference until real provider accuracy is available.",
+      "actuals_reference_connected": "Manual CSV actuals are available and can be used as the reference signal.",
+      "actuals_reference_empty": "No manual CSV actuals are available yet for the reference signal."
+    },
+    "values": {
+      "targetMape": "<{value}%"
     },
     "kpi": {
       "totalProviders": "Total providers",
-      "totalProvidersHelper": "Providers returned by registry",
+      "totalProvidersHelper": "Providers returned by the backend overview",
       "activeProviders": "Active providers",
       "activeProvidersHelper": "Providers marked active",
+      "connectedProviders": "Connected data sources",
+      "connectedProvidersHelper": "Providers with real connected data",
       "forecastRuns": "Total forecast runs",
-      "forecastRunsHelper": "Runs included in provider ranking",
+      "forecastRunsHelper": "Forecast runs or actuals reference rows",
       "bestProvider": "Best provider by MAPE",
       "bestProviderHelper": "Lowest average MAPE"
     },
     "table": {
-      "eyebrow": "Registry + Accuracy",
+      "eyebrow": "Provider overview",
       "title": "Forecast Providers",
       "name": "Provider name",
-      "code": "Provider code",
+      "type": "Type",
       "status": "Status",
-      "avgMape": "Average MAPE",
-      "avgRmse": "Average RMSE",
+      "dataStatus": "Data status",
+      "latestForecast": "Latest forecast",
+      "latestMape": "Latest MAPE",
       "forecastRuns": "Forecast runs",
-      "rank": "Rank"
+      "targetMape": "Target MAPE"
     },
-    "comparison": {
-      "eyebrow": "Comparison",
-      "title": "Provider Performance",
-      "bestProvider": "Best provider",
-      "worstProvider": "Worst provider",
-      "mapeDelta": "MAPE difference",
-      "emptyTitle": "No provider comparison yet",
-      "emptyDetail": "Comparison will appear after provider ranking returns accuracy metrics."
+    "cards": {
+      "eyebrow": "Provider cards",
+      "title": "Connection and accuracy status",
+      "latestForecast": "Latest forecast",
+      "latestMape": "Latest MAPE",
+      "baselineMape": "Baseline MAPE",
+      "forecastRuns": "Forecast runs",
+      "targetMape": "Target MAPE",
+      "emptyTitle": "No provider cards yet",
+      "emptyDetail": "Provider cards will appear after the backend overview returns provider records."
     }
   },
   "telemetry": {
