@@ -204,6 +204,12 @@
       "importedRowsMessage": "{count} жол импортталды",
       "resultSummary": "Импортталған жолдар: {imported}, қабылданбаған жолдар: {rejected}",
       "rejectedRows": "Қабылданбаған жолдар",
+      "lastImportedFile": "Соңғы импортталған файл",
+      "lastImportedRows": "Импортталған жолдар: {imported}, қабылданбаған жолдар: {rejected}",
+      "lastImportedAt": "Импорт уақыты: {time}",
+      "actualStoredDetail": "Нақты телеметрия станция профилінде сақталған.",
+      "dataAvailableTitle": "Деректер бар",
+      "dataAvailableDetail": "Деректер базада бар. Басқа файл импорттау қажет болса ғана жаңа CSV таңдаңыз.",
       "validationError": "Станцияны және CSV файлын таңдаңыз.",
       "error": "Импорт сәтсіз аяқталды",
       "rowError": "{row}-жол: {message}",
@@ -264,6 +270,42 @@
       "samplesHelper": "Сәйкес келген болжам және факт нүктелері",
       "forecastRuns": "Болжам іске қосулары",
       "forecastRunsHelper": "Күндік агрегаттарға кірген іске қосулар"
+    },
+    "forecastImport": {
+      "eyebrow": "Болжам CSV",
+      "title": "Болжам дерегін импорттау",
+      "helper": "Таңдалған станция үшін болжам CSV жүктеңіз. Сервер оны болжам іске қосуы ретінде сақтап, нақты телеметриямен уақыт бойынша салыстырады.",
+      "plantLabel": "Станция",
+      "plantHelper": "Дәлдік осы станцияның нақты телеметриясы бойынша есептеледі.",
+      "chooseButton": "Болжам CSV таңдау",
+      "import": "Болжамды импорттау",
+      "importing": "Импортталуда...",
+      "started": "Болжам импорты басталды.",
+      "success": "Болжам сәтті импортталды.",
+      "error": "Болжамды импорттау сәтсіз болды. CSV форматын тексеріп, қайта көріңіз.",
+      "resultSummary": "Импортталған жолдар: {imported}, қабылданбаған жолдар: {rejected}",
+      "lastImportedFile": "Соңғы импортталған файл",
+      "lastImportedRows": "Импортталған жолдар: {imported}, қабылданбаған жолдар: {rejected}",
+      "lastImportedProvider": "Провайдер: {provider}",
+      "lastImportedAt": "Импорт уақыты: {time}",
+      "forecastStoredDetail": "Болжам деректері сақталған және Accuracy Lab дәлдік есебінде қолданылады.",
+      "dataAvailableTitle": "Деректер бар",
+      "dataAvailableDetail": "Деректер базада бар. Басқа файл импорттау қажет болса ғана жаңа CSV таңдаңыз.",
+      "rowError": "{row}-жол: {message}",
+      "validation": {
+        "selectFileAndPlant": "Алдымен станцияны және болжам CSV таңдаңыз.",
+        "timestamp_required": "timestamp толтырылуы керек",
+        "timestamp_invalid": "timestamp ISO 8601 күні болуы керек",
+        "timestamp_not_15_minute": "timestamp 15 минут қадамына сәйкес болуы керек",
+        "provider_code_required": "provider_code толтырылуы керек",
+        "provider_code_unsupported": "MVP үшін provider_code «Қолмен болжам» провайдеріне сәйкес болуы керек",
+        "forecast_power_kw_required": "forecast_power_kw толтырылуы керек",
+        "forecast_power_kw_invalid": "forecast_power_kw сан болуы керек",
+        "forecast_power_kw_negative": "forecast_power_kw теріс болмауы керек",
+        "forecast_energy_kwh_required": "forecast_energy_kwh толтырылуы керек",
+        "forecast_energy_kwh_invalid": "forecast_energy_kwh сан болуы керек",
+        "forecast_energy_kwh_negative": "forecast_energy_kwh теріс болмауы керек"
+      }
     },
     "target": {
       "eyebrow": "Пилот мақсаты",
@@ -580,7 +622,8 @@
       "mockForecast": "Тест болжам",
       "manualForecast": "Қолмен енгізілген болжам",
       "internalBaseline": "Ішкі базалық болжам",
-      "manualCsvActuals": "CSV факт / нақты дерек тірегі"
+      "manualCsvActuals": "CSV факт / нақты дерек тірегі",
+      "manualCsvForecast": "Қолмен болжам"
     },
     "providerTypes": {
       "mock": "Тест",
@@ -610,6 +653,8 @@
     "notes": {
       "external_not_configured": "Сыртқы болжам интеграциясы әлі бапталмаған. Сәтті қосылым көрсетілмейді.",
       "pilot_baseline": "Пилоттық базалық деңгей нақты провайдер дәлдігі шыққанша MAPE 14% бағдарын қолданады.",
+      "manual_forecast_connected": "CSV болжам дерегі қолжетімді және нақты телеметриямен салыстырыла алады.",
+      "manual_forecast_empty": "CSV болжам дерегі әлі импортталмаған.",
       "actuals_reference_connected": "CSV нақты дерегі қолжетімді және тірек сигнал ретінде қолданыла алады.",
       "actuals_reference_empty": "Тірек сигналға арналған CSV нақты дерегі әлі жүктелмеген."
     },

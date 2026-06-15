@@ -161,6 +161,16 @@ type TelemetryCsvImportResponse = {
   }>;
 };
 
+type LastCsvImportSummary = {
+  fileName: string;
+  importedRows: number;
+  rejectedRows: number;
+  importedAt: string;
+  plantId?: string;
+  plantName?: string;
+  providerCode?: string;
+};
+
 type BackendAlertSeverity = "healthy" | "warning" | "critical" | "unknown";
 type BackendAlert = {
   id: string;
@@ -300,6 +310,8 @@ const rejectionReasons = [
 
 const forecastBaselineMape = 14;
 const forecastTargetMape = 10;
+const lastActualCsvImportStorageKey = "energy_copilot_last_actual_csv_import";
+const lastForecastCsvImportStorageKey = "energy_copilot_last_forecast_csv_import";
 const strongForecastBiasThreshold = 1;
 const criticalRejectionReasons = new Set([
   "invalid_topic",
@@ -384,6 +396,45 @@ async function fetchJson<T>(path: string, params?: Record<string, string>): Prom
     throw new Error(`${path} returned ${response.status}`);
   }
   return response.json() as Promise<T>;
+}
+
+function isLastCsvImportSummary(value: unknown): value is LastCsvImportSummary {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const summary = value as Record<string, unknown>;
+  return (
+    typeof summary.fileName === "string" &&
+    typeof summary.importedRows === "number" &&
+    typeof summary.rejectedRows === "number" &&
+    typeof summary.importedAt === "string"
+  );
+}
+
+function readLastCsvImportSummary(storageKey: string): LastCsvImportSummary | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(storageKey);
+    if (!storedValue) {
+      return null;
+    }
+    const parsedValue = JSON.parse(storedValue) as unknown;
+    return isLastCsvImportSummary(parsedValue) ? parsedValue : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastCsvImportSummary(storageKey: string, summary: LastCsvImportSummary) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(storageKey, JSON.stringify(summary));
 }
 
 function formatNumber(
@@ -485,6 +536,9 @@ function getProviderDisplayKey(name: string | undefined, code?: string) {
   if (normalized.includes("manual_csv_actuals") || normalized.includes("actuals reference")) {
     return "manualCsvActuals";
   }
+  if (normalized.includes("manual_csv_forecast") || normalized.includes("forecast provider")) {
+    return "manualCsvForecast";
+  }
   if (normalized.includes("manual")) {
     return "manualForecast";
   }
@@ -532,6 +586,10 @@ function translateProviderAction(action: string | undefined, t: Translate, fallb
 
 function translateProviderNote(note: string | undefined, t: Translate, fallback: string) {
   return translateMachineValue("forecastProviders.notes", note, t, fallback);
+}
+
+function translateForecastImportError(message: string | undefined, t: Translate, fallback: string) {
+  return translateMachineValue("accuracyLab.forecastImport.validation", message, t, fallback);
 }
 
 function getProviderBadgeTone(value: string | undefined) {
@@ -1705,7 +1763,12 @@ function SolarPlantProfileSection({
   const [uploadResult, setUploadResult] = useState<TelemetryCsvImportResponse | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<{ type: "info" | "success"; text: string } | null>(null);
+  const [lastActualImport, setLastActualImport] = useState<LastCsvImportSummary | null>(null);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
+
+  useEffect(() => {
+    setLastActualImport(readLastCsvImportSummary(lastActualCsvImportStorageKey));
+  }, []);
 
   useEffect(() => {
     if (plants.length === 0) {
@@ -1865,7 +1928,17 @@ function SolarPlantProfileSection({
       }
 
       const result = (await response.json()) as TelemetryCsvImportResponse;
+      const lastImportSummary: LastCsvImportSummary = {
+        fileName: stationDataFile.name,
+        importedRows: result.imported_rows,
+        rejectedRows: result.rejected_rows,
+        importedAt: new Date().toISOString(),
+        plantId: selectedPlantId,
+        plantName: selectedPlant?.name,
+      };
       setUploadResult(result);
+      setLastActualImport(lastImportSummary);
+      writeLastCsvImportSummary(lastActualCsvImportStorageKey, lastImportSummary);
       setUploadMessage({ type: "success", text: t("solarPlantProfile.upload.success") });
       setStationDataFile(null);
       setProfileRefreshToken((current) => current + 1);
@@ -2103,6 +2176,31 @@ function SolarPlantProfileSection({
                 })}
               </div>
             ) : null}
+            {lastActualImport ? (
+              <div className="station-upload-last">
+                <span>{t("solarPlantProfile.upload.lastImportedFile")}</span>
+                <strong>{lastActualImport.fileName}</strong>
+                <div>
+                  <span>
+                    {t("solarPlantProfile.upload.lastImportedRows", {
+                      imported: formatNumber(lastActualImport.importedRows, 0, noData, locale),
+                      rejected: formatNumber(lastActualImport.rejectedRows, 0, noData, locale),
+                    })}
+                  </span>
+                  <span>
+                    {t("solarPlantProfile.upload.lastImportedAt", {
+                      time: formatDateTime(lastActualImport.importedAt, noData, locale),
+                    })}
+                  </span>
+                </div>
+                <p>{t("solarPlantProfile.upload.actualStoredDetail")}</p>
+              </div>
+            ) : profileState.summary && profileState.summary.telemetry_points_count > 0 ? (
+              <div className="station-upload-last">
+                <span>{t("solarPlantProfile.upload.dataAvailableTitle")}</span>
+                <p>{t("solarPlantProfile.upload.dataAvailableDetail")}</p>
+              </div>
+            ) : null}
             {uploadError ? <div className="station-upload-message error">{uploadError}</div> : null}
             {uploadResult?.errors.length ? (
               <div className="station-upload-message warning">
@@ -2331,7 +2429,6 @@ function ForecastInsightsSection({
               <div className="forecast-insights-provider-row" key={provider.provider_id}>
                 <span>
                   <strong>{translateProviderName(provider.provider_name, provider.provider_code, t, noData)}</strong>
-                  <small>{provider.provider_code}</small>
                 </span>
                 <span>{formatPercent(provider.avg_mape, noData, locale)}</span>
                 <span>{formatNumber(provider.avg_rmse, 2, noData, locale)}</span>
@@ -2353,22 +2450,110 @@ function ForecastInsightsSection({
 }
 
 function ForecastAccuracyLabSection({
+  plants,
   summary,
   ranking,
   loading,
   locale,
+  onImportComplete,
   t,
 }: {
+  plants: SolarPlant[];
   summary: AccuracySummary | null;
   ranking: AccuracyProviderRankingResponse | null;
   loading: boolean;
   locale: Locale;
+  onImportComplete: () => void;
   t: Translate;
 }) {
   const noData = t("common.noData");
   const targetStatus = getAccuracyTargetStatus(summary?.avg_mape);
   const rankingProviders = ranking?.providers || [];
   const hasAggregates = Boolean(summary && summary.aggregates_count > 0);
+  const [forecastPlantId, setForecastPlantId] = useState("");
+  const [forecastCsvFile, setForecastCsvFile] = useState<File | null>(null);
+  const [forecastImporting, setForecastImporting] = useState(false);
+  const [forecastImportResult, setForecastImportResult] = useState<TelemetryCsvImportResponse | null>(null);
+  const [forecastImportError, setForecastImportError] = useState<string | null>(null);
+  const [forecastImportMessage, setForecastImportMessage] = useState<{
+    type: "info" | "success";
+    text: string;
+  } | null>(null);
+  const [lastForecastImport, setLastForecastImport] = useState<LastCsvImportSummary | null>(null);
+
+  useEffect(() => {
+    setLastForecastImport(readLastCsvImportSummary(lastForecastCsvImportStorageKey));
+  }, []);
+
+  useEffect(() => {
+    if (plants.length === 0) {
+      setForecastPlantId("");
+      return;
+    }
+    if (!forecastPlantId || !plants.some((plant) => plant.id === forecastPlantId)) {
+      setForecastPlantId(plants[0].id);
+    }
+  }, [forecastPlantId, plants]);
+
+  const forecastCsvFileSize =
+    forecastCsvFile?.size !== undefined
+      ? t("solarPlantProfile.upload.fileSizeValue", {
+          value: formatNumber(forecastCsvFile.size / 1024, 1, noData, locale),
+        })
+      : noData;
+  const forecastCsvFileType = forecastCsvFile?.type || t("solarPlantProfile.upload.unknownType");
+
+  const handleForecastCsvImport = async () => {
+    if (!forecastPlantId || !forecastCsvFile) {
+      setForecastImportError(t("accuracyLab.forecastImport.validation.selectFileAndPlant"));
+      return;
+    }
+
+    setForecastImporting(true);
+    setForecastImportResult(null);
+    setForecastImportError(null);
+    setForecastImportMessage({ type: "info", text: t("accuracyLab.forecastImport.started") });
+
+    const formData = new FormData();
+    formData.append("file", forecastCsvFile);
+    formData.append("plant_id", forecastPlantId);
+
+    try {
+      const response = await fetch(buildUrl("/api/v1/forecast-runs/import-csv"), {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(t("accuracyLab.forecastImport.error"));
+      }
+
+      const result = (await response.json()) as TelemetryCsvImportResponse;
+      const selectedPlant = plants.find((plant) => plant.id === forecastPlantId);
+      const lastImportSummary: LastCsvImportSummary = {
+        fileName: forecastCsvFile.name,
+        importedRows: result.imported_rows,
+        rejectedRows: result.rejected_rows,
+        importedAt: new Date().toISOString(),
+        plantId: forecastPlantId,
+        plantName: selectedPlant?.name,
+        providerCode: "manual_csv_forecast",
+      };
+      setForecastImportResult(result);
+      setLastForecastImport(lastImportSummary);
+      writeLastCsvImportSummary(lastForecastCsvImportStorageKey, lastImportSummary);
+      setForecastImportMessage({ type: "success", text: t("accuracyLab.forecastImport.success") });
+      setForecastCsvFile(null);
+      onImportComplete();
+    } catch (error) {
+      setForecastImportMessage(null);
+      setForecastImportError(
+        error instanceof Error ? error.message : t("accuracyLab.forecastImport.error"),
+      );
+    } finally {
+      setForecastImporting(false);
+    }
+  };
 
   return (
     <section className="section-stack">
@@ -2423,6 +2608,141 @@ function ForecastAccuracyLabSection({
           value={formatNumber(summary?.forecast_runs_count, 0, noData, locale)}
         />
       </section>
+
+      <Panel
+        eyebrow={t("accuracyLab.forecastImport.eyebrow")}
+        title={t("accuracyLab.forecastImport.title")}
+      >
+        <div className="station-upload-card">
+          <p>{t("accuracyLab.forecastImport.helper")}</p>
+          <div className="plant-profile-selector">
+            <label>
+              <span>{t("accuracyLab.forecastImport.plantLabel")}</span>
+              <select
+                disabled={plants.length === 0 || forecastImporting}
+                onChange={(event) => setForecastPlantId(event.target.value)}
+                value={forecastPlantId}
+              >
+                {plants.map((plant) => (
+                  <option key={plant.id} value={plant.id}>
+                    {plant.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <small>{t("accuracyLab.forecastImport.plantHelper")}</small>
+          </div>
+          <label className="station-upload-button">
+            <span>{t("accuracyLab.forecastImport.chooseButton")}</span>
+            <input
+              accept=".csv,text/csv"
+              disabled={forecastImporting}
+              onChange={(event) => {
+                setForecastCsvFile(event.target.files?.[0] || null);
+                setForecastImportResult(null);
+                setForecastImportError(null);
+                setForecastImportMessage(null);
+              }}
+              type="file"
+            />
+          </label>
+          {forecastCsvFile ? (
+            <div className="station-upload-file">
+              <div>
+                <span>{t("solarPlantProfile.upload.fileName")}</span>
+                <strong>{forecastCsvFile.name}</strong>
+              </div>
+              <div>
+                <span>{t("solarPlantProfile.upload.fileSize")}</span>
+                <strong>{forecastCsvFileSize}</strong>
+              </div>
+              <div>
+                <span>{t("solarPlantProfile.upload.fileType")}</span>
+                <strong>{forecastCsvFileType}</strong>
+              </div>
+            </div>
+          ) : null}
+          {forecastCsvFile ? (
+            <div className="station-upload-actions">
+              <button
+                className="station-upload-submit"
+                disabled={!forecastPlantId || forecastImporting}
+                onClick={handleForecastCsvImport}
+                type="button"
+              >
+                {forecastImporting
+                  ? t("accuracyLab.forecastImport.importing")
+                  : t("accuracyLab.forecastImport.import")}
+              </button>
+            </div>
+          ) : null}
+          {forecastImportMessage ? (
+            <div className={`station-upload-message ${forecastImportMessage.type}`}>
+              {forecastImportMessage.text}
+            </div>
+          ) : null}
+          {forecastImportResult ? (
+            <div className="station-upload-message success">
+              {t("accuracyLab.forecastImport.resultSummary", {
+                imported: formatNumber(forecastImportResult.imported_rows, 0, noData, locale),
+                rejected: formatNumber(forecastImportResult.rejected_rows, 0, noData, locale),
+              })}
+            </div>
+          ) : null}
+          {lastForecastImport ? (
+            <div className="station-upload-last">
+              <span>{t("accuracyLab.forecastImport.lastImportedFile")}</span>
+              <strong>{lastForecastImport.fileName}</strong>
+              <div>
+                <span>
+                  {t("accuracyLab.forecastImport.lastImportedRows", {
+                    imported: formatNumber(lastForecastImport.importedRows, 0, noData, locale),
+                    rejected: formatNumber(lastForecastImport.rejectedRows, 0, noData, locale),
+                  })}
+                </span>
+                <span>
+                  {t("accuracyLab.forecastImport.lastImportedProvider", {
+                    provider: translateProviderName(
+                      "Manual CSV / Forecast provider",
+                      lastForecastImport.providerCode,
+                      t,
+                      noData,
+                    ),
+                  })}
+                </span>
+                <span>
+                  {t("accuracyLab.forecastImport.lastImportedAt", {
+                    time: formatDateTime(lastForecastImport.importedAt, noData, locale),
+                  })}
+                </span>
+              </div>
+              <p>{t("accuracyLab.forecastImport.forecastStoredDetail")}</p>
+            </div>
+          ) : hasAggregates || (summary?.forecast_runs_count ?? 0) > 0 ? (
+            <div className="station-upload-last">
+              <span>{t("accuracyLab.forecastImport.dataAvailableTitle")}</span>
+              <p>{t("accuracyLab.forecastImport.dataAvailableDetail")}</p>
+            </div>
+          ) : null}
+          {forecastImportError ? (
+            <div className="station-upload-message error">{forecastImportError}</div>
+          ) : null}
+          {forecastImportResult?.errors.length ? (
+            <div className="station-upload-message warning">
+              {forecastImportResult.errors.slice(0, 3).map((error) => (
+                <span key={`${error.row_number}-${error.message}`}>
+                  {error.row_number
+                    ? t("accuracyLab.forecastImport.rowError", {
+                        row: error.row_number,
+                        message: translateForecastImportError(error.message, t, error.message),
+                      })
+                    : translateForecastImportError(error.message, t, error.message)}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </Panel>
 
       <section className="accuracy-lab-layout">
         <Panel eyebrow={t("accuracyLab.target.eyebrow")} title={t("accuracyLab.target.title")}>
@@ -2483,7 +2803,6 @@ function ForecastAccuracyLabSection({
                   <strong>#{provider.rank}</strong>
                   <span>
                     <strong>{translateProviderName(provider.provider_name, provider.provider_code, t, noData)}</strong>
-                    <small>{provider.provider_code}</small>
                   </span>
                   <span>{formatPercent(provider.avg_mape, noData, locale)}</span>
                   <span>{formatNumber(provider.avg_rmse, 2, noData, locale)}</span>
@@ -3561,6 +3880,7 @@ function DashboardOverview({
   });
   const [activeSection, setActiveSection] = useState<SectionKey>("overview");
   const [selectedProfilePlantId, setSelectedProfilePlantId] = useState("");
+  const [dashboardRefreshToken, setDashboardRefreshToken] = useState(0);
 
   const openPlantProfile = (plantId: string) => {
     setSelectedProfilePlantId(plantId);
@@ -3692,7 +4012,7 @@ function DashboardOverview({
     return () => {
       mounted = false;
     };
-  }, [period.from, period.to]);
+  }, [period.from, period.to, dashboardRefreshToken]);
 
   const totalCapacity = state.data.plants.reduce(
     (sum, plant) => sum + plant.capacity_kw,
@@ -4000,6 +4320,8 @@ function DashboardOverview({
           <ForecastAccuracyLabSection
             locale={locale}
             loading={state.loading}
+            onImportComplete={() => setDashboardRefreshToken((current) => current + 1)}
+            plants={state.data.plants}
             ranking={state.data.accuracyRanking}
             summary={state.data.accuracy}
             t={t}
@@ -5829,6 +6151,41 @@ function DashboardOverview({
         .station-upload-message.warning {
           border: 1px solid rgba(255, 183, 77, 0.3);
           background: rgba(255, 183, 77, 0.08);
+        }
+
+        .station-upload-last {
+          display: grid;
+          gap: 8px;
+          border: 1px solid rgba(50, 213, 131, 0.24);
+          border-radius: 16px;
+          background: rgba(50, 213, 131, 0.07);
+          padding: 14px;
+        }
+
+        .station-upload-last > span,
+        .station-upload-last div span {
+          color: rgba(245, 242, 237, 0.62);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .station-upload-last strong {
+          color: #fffaf4;
+          font-size: 15px;
+          overflow-wrap: anywhere;
+        }
+
+        .station-upload-last div {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px 14px;
+        }
+
+        .station-upload-last p {
+          margin: 0;
+          color: rgba(245, 242, 237, 0.68);
+          font-size: 13px;
+          line-height: 1.45;
         }
 
         .pilot-hero {

@@ -160,6 +160,22 @@ async def list_forecast_providers(session: AsyncSession = Depends(get_db_session
             if provider_by_code.get("mock") is None
             else "ready_for_connection",
         ),
+        await _build_provider_overview(
+            session,
+            code="manual_csv_forecast",
+            name="Manual CSV / Forecast provider",
+            provider_type="internal",
+            db_provider=provider_by_code.get("manual_csv_forecast"),
+            status="active" if provider_by_code.get("manual_csv_forecast") else "unknown",
+            data_status="connected" if provider_by_code.get("manual_csv_forecast") else "not_connected",
+            notes="manual_forecast_connected"
+            if provider_by_code.get("manual_csv_forecast")
+            else "manual_forecast_empty",
+            recommended_action="ready_for_connection"
+            if provider_by_code.get("manual_csv_forecast")
+            else "no_data",
+            baseline_mape=None,
+        ),
         ForecastProviderOverviewRead(
             id=provider_by_code.get("manual").id
             if provider_by_code.get("manual")

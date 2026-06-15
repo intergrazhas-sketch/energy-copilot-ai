@@ -204,6 +204,12 @@
       "importedRowsMessage": "Imported {count} rows",
       "resultSummary": "Imported rows: {imported}, rejected rows: {rejected}",
       "rejectedRows": "Rejected rows",
+      "lastImportedFile": "Last imported file",
+      "lastImportedRows": "Imported rows: {imported}, rejected rows: {rejected}",
+      "lastImportedAt": "Imported at: {time}",
+      "actualStoredDetail": "Actual telemetry is already saved to the station profile.",
+      "dataAvailableTitle": "Data is already available",
+      "dataAvailableDetail": "Data is already available in the database. Choose a new CSV only if you want to import another file.",
       "validationError": "Choose a station and CSV file.",
       "error": "Import failed",
       "rowError": "Row {row}: {message}",
@@ -264,6 +270,42 @@
       "samplesHelper": "Matched forecast and actual points",
       "forecastRuns": "Forecast runs count",
       "forecastRunsHelper": "Runs included in daily aggregates"
+    },
+    "forecastImport": {
+      "eyebrow": "Forecast CSV",
+      "title": "Import forecast data",
+      "helper": "Upload forecast CSV for a selected station. The backend stores it as forecast runs and matches it with actual telemetry by timestamp.",
+      "plantLabel": "Station",
+      "plantHelper": "Accuracy is calculated against actual telemetry for this station.",
+      "chooseButton": "Choose Forecast CSV",
+      "import": "Import forecast",
+      "importing": "Importing...",
+      "started": "Forecast import started.",
+      "success": "Forecast import successful.",
+      "error": "Forecast import failed. Check the CSV format and try again.",
+      "resultSummary": "Imported rows: {imported}, rejected rows: {rejected}",
+      "lastImportedFile": "Last imported file",
+      "lastImportedRows": "Imported rows: {imported}, rejected rows: {rejected}",
+      "lastImportedProvider": "Provider: {provider}",
+      "lastImportedAt": "Imported at: {time}",
+      "forecastStoredDetail": "Forecast data is already saved and used for accuracy calculation in Accuracy Lab.",
+      "dataAvailableTitle": "Data is already available",
+      "dataAvailableDetail": "Data is already available in the database. Choose a new CSV only if you want to import another file.",
+      "rowError": "Row {row}: {message}",
+      "validation": {
+        "selectFileAndPlant": "Choose a station and Forecast CSV first.",
+        "timestamp_required": "timestamp is required",
+        "timestamp_invalid": "timestamp must be a valid ISO 8601 datetime",
+        "timestamp_not_15_minute": "timestamp must be aligned to a 15-minute interval",
+        "provider_code_required": "provider_code is required",
+        "provider_code_unsupported": "provider_code must match the Manual Forecast provider for this MVP",
+        "forecast_power_kw_required": "forecast_power_kw is required",
+        "forecast_power_kw_invalid": "forecast_power_kw must be a number",
+        "forecast_power_kw_negative": "forecast_power_kw cannot be negative",
+        "forecast_energy_kwh_required": "forecast_energy_kwh is required",
+        "forecast_energy_kwh_invalid": "forecast_energy_kwh must be a number",
+        "forecast_energy_kwh_negative": "forecast_energy_kwh cannot be negative"
+      }
     },
     "target": {
       "eyebrow": "Pilot Target",
@@ -580,7 +622,8 @@
       "mockForecast": "Mock Forecast",
       "manualForecast": "Manual Forecast",
       "internalBaseline": "Internal Baseline",
-      "manualCsvActuals": "Manual CSV / Actuals reference"
+      "manualCsvActuals": "Manual CSV / Actuals reference",
+      "manualCsvForecast": "Manual Forecast"
     },
     "providerTypes": {
       "mock": "Mock",
@@ -610,6 +653,8 @@
     "notes": {
       "external_not_configured": "External forecast integration is not configured yet. No successful connection is shown.",
       "pilot_baseline": "Pilot baseline uses the known 14% MAPE reference until real provider accuracy is available.",
+      "manual_forecast_connected": "Manual forecast CSV data is available and can be matched with actual telemetry.",
+      "manual_forecast_empty": "Manual forecast CSV data has not been imported yet.",
       "actuals_reference_connected": "Manual CSV actuals are available and can be used as the reference signal.",
       "actuals_reference_empty": "No manual CSV actuals are available yet for the reference signal."
     },

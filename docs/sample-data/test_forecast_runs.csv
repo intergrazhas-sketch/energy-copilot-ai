@@ -1,0 +1,9 @@
+timestamp,provider_code,forecast_power_kw,forecast_energy_kwh
+2026-06-13T09:00:00+05:00,manual_csv_forecast,118,29.5
+2026-06-13T09:15:00+05:00,manual_csv_forecast,132,33
+2026-06-13T09:30:00+05:00,manual_csv_forecast,145,36.25
+2026-06-13T09:45:00+05:00,manual_csv_forecast,154,38.5
+2026-06-13T10:00:00+05:00,manual_csv_forecast,170,42.5
+2026-06-13T10:15:00+05:00,manual_csv_forecast,178,44.5
+2026-06-13T10:30:00+05:00,manual_csv_forecast,190,47.5
+2026-06-13T10:45:00+05:00,manual_csv_forecast,208,52

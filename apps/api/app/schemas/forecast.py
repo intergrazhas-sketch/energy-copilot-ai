@@ -28,7 +28,7 @@ class SolarPlantRead(SolarPlantCreate):
 
 
 class ForecastProviderCreate(BaseModel):
-    code: Literal["manual", "mock"]
+    code: Literal["manual", "mock", "manual_csv_forecast"]
     name: str = Field(min_length=1, max_length=255)
     provider_type: Literal["manual", "mock"]
     is_active: bool = True
@@ -36,6 +36,8 @@ class ForecastProviderCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_provider_type_matches_code(self) -> "ForecastProviderCreate":
+        if self.code == "manual_csv_forecast" and self.provider_type == "manual":
+            return self
         if self.provider_type != self.code:
             raise ValueError("provider_type must match code for Forecast MVP")
         return self

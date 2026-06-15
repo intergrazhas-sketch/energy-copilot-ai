@@ -64,6 +64,41 @@ async def get_forecast_provider(
     return await session.get(ForecastProvider, provider_id)
 
 
+async def get_forecast_provider_by_code(
+    session: AsyncSession,
+    provider_code: str,
+) -> ForecastProvider | None:
+    result = await session.execute(
+        select(ForecastProvider).where(ForecastProvider.code == provider_code)
+    )
+    return result.scalar_one_or_none()
+
+
+async def ensure_forecast_provider(
+    session: AsyncSession,
+    *,
+    code: str,
+    name: str,
+    provider_type: str,
+    config: dict | None = None,
+) -> ForecastProvider:
+    provider = await get_forecast_provider_by_code(session, code)
+    if provider is not None:
+        return provider
+
+    provider = ForecastProvider(
+        code=code,
+        name=name,
+        provider_type=provider_type,
+        is_active=True,
+        config=config or {},
+    )
+    session.add(provider)
+    await session.commit()
+    await session.refresh(provider)
+    return provider
+
+
 async def create_forecast_run(session: AsyncSession, payload: ForecastRunCreate) -> ForecastRun:
     forecast_run = ForecastRun(**payload.model_dump())
     session.add(forecast_run)
