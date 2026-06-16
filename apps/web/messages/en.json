@@ -430,6 +430,13 @@
       "unknown": "Unknown",
       "info": "Info"
     },
+    "compactSeverity": {
+      "healthy": "OK",
+      "critical": "Crit.",
+      "warning": "Warn.",
+      "unknown": "Unknown",
+      "info": "Info"
+    },
     "categories": {
       "telemetry": "Telemetry",
       "dataQuality": "Data quality",
@@ -638,17 +645,40 @@
       "inactive": "Inactive",
       "unknown": "Unknown"
     },
+    "compactStatuses": {
+      "active": "Active",
+      "inactive": "Config",
+      "unknown": "Unknown"
+    },
     "dataStatuses": {
       "connected": "Connected",
       "not_connected": "Not connected",
       "simulated": "Simulated",
       "unknown": "Unknown"
     },
+    "compactDataStatuses": {
+      "connected": "Conn.",
+      "not_connected": "Config",
+      "simulated": "Active",
+      "unknown": "Unknown"
+    },
     "actions": {
       "no_data": "Add data",
       "no_recent_forecast": "Refresh",
       "ready_for_connection": "Ready",
+      "ready_for_pilot_review": "Ready for pilot review",
+      "pilot_ready": "Pilot ready",
+      "ready_for_pilot_check": "Ready for pilot check",
       "needs_configuration": "Configure"
+    },
+    "compactActions": {
+      "no_data": "Config",
+      "no_recent_forecast": "Config",
+      "ready_for_connection": "Ready",
+      "ready_for_pilot_review": "Ready",
+      "pilot_ready": "Ready",
+      "ready_for_pilot_check": "Ready",
+      "needs_configuration": "Config"
     },
     "notes": {
       "external_not_configured": "External forecast integration is not configured yet. No successful connection is shown.",
@@ -705,6 +735,12 @@
     },
     "freshness": {
       "fresh": "Fresh",
+      "stale": "Stale",
+      "offline": "Offline",
+      "no_data": "No data"
+    },
+    "compactFreshness": {
+      "fresh": "OK",
       "stale": "Stale",
       "offline": "Offline",
       "no_data": "No data"
@@ -869,6 +905,12 @@
       "healthy": "Healthy",
       "warning": "Warning",
       "critical": "Critical",
+      "unknown": "Unknown"
+    },
+    "compactStatus": {
+      "healthy": "OK",
+      "warning": "Warn.",
+      "critical": "Crit.",
       "unknown": "Unknown"
     },
     "environments": {

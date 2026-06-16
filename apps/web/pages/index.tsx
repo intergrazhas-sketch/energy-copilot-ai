@@ -584,8 +584,61 @@ function translateProviderAction(action: string | undefined, t: Translate, fallb
   return translateMachineValue("forecastProviders.actions", action, t, fallback);
 }
 
+function translateProviderCompactStatus(status: string | undefined, t: Translate, fallback: string) {
+  return translateMachineValue(
+    "forecastProviders.compactStatuses",
+    status,
+    t,
+    translateProviderStatus(status, t, fallback),
+  );
+}
+
+function translateProviderCompactDataStatus(status: string | undefined, t: Translate, fallback: string) {
+  return translateMachineValue(
+    "forecastProviders.compactDataStatuses",
+    status,
+    t,
+    translateProviderDataStatus(status, t, fallback),
+  );
+}
+
+function translateProviderCompactAction(action: string | undefined, t: Translate, fallback: string) {
+  return translateMachineValue(
+    "forecastProviders.compactActions",
+    action,
+    t,
+    translateProviderAction(action, t, fallback),
+  );
+}
+
 function translateProviderNote(note: string | undefined, t: Translate, fallback: string) {
   return translateMachineValue("forecastProviders.notes", note, t, fallback);
+}
+
+function translateMonitoringCompactStatus(status: MonitoringStatus, t: Translate) {
+  const compactKey = `systemHealth.compactStatus.${status}`;
+  const compactLabel = t(compactKey);
+  return compactLabel === compactKey ? t(`systemHealth.status.${status}`) : compactLabel;
+}
+
+function translateFreshnessCompactStatus(
+  status: TelemetrySummary["data_freshness_status"] | undefined,
+  t: Translate,
+  fallback: string,
+) {
+  if (!status) {
+    return fallback;
+  }
+
+  const compactKey = `telemetry.compactFreshness.${status}`;
+  const compactLabel = t(compactKey);
+  return compactLabel === compactKey ? t(`telemetry.freshness.${status}`) : compactLabel;
+}
+
+function translateAlertCompactSeverity(severity: AlertSeverity, t: Translate) {
+  const compactKey = `alertsCenter.compactSeverity.${severity}`;
+  const compactLabel = t(compactKey);
+  return compactLabel === compactKey ? t(`alertsCenter.severity.${severity}`) : compactLabel;
 }
 
 function translateForecastImportError(message: string | undefined, t: Translate, fallback: string) {
@@ -594,7 +647,14 @@ function translateForecastImportError(message: string | undefined, t: Translate,
 
 function getProviderBadgeTone(value: string | undefined) {
   const normalized = normalizeMachineValue(value || "unknown");
-  if (normalized === "active" || normalized === "connected" || normalized === "ready_for_connection") {
+  if (
+    normalized === "active" ||
+    normalized === "connected" ||
+    normalized === "ready_for_connection" ||
+    normalized === "ready_for_pilot_review" ||
+    normalized === "pilot_ready" ||
+    normalized === "ready_for_pilot_check"
+  ) {
     return "good";
   }
   if (normalized === "simulated" || normalized === "needs_configuration" || normalized === "no_recent_forecast") {
@@ -815,11 +875,15 @@ function ProviderBadge({
   label: string;
   value: string | undefined;
 }) {
-  return <span className={`status-badge ${getProviderBadgeTone(value)}`}>{label}</span>;
+  return <span className={`status-badge provider-badge ${getProviderBadgeTone(value)}`}>{label}</span>;
 }
 
 function AlertSeverityBadge({ severity, t }: { severity: AlertSeverity; t: Translate }) {
-  return <span className={`alert-severity-badge ${severity}`}>{t(`alertsCenter.severity.${severity}`)}</span>;
+  return (
+    <span className={`alert-severity-badge ${severity}`}>
+      {translateAlertCompactSeverity(severity, t)}
+    </span>
+  );
 }
 
 function MetricCard({
@@ -840,7 +904,9 @@ function MetricCard({
   return (
     <section className="metric-card">
       <p>{label}</p>
-      <strong className={loading ? "" : valueClassName}>{loading ? t("common.loading") : value}</strong>
+      <strong className={loading ? "metric-value" : `metric-value ${valueClassName}`.trim()}>
+        {loading ? t("common.loading") : value}
+      </strong>
       <span>{loading ? t("common.fetchingLiveData") : helper}</span>
     </section>
   );
@@ -1635,7 +1701,7 @@ function AlertsCenterSection({
           label={t("alertsCenter.kpi.highestSeverity")}
           loading={loading}
           t={t}
-          value={highestSeverity ? t(`alertsCenter.severity.${highestSeverity}`) : noData}
+          value={highestSeverity ? translateAlertCompactSeverity(highestSeverity, t) : noData}
           valueClassName="metric-value-text"
         />
       </section>
@@ -1712,7 +1778,7 @@ function AlertsCenterSection({
                 <strong>{alert.title || alert.type}</strong>
                 <span>{alert.entity}</span>
                 <span>{alert.message || alert.signalValue}</span>
-                <span>{t(`alertsCenter.severity.${alert.severity}`)}</span>
+                <span>{translateAlertCompactSeverity(alert.severity, t)}</span>
                 <span>{alert.sourceApi}</span>
                 <span>{alert.recommendedAction}</span>
               </div>
@@ -2980,17 +3046,17 @@ function ForecastProvidersSection({
                       <strong>{translateProviderName(provider.name, provider.code, t, noData)}</strong>
                     </div>
                     <ProviderBadge
-                      label={translateProviderDataStatus(provider.dataStatus, t, noData)}
+                      label={translateProviderCompactDataStatus(provider.dataStatus, t, noData)}
                       value={provider.dataStatus}
                     />
                   </div>
                   <div className="provider-card-badges">
                     <ProviderBadge
-                      label={translateProviderStatus(provider.status, t, noData)}
+                      label={translateProviderCompactStatus(provider.status, t, noData)}
                       value={provider.status}
                     />
                     <ProviderBadge
-                      label={translateProviderAction(provider.recommendedAction, t, noData)}
+                      label={translateProviderCompactAction(provider.recommendedAction, t, noData)}
                       value={provider.recommendedAction}
                     />
                   </div>
@@ -3354,7 +3420,7 @@ function DataQualitySection({
 function MonitoringStatusBadge({ status, t }: { status: MonitoringStatus; t: Translate }) {
   return (
     <span className={`monitoring-badge ${status}`}>
-      {t(`systemHealth.status.${status}`)}
+      {translateMonitoringCompactStatus(status, t)}
     </span>
   );
 }
@@ -3461,53 +3527,49 @@ function SystemHealthSection({
           label={t("systemHealth.kpi.overall")}
           loading={loading}
           t={t}
-          value={t(`systemHealth.status.${platformStatus}`)}
+          value={translateMonitoringCompactStatus(platformStatus, t)}
         />
         <MetricCard
           helper={health?.service || system?.service || notAvailable}
           label={t("systemHealth.kpi.api")}
           loading={loading}
           t={t}
-          value={t(`systemHealth.status.${apiStatus}`)}
+          value={translateMonitoringCompactStatus(apiStatus, t)}
         />
         <MetricCard
           helper={t("systemHealth.kpi.databaseHelper")}
           label={t("systemHealth.kpi.database")}
           loading={loading}
           t={t}
-          value={t(`systemHealth.status.${databaseStatus}`)}
+          value={translateMonitoringCompactStatus(databaseStatus, t)}
         />
         <MetricCard
           helper={t("systemHealth.kpi.redisHelper")}
           label={t("systemHealth.kpi.redis")}
           loading={loading}
           t={t}
-          value={t(`systemHealth.status.${redisStatus}`)}
+          value={translateMonitoringCompactStatus(redisStatus, t)}
         />
         <MetricCard
           helper={t("systemHealth.kpi.qdrantHelper")}
           label={t("systemHealth.kpi.qdrant")}
           loading={loading}
           t={t}
-          value={t(`systemHealth.status.${qdrantStatus}`)}
+          value={translateMonitoringCompactStatus(qdrantStatus, t)}
         />
         <MetricCard
           helper={t("systemHealth.kpi.mqttHelper")}
           label={t("systemHealth.kpi.mqtt")}
           loading={loading}
           t={t}
-          value={t(`systemHealth.status.${mqttStatus}`)}
+          value={translateMonitoringCompactStatus(mqttStatus, t)}
         />
         <MetricCard
           helper={t("systemHealth.kpi.freshnessHelper")}
           label={t("systemHealth.kpi.dataFreshness")}
           loading={loading}
           t={t}
-          value={
-            summary?.data_freshness_status
-              ? t(`telemetry.freshness.${summary.data_freshness_status}`)
-              : notAvailable
-          }
+          value={translateFreshnessCompactStatus(summary?.data_freshness_status, t, notAvailable)}
         />
         <MetricCard
           helper={t("systemHealth.kpi.telemetryHelper")}
@@ -3629,7 +3691,7 @@ function FreshnessBadge({ status, t }: { status?: TelemetrySummary["data_freshne
   const normalized = status || "no_data";
   return (
     <span className={`freshness-badge ${normalized}`}>
-      {t(`telemetry.freshness.${normalized}`)}
+      {translateFreshnessCompactStatus(normalized, t, t("common.noData"))}
     </span>
   );
 }
@@ -4614,23 +4676,25 @@ function DashboardOverview({
           word-break: normal;
         }
 
-        .metric-card strong {
+        .metric-card strong,
+        .metric-value {
           display: block;
           margin: 18px 0 10px;
           color: #fffaf4;
-          font-size: clamp(24px, 3vw, 34px);
-          letter-spacing: -0.05em;
-          line-height: 1;
+          font-size: clamp(23px, 2.6vw, 32px);
+          letter-spacing: -0.045em;
+          line-height: 1.08;
           max-width: 100%;
           overflow-wrap: break-word;
           white-space: normal;
           word-break: normal;
         }
 
-        .metric-card strong.metric-value-text {
-          font-size: clamp(17px, 1.5vw, 22px);
+        .metric-card strong.metric-value-text,
+        .metric-value.metric-value-text {
+          font-size: clamp(16px, 1.35vw, 21px);
           letter-spacing: -0.025em;
-          line-height: 1.12;
+          line-height: 1.16;
           max-width: 100%;
           overflow-wrap: break-word;
           white-space: normal;
@@ -4931,9 +4995,12 @@ function DashboardOverview({
         .provider-card {
           display: grid;
           gap: 14px;
+          align-content: start;
           border: 1px solid rgba(255, 255, 255, 0.07);
           border-radius: 18px;
           background: rgba(0, 0, 0, 0.18);
+          min-width: 0;
+          overflow: visible;
           padding: 16px;
         }
 
@@ -4967,19 +5034,30 @@ function DashboardOverview({
 
         .provider-card-badges {
           display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
+          flex-wrap: nowrap;
+          gap: 6px;
+          max-width: 100%;
+          min-width: 0;
+          overflow: hidden;
         }
 
         .provider-card-badges .status-badge,
         .provider-card-header .status-badge {
-          flex: 0 1 auto;
-          font-size: 11px;
+          flex: 0 0 auto;
+          font-size: 10px;
           line-height: 1.15;
+          max-width: 100%;
           min-width: 0;
+          overflow: hidden;
+          overflow-wrap: normal;
           padding: 6px 9px;
+          text-overflow: ellipsis;
           white-space: nowrap;
           word-break: normal;
+        }
+
+        .provider-card-header .provider-badge {
+          max-width: 45%;
         }
 
         .provider-card-metrics {
@@ -5009,6 +5087,10 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.68);
           font-size: 13px;
           line-height: 1.5;
+          min-width: 0;
+          overflow-wrap: break-word;
+          padding-bottom: 2px;
+          word-break: normal;
         }
 
         .forecast-thresholds {
@@ -5139,11 +5221,14 @@ function DashboardOverview({
           border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 999px;
           color: #fffaf4;
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 900;
-          line-height: 1.2;
-          padding: 7px 10px;
+          line-height: 1.1;
+          overflow: hidden;
+          overflow-wrap: normal;
+          padding: 6px 9px;
           text-align: center;
+          text-overflow: ellipsis;
           text-transform: uppercase;
           white-space: nowrap;
           word-break: normal;
@@ -5325,6 +5410,20 @@ function DashboardOverview({
           line-height: 1.5;
         }
 
+        .operator-priority-item .alert-severity-badge,
+        .alerts-table-row .alert-severity-badge {
+          display: inline-flex;
+          margin-top: 0;
+          font-size: 10px;
+          line-height: 1.1;
+          overflow: hidden;
+          overflow-wrap: normal;
+          padding: 6px 9px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          word-break: normal;
+        }
+
         .data-quality-filters {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5441,8 +5540,11 @@ function DashboardOverview({
           font-size: 11px;
           font-weight: 900;
           line-height: 1.15;
+          overflow: hidden;
+          overflow-wrap: normal;
           padding: 7px 10px;
           text-align: center;
+          text-overflow: ellipsis;
           text-transform: uppercase;
           white-space: nowrap;
           word-break: normal;
@@ -5532,17 +5634,21 @@ function DashboardOverview({
 
         .monitoring-badge {
           display: inline-flex;
+          align-items: center;
+          justify-content: center;
           width: fit-content;
           max-width: 100%;
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 999px;
           color: #fffaf4;
-          font-size: 12px;
+          font-size: 10px;
           font-weight: 900;
-          line-height: 1.2;
-          overflow-wrap: break-word;
-          padding: 8px 11px;
+          line-height: 1.1;
+          overflow: hidden;
+          overflow-wrap: normal;
+          padding: 6px 9px;
           text-align: center;
+          text-overflow: ellipsis;
           text-transform: uppercase;
           white-space: nowrap;
           word-break: normal;
@@ -5666,21 +5772,32 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.58);
           font-size: 12px;
           min-width: 0;
+          overflow-wrap: break-word;
+          word-break: normal;
+        }
+
+        .service-health-row span:nth-child(4) {
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .freshness-badge {
           display: inline-flex;
+          align-items: center;
+          justify-content: center;
           width: fit-content;
           max-width: 100%;
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 999px;
           color: #fffaf4;
-          font-size: 12px;
+          font-size: 10px;
           font-weight: 800;
-          line-height: 1.2;
-          overflow-wrap: break-word;
-          padding: 8px 11px;
+          line-height: 1.1;
+          overflow: hidden;
+          overflow-wrap: normal;
+          padding: 6px 9px;
           text-align: center;
+          text-overflow: ellipsis;
           text-transform: uppercase;
           white-space: nowrap;
           word-break: normal;
@@ -6436,15 +6553,17 @@ function DashboardOverview({
           border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 999px;
           color: rgba(245, 242, 237, 0.72);
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 800;
           line-height: 1.2;
           min-width: 0;
-          overflow-wrap: break-word;
+          overflow: hidden;
+          overflow-wrap: normal;
           padding: 7px 10px;
           text-align: center;
+          text-overflow: ellipsis;
           text-transform: uppercase;
-          white-space: normal;
+          white-space: nowrap;
           word-break: normal;
         }
 

@@ -430,6 +430,13 @@
       "unknown": "Белгісіз",
       "info": "Ақпарат"
     },
+    "compactSeverity": {
+      "healthy": "Қалып.",
+      "critical": "Крит.",
+      "warning": "Еск.",
+      "unknown": "Белгісіз",
+      "info": "Ақпарат"
+    },
     "categories": {
       "telemetry": "Телеметрия",
       "dataQuality": "Дерек сапасы",
@@ -638,17 +645,40 @@
       "inactive": "Белсенді емес",
       "unknown": "Белгісіз"
     },
+    "compactStatuses": {
+      "active": "Белс.",
+      "inactive": "Бапт.",
+      "unknown": "Белгісіз"
+    },
     "dataStatuses": {
       "connected": "Қосылған",
       "not_connected": "Қосылмаған",
       "simulated": "Симул.",
       "unknown": "Белгісіз"
     },
+    "compactDataStatuses": {
+      "connected": "Қос.",
+      "not_connected": "Бапт.",
+      "simulated": "Белс.",
+      "unknown": "Белгісіз"
+    },
     "actions": {
       "no_data": "Дерек",
       "no_recent_forecast": "Жаңарту",
       "ready_for_connection": "Дайын",
+      "ready_for_pilot_review": "Дайын",
+      "pilot_ready": "Дайын",
+      "ready_for_pilot_check": "Дайын",
       "needs_configuration": "Баптау"
+    },
+    "compactActions": {
+      "no_data": "Бапт.",
+      "no_recent_forecast": "Бапт.",
+      "ready_for_connection": "Дайын",
+      "ready_for_pilot_review": "Дайын",
+      "pilot_ready": "Дайын",
+      "ready_for_pilot_check": "Дайын",
+      "needs_configuration": "Бапт."
     },
     "notes": {
       "external_not_configured": "Сыртқы болжам интеграциясы әлі бапталмаған. Сәтті қосылым көрсетілмейді.",
@@ -707,6 +737,12 @@
       "fresh": "Жаңа дерек",
       "stale": "Ескіріп жатыр",
       "offline": "Байланыс жоқ",
+      "no_data": "Дерек жоқ"
+    },
+    "compactFreshness": {
+      "fresh": "Қалыпты",
+      "stale": "Ескі",
+      "offline": "Байл. жоқ",
       "no_data": "Дерек жоқ"
     },
     "sources": {
@@ -871,6 +907,12 @@
       "critical": "Критик.",
       "unknown": "Белгісіз"
     },
+    "compactStatus": {
+      "healthy": "Қалыпты",
+      "warning": "Еск.",
+      "critical": "Критик.",
+      "unknown": "Белгісіз"
+    },
     "environments": {
       "development": "Әзірлеу",
       "production": "Өндірістік орта",
@@ -939,7 +981,7 @@
     },
     "empty": {
       "unavailableTitle": "Жүйе жағдайы қолжетімсіз",
-      "unavailableDetail": "Dashboard /health немесе /api/v1/system/status жүктей алмады."
+      "unavailableDetail": "Жүйе /health немесе /api/v1/system/status жүктей алмады."
     }
   },
   "rejectedTelemetry": {

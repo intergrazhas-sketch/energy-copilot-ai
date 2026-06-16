@@ -430,6 +430,13 @@
       "unknown": "Неизвестно",
       "info": "Инфо"
     },
+    "compactSeverity": {
+      "healthy": "Испр.",
+      "critical": "Крит.",
+      "warning": "Пред.",
+      "unknown": "Неизв.",
+      "info": "Инфо"
+    },
     "categories": {
       "telemetry": "Телеметрия",
       "dataQuality": "Качество данных",
@@ -638,17 +645,40 @@
       "inactive": "Неактивен",
       "unknown": "Неизвестно"
     },
+    "compactStatuses": {
+      "active": "Активен",
+      "inactive": "Настр.",
+      "unknown": "Неизв."
+    },
     "dataStatuses": {
       "connected": "Подключён",
       "not_connected": "Не подключён",
       "simulated": "Симуляция",
       "unknown": "Неизвестно"
     },
+    "compactDataStatuses": {
+      "connected": "Подкл.",
+      "not_connected": "Настр.",
+      "simulated": "Активен",
+      "unknown": "Неизв."
+    },
     "actions": {
       "no_data": "Данные",
       "no_recent_forecast": "Обновить",
       "ready_for_connection": "Готово",
+      "ready_for_pilot_review": "Готово",
+      "pilot_ready": "Готово",
+      "ready_for_pilot_check": "Готово",
       "needs_configuration": "Настроить"
+    },
+    "compactActions": {
+      "no_data": "Настр.",
+      "no_recent_forecast": "Настр.",
+      "ready_for_connection": "Готово",
+      "ready_for_pilot_review": "Готово",
+      "pilot_ready": "Готово",
+      "ready_for_pilot_check": "Готово",
+      "needs_configuration": "Настр."
     },
     "notes": {
       "external_not_configured": "Внешняя интеграция прогноза ещё не настроена. Успешное подключение не показываем.",
@@ -706,6 +736,12 @@
     "freshness": {
       "fresh": "Свежие данные",
       "stale": "Устаревает",
+      "offline": "Нет связи",
+      "no_data": "Нет данных"
+    },
+    "compactFreshness": {
+      "fresh": "Исправно",
+      "stale": "Устар.",
       "offline": "Нет связи",
       "no_data": "Нет данных"
     },
@@ -868,6 +904,12 @@
     "status": {
       "healthy": "Исправно",
       "warning": "Предупреждение",
+      "critical": "Критично",
+      "unknown": "Неизвестно"
+    },
+    "compactStatus": {
+      "healthy": "Исправно",
+      "warning": "Пред.",
       "critical": "Критично",
       "unknown": "Неизвестно"
     },
