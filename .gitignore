@@ -4,6 +4,7 @@
 
 # Секретные файлы — НИКОГДА не коммитить!
 .env
+.env.prod
 .env.local
 .env.production
 *.pem

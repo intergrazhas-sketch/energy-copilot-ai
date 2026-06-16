@@ -1,0 +1,9 @@
+# Пример Caddy config для Energy Copilot AI API.
+# Замените domain и подключите Caddy container к Docker network
+# energy_copilot_ai_net из docker-compose.prod.yml.
+
+api.energy-copilot.<domain> {
+	encode gzip
+
+	reverse_proxy energy-copilot-api:8000
+}
