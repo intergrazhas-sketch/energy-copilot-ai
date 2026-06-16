@@ -17,7 +17,7 @@
     "systemStatus": "System Status"
   },
   "header": {
-    "eyebrow": "Dashboard MVP",
+    "eyebrow": "Live Operations Dashboard",
     "title": "Overview",
     "period": "Last 7 days",
     "languageLabel": "Language"
@@ -75,7 +75,7 @@
   },
   "placeholders": {
     "eyebrow": "Dashboard Section",
-    "detail": "{section} is available as a Dashboard MVP navigation section. Detailed data views will be added in the next UI iterations."
+    "detail": "{section} is available in the dashboard navigation. Detailed data views can be connected when this area is needed for the demo."
   },
   "system": {
     "dependencyOk": "Dependency responded successfully",
@@ -224,8 +224,8 @@
     "timeline": {
       "eyebrow": "Timeline",
       "title": "Station Timeline",
-      "placeholderTitle": "Historical station events will be added in Phase 2",
-      "placeholderDetail": "This MVP keeps the timeline as a placeholder until persisted station events are available."
+      "placeholderTitle": "Station event history",
+      "placeholderDetail": "Event history is not connected yet. The main station profile, telemetry, and forecast data are available above."
     },
     "empty": {
       "noPlantsTitle": "No stations available",
@@ -297,8 +297,8 @@
         "timestamp_required": "timestamp is required",
         "timestamp_invalid": "timestamp must be a valid ISO 8601 datetime",
         "timestamp_not_15_minute": "timestamp must be aligned to a 15-minute interval",
-        "provider_code_required": "provider_code is required",
-        "provider_code_unsupported": "provider_code must match the Manual Forecast provider for this MVP",
+        "provider_code_required": "provider column is required",
+        "provider_code_unsupported": "Use Manual Forecast in the provider column",
         "forecast_power_kw_required": "forecast_power_kw is required",
         "forecast_power_kw_invalid": "forecast_power_kw must be a number",
         "forecast_power_kw_negative": "forecast_power_kw cannot be negative",
@@ -420,8 +420,8 @@
   },
   "alertsCenter": {
     "mvpLimit": {
-      "title": "MVP limits",
-      "detail": "Alerts are computed from current API responses. Persistence, acknowledgement and history will be added later."
+      "title": "Alert scope",
+      "detail": "Alerts are computed from current API responses. Acknowledgement and history are not shown in this demo view."
     },
     "severity": {
       "healthy": "Healthy",
@@ -438,7 +438,7 @@
       "asset": "Asset"
     },
     "status": {
-      "open": "Computed open"
+      "open": "Open"
     },
     "entities": {
       "telemetryAsset": "Telemetry asset",
@@ -472,7 +472,7 @@
       "priorityTitle": "No active operator priorities",
       "priorityDetail": "Current API responses do not produce critical or warning alerts.",
       "tableTitle": "No active alerts",
-      "tableDetail": "All computed signals are currently within MVP thresholds."
+      "tableDetail": "All computed signals are currently within configured thresholds."
     },
     "priority": {
       "eyebrow": "Operator Priority",
@@ -619,14 +619,14 @@
   },
   "forecastProviders": {
     "demoNames": {
-      "mockForecast": "Mock Forecast",
+      "mockForecast": "Test Forecast",
       "manualForecast": "Manual Forecast",
       "internalBaseline": "Internal Baseline",
       "manualCsvActuals": "Manual CSV / Actuals reference",
       "manualCsvForecast": "Manual Forecast"
     },
     "providerTypes": {
-      "mock": "Mock",
+      "mock": "Test",
       "manual": "Manual",
       "api": "API",
       "external": "External",
@@ -646,9 +646,9 @@
     },
     "actions": {
       "no_data": "Add data",
-      "no_recent_forecast": "Create a recent forecast",
-      "ready_for_connection": "Ready for pilot review",
-      "needs_configuration": "Needs configuration"
+      "no_recent_forecast": "Refresh",
+      "ready_for_connection": "Ready",
+      "needs_configuration": "Configure"
     },
     "notes": {
       "external_not_configured": "External forecast integration is not configured yet. No successful connection is shown.",

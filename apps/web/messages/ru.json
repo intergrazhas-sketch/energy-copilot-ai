@@ -17,7 +17,7 @@
     "systemStatus": "Статус системы"
   },
   "header": {
-    "eyebrow": "Dashboard MVP",
+    "eyebrow": "Операционный Dashboard",
     "title": "Обзор",
     "period": "Последние 7 дней",
     "languageLabel": "Язык"
@@ -75,7 +75,7 @@
   },
   "placeholders": {
     "eyebrow": "Раздел Dashboard",
-    "detail": "{section} доступен как навигационный раздел Dashboard MVP. Детальные представления данных будут добавлены в следующих UI-итерациях."
+    "detail": "{section} доступен в навигации Dashboard. Детальное представление можно подключить, когда этот раздел понадобится для демо."
   },
   "system": {
     "dependencyOk": "Зависимость успешно ответила",
@@ -224,8 +224,8 @@
     "timeline": {
       "eyebrow": "Таймлайн",
       "title": "Таймлайн станции",
-      "placeholderTitle": "Исторические события станции будут добавлены в Phase 2",
-      "placeholderDetail": "В этом MVP таймлайн остаётся placeholder, пока нет сохранённых событий станции."
+      "placeholderTitle": "История событий станции",
+      "placeholderDetail": "История событий пока не подключена. Основные данные станции, телеметрия и прогноз доступны выше."
     },
     "empty": {
       "noPlantsTitle": "Станций нет",
@@ -297,8 +297,8 @@
         "timestamp_required": "нужно заполнить timestamp",
         "timestamp_invalid": "timestamp должен быть датой ISO 8601",
         "timestamp_not_15_minute": "timestamp должен идти с шагом 15 минут",
-        "provider_code_required": "нужно заполнить provider_code",
-        "provider_code_unsupported": "для MVP provider_code должен соответствовать провайдеру «Ручной прогноз»",
+        "provider_code_required": "нужно заполнить колонку провайдера",
+        "provider_code_unsupported": "в колонке провайдера используйте «Ручной прогноз»",
         "forecast_power_kw_required": "нужно заполнить forecast_power_kw",
         "forecast_power_kw_invalid": "forecast_power_kw должен быть числом",
         "forecast_power_kw_negative": "forecast_power_kw не может быть отрицательным",
@@ -420,8 +420,8 @@
   },
   "alertsCenter": {
     "mvpLimit": {
-      "title": "Ограничения MVP",
-      "detail": "Алерты вычисляются из текущих ответов API. Сохранение, подтверждение и история будут добавлены позже."
+      "title": "Область алертов",
+      "detail": "Алерты вычисляются из текущих ответов API. Подтверждение и история не показываются в этом демо-экране."
     },
     "severity": {
       "healthy": "Исправно",
@@ -438,7 +438,7 @@
       "asset": "Актив"
     },
     "status": {
-      "open": "Вычислено как открыто"
+      "open": "Открыто"
     },
     "entities": {
       "telemetryAsset": "Актив телеметрии",
@@ -472,7 +472,7 @@
       "priorityTitle": "Нет активных приоритетов оператора",
       "priorityDetail": "Текущие ответы API не создают критичных алертов или предупреждений.",
       "tableTitle": "Активных алертов нет",
-      "tableDetail": "Все вычисленные сигналы сейчас в пределах MVP-порогов."
+      "tableDetail": "Все вычисленные сигналы сейчас в пределах настроенных порогов."
     },
     "priority": {
       "eyebrow": "Приоритет оператора",
@@ -645,10 +645,10 @@
       "unknown": "Неизвестно"
     },
     "actions": {
-      "no_data": "Добавить данные",
-      "no_recent_forecast": "Создать свежий прогноз",
-      "ready_for_connection": "Готово к пилотной проверке",
-      "needs_configuration": "Нужна настройка"
+      "no_data": "Данные",
+      "no_recent_forecast": "Обновить",
+      "ready_for_connection": "Готово",
+      "needs_configuration": "Настроить"
     },
     "notes": {
       "external_not_configured": "Внешняя интеграция прогноза ещё не настроена. Успешное подключение не показываем.",

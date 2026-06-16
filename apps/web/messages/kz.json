@@ -17,7 +17,7 @@
     "systemStatus": "Жүйе статусы"
   },
   "header": {
-    "eyebrow": "Dashboard MVP",
+    "eyebrow": "Операциялық Dashboard",
     "title": "Шолу",
     "period": "Соңғы 7 күн",
     "languageLabel": "Тіл"
@@ -42,7 +42,7 @@
     "ignored": "Еленбейді",
     "healthy": "Қалыпты",
     "warning": "Ескерту",
-    "critical": "Критикалық",
+    "critical": "Критик.",
     "offline": "Байланыс жоқ",
     "fresh": "Жаңа дерек",
     "stale": "Ескіріп жатыр",
@@ -75,7 +75,7 @@
   },
   "placeholders": {
     "eyebrow": "Dashboard бөлімі",
-    "detail": "{section} Dashboard MVP навигация бөлімі ретінде қолжетімді. Толық дерек көріністері келесі UI итерацияларында қосылады."
+    "detail": "{section} Dashboard навигациясында қолжетімді. Бұл бөлім демоға қажет болғанда толық көрініс қосылады."
   },
   "system": {
     "dependencyOk": "Тәуелділік сәтті жауап берді",
@@ -224,8 +224,8 @@
     "timeline": {
       "eyebrow": "Таймлайн",
       "title": "Станция таймлайны",
-      "placeholderTitle": "Станцияның тарихи оқиғалары Phase 2 кезеңінде қосылады",
-      "placeholderDetail": "Бұл MVP-де сақталған станция оқиғалары жоқ болғандықтан, таймлайн placeholder ретінде қалады."
+      "placeholderTitle": "Станция оқиғалары",
+      "placeholderDetail": "Оқиғалар тарихы әлі қосылмаған. Негізгі профиль, телеметрия және болжам деректері жоғарыда бар."
     },
     "empty": {
       "noPlantsTitle": "Станциялар жоқ",
@@ -268,8 +268,8 @@
       "avgBiasHelper": "Болжамның орташа ауытқуы",
       "samples": "Үлгілер саны",
       "samplesHelper": "Сәйкес келген болжам және факт нүктелері",
-      "forecastRuns": "Болжам іске қосулары",
-      "forecastRunsHelper": "Күндік агрегаттарға кірген іске қосулар"
+      "forecastRuns": "Іске қосулар",
+      "forecastRunsHelper": "Агрегаттағы іске қосулар"
     },
     "forecastImport": {
       "eyebrow": "Болжам CSV",
@@ -297,8 +297,8 @@
         "timestamp_required": "timestamp толтырылуы керек",
         "timestamp_invalid": "timestamp ISO 8601 күні болуы керек",
         "timestamp_not_15_minute": "timestamp 15 минут қадамына сәйкес болуы керек",
-        "provider_code_required": "provider_code толтырылуы керек",
-        "provider_code_unsupported": "MVP үшін provider_code «Қолмен болжам» провайдеріне сәйкес болуы керек",
+        "provider_code_required": "провайдер бағанын толтырыңыз",
+        "provider_code_unsupported": "провайдер бағанында «Қолмен болжам» мәнін қолданыңыз",
         "forecast_power_kw_required": "forecast_power_kw толтырылуы керек",
         "forecast_power_kw_invalid": "forecast_power_kw сан болуы керек",
         "forecast_power_kw_negative": "forecast_power_kw теріс болмауы керек",
@@ -420,12 +420,12 @@
   },
   "alertsCenter": {
     "mvpLimit": {
-      "title": "MVP шектеулері",
-      "detail": "Ескертулер ағымдағы API жауаптарынан есептеледі. Сақтау, растау және тарих кейін қосылады."
+      "title": "Ескертулер ауқымы",
+      "detail": "Ескертулер ағымдағы API жауаптарынан есептеледі. Растау және тарих бұл демо экранында көрсетілмейді."
     },
     "severity": {
       "healthy": "Қалыпты",
-      "critical": "Критикалық",
+      "critical": "Критик.",
       "warning": "Ескерту",
       "unknown": "Белгісіз",
       "info": "Ақпарат"
@@ -438,7 +438,7 @@
       "asset": "Актив"
     },
     "status": {
-      "open": "Есептелген ашық"
+      "open": "Ашық"
     },
     "entities": {
       "telemetryAsset": "Телеметрия активі",
@@ -472,7 +472,7 @@
       "priorityTitle": "Оператордың белсенді басымдықтары жоқ",
       "priorityDetail": "Ағымдағы API жауаптары критикалық немесе warning ескертулерін жасамайды.",
       "tableTitle": "Белсенді ескертулер жоқ",
-      "tableDetail": "Барлық есептелген сигналдар қазір MVP шектерінде."
+      "tableDetail": "Барлық есептелген сигналдар қазір бапталған шектерде."
     },
     "priority": {
       "eyebrow": "Оператор басымдығы",
@@ -641,14 +641,14 @@
     "dataStatuses": {
       "connected": "Қосылған",
       "not_connected": "Қосылмаған",
-      "simulated": "Симуляцияланған",
+      "simulated": "Симул.",
       "unknown": "Белгісіз"
     },
     "actions": {
-      "no_data": "Дерек қосу",
-      "no_recent_forecast": "Жаңа болжам жасау",
-      "ready_for_connection": "Пилотқа дайын",
-      "needs_configuration": "Баптау керек"
+      "no_data": "Дерек",
+      "no_recent_forecast": "Жаңарту",
+      "ready_for_connection": "Дайын",
+      "needs_configuration": "Баптау"
     },
     "notes": {
       "external_not_configured": "Сыртқы болжам интеграциясы әлі бапталмаған. Сәтті қосылым көрсетілмейді.",
@@ -668,8 +668,8 @@
       "activeProvidersHelper": "«Белсенді» статусы бар провайдерлер",
       "connectedProviders": "Қосылған дерек көздері",
       "connectedProvidersHelper": "Нақты дерегі қосылған провайдерлер",
-      "forecastRuns": "Барлық болжам іске қосулары",
-      "forecastRunsHelper": "Болжам іске қосулары немесе нақты дерек жолдары",
+      "forecastRuns": "Іске қосулар",
+      "forecastRunsHelper": "Болжам немесе факт жолдары",
       "bestProvider": "MAPE бойынша үздік провайдер",
       "bestProviderHelper": "Ең төмен орташа MAPE"
     },
@@ -682,7 +682,7 @@
       "dataStatus": "Дерек статусы",
       "latestForecast": "Соңғы болжам",
       "latestMape": "Соңғы MAPE",
-      "forecastRuns": "Болжам іске қосулары",
+      "forecastRuns": "Іске қосулар",
       "targetMape": "MAPE мақсаты"
     },
     "cards": {
@@ -868,7 +868,7 @@
     "status": {
       "healthy": "Қалыпты",
       "warning": "Ескерту",
-      "critical": "Критикалық",
+      "critical": "Критик.",
       "unknown": "Белгісіз"
     },
     "environments": {
@@ -904,7 +904,7 @@
       "title": "Сервистер жағдайының жиынтығы",
       "healthy": "Қалыпты",
       "warning": "Ескерту",
-      "critical": "Критикалық",
+      "critical": "Критик.",
       "unknown": "Белгісіз"
     },
     "signals": {

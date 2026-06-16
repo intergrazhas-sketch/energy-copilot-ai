@@ -4610,8 +4610,8 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.56);
           font-size: 13px;
           line-height: 1.35;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .metric-card strong {
@@ -4622,9 +4622,9 @@ function DashboardOverview({
           letter-spacing: -0.05em;
           line-height: 1;
           max-width: 100%;
-          overflow-wrap: anywhere;
+          overflow-wrap: break-word;
           white-space: normal;
-          word-break: break-word;
+          word-break: normal;
         }
 
         .metric-card strong.metric-value-text {
@@ -4632,9 +4632,9 @@ function DashboardOverview({
           letter-spacing: -0.025em;
           line-height: 1.12;
           max-width: 100%;
-          overflow-wrap: anywhere;
+          overflow-wrap: break-word;
           white-space: normal;
-          word-break: break-word;
+          word-break: normal;
         }
 
         .panel-grid {
@@ -4821,8 +4821,8 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.62);
           font-size: 13px;
           min-width: 0;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .ranking-table-row small {
@@ -4830,8 +4830,8 @@ function DashboardOverview({
           margin-top: 4px;
           color: rgba(245, 242, 237, 0.44);
           font-size: 12px;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .providers-table {
@@ -4869,16 +4869,16 @@ function DashboardOverview({
           color: #fffaf4;
           font-size: 14px;
           min-width: 0;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .providers-table-row span {
           color: rgba(245, 242, 237, 0.62);
           font-size: 13px;
           min-width: 0;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .provider-comparison-card {
@@ -4913,8 +4913,8 @@ function DashboardOverview({
           font-size: 20px;
           letter-spacing: -0.04em;
           line-height: 1.15;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .provider-comparison-card small {
@@ -4944,6 +4944,10 @@ function DashboardOverview({
           gap: 12px;
         }
 
+        .provider-card-header > div {
+          min-width: 0;
+        }
+
         .provider-card-header span,
         .provider-card-metrics dt {
           color: rgba(245, 242, 237, 0.52);
@@ -4957,13 +4961,25 @@ function DashboardOverview({
           color: #fffaf4;
           font-size: 18px;
           line-height: 1.15;
-          overflow-wrap: anywhere;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .provider-card-badges {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
+        }
+
+        .provider-card-badges .status-badge,
+        .provider-card-header .status-badge {
+          flex: 0 1 auto;
+          font-size: 11px;
+          line-height: 1.15;
+          min-width: 0;
+          padding: 6px 9px;
+          white-space: nowrap;
+          word-break: normal;
         }
 
         .provider-card-metrics {
@@ -4984,7 +5000,8 @@ function DashboardOverview({
           color: #fffaf4;
           font-size: 14px;
           font-weight: 800;
-          overflow-wrap: anywhere;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .provider-card p {
@@ -5016,8 +5033,8 @@ function DashboardOverview({
           font-size: 12px;
           font-weight: 800;
           line-height: 1.35;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .forecast-thresholds strong,
@@ -5027,8 +5044,8 @@ function DashboardOverview({
           color: #fffaf4;
           font-size: 15px;
           line-height: 1.35;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .forecast-insights-summary {
@@ -5071,8 +5088,8 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.62);
           font-size: 13px;
           min-width: 0;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .forecast-insights-provider-row strong {
@@ -5087,8 +5104,8 @@ function DashboardOverview({
           margin-top: 4px;
           color: rgba(245, 242, 237, 0.44);
           font-size: 12px;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .alerts-mvp-note {
@@ -5109,12 +5126,14 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.62);
           font-size: 13px;
           line-height: 1.45;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .alert-severity-badge {
           display: inline-flex;
+          align-items: center;
+          justify-content: center;
           width: fit-content;
           max-width: 100%;
           border: 1px solid rgba(255, 255, 255, 0.12);
@@ -5124,8 +5143,10 @@ function DashboardOverview({
           font-weight: 900;
           line-height: 1.2;
           padding: 7px 10px;
+          text-align: center;
           text-transform: uppercase;
-          white-space: normal;
+          white-space: nowrap;
+          word-break: normal;
         }
 
         .alert-severity-badge.critical {
@@ -5205,8 +5226,8 @@ function DashboardOverview({
           color: #fffaf4;
           font-size: 15px;
           line-height: 1.35;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .operator-priority-item span,
@@ -5217,8 +5238,8 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.58);
           font-size: 12px;
           line-height: 1.45;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .operator-priority-item small {
@@ -5229,21 +5250,21 @@ function DashboardOverview({
           display: grid;
           gap: 10px;
           max-width: 100%;
-          overflow-x: visible;
+          overflow-x: auto;
         }
 
         .alerts-table-head,
         .alerts-table-row {
           display: grid;
           grid-template-columns:
-            minmax(86px, 0.6fr)
-            minmax(92px, 0.65fr)
+            minmax(78px, 0.48fr)
+            minmax(88px, 0.58fr)
             minmax(140px, 1fr)
             minmax(130px, 0.9fr)
             minmax(150px, 1fr)
-            minmax(72px, 0.48fr)
-            minmax(92px, 0.62fr)
-            minmax(220px, 1.55fr);
+            minmax(70px, 0.42fr)
+            minmax(82px, 0.5fr)
+            minmax(240px, 1.7fr);
           gap: 10px;
           min-width: 0;
           width: 100%;
@@ -5273,9 +5294,9 @@ function DashboardOverview({
           line-height: 1.4;
           max-width: 100%;
           min-width: 0;
-          overflow-wrap: anywhere;
+          overflow-wrap: break-word;
           white-space: normal;
-          word-break: break-word;
+          word-break: normal;
         }
 
         .alerts-table-row strong {
@@ -5293,6 +5314,11 @@ function DashboardOverview({
         .alerts-table-row > span:nth-child(7) {
           font-size: 11px;
           line-height: 1.35;
+        }
+
+        .alerts-table-row > span:nth-child(7) {
+          font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+          overflow-wrap: anywhere;
         }
 
         .alerts-table-row > span:nth-child(8) {
@@ -5405,14 +5431,21 @@ function DashboardOverview({
 
         .quality-badge {
           display: inline-flex;
+          align-items: center;
+          justify-content: center;
           width: fit-content;
+          max-width: 100%;
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 999px;
           color: #fffaf4;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 900;
-          padding: 8px 11px;
+          line-height: 1.15;
+          padding: 7px 10px;
+          text-align: center;
           text-transform: uppercase;
+          white-space: nowrap;
+          word-break: normal;
         }
 
         .quality-badge.clean {
@@ -5469,8 +5502,8 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.58);
           font-size: 12px;
           min-width: 0;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .rejected-records-row strong {
@@ -5507,12 +5540,12 @@ function DashboardOverview({
           font-size: 12px;
           font-weight: 900;
           line-height: 1.2;
-          overflow-wrap: anywhere;
+          overflow-wrap: break-word;
           padding: 8px 11px;
           text-align: center;
           text-transform: uppercase;
-          white-space: normal;
-          word-break: break-word;
+          white-space: nowrap;
+          word-break: normal;
         }
 
         .monitoring-badge.healthy {
@@ -5549,8 +5582,8 @@ function DashboardOverview({
           font-size: 18px;
           letter-spacing: -0.03em;
           line-height: 1.35;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .platform-status-grid {
@@ -5573,8 +5606,8 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.54);
           font-size: 12px;
           font-weight: 700;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .platform-status-grid strong,
@@ -5584,8 +5617,8 @@ function DashboardOverview({
           color: #fffaf4;
           font-size: 16px;
           line-height: 1.35;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .system-signal-list {
@@ -5645,12 +5678,12 @@ function DashboardOverview({
           font-size: 12px;
           font-weight: 800;
           line-height: 1.2;
-          overflow-wrap: anywhere;
+          overflow-wrap: break-word;
           padding: 8px 11px;
           text-align: center;
           text-transform: uppercase;
-          white-space: normal;
-          word-break: break-word;
+          white-space: nowrap;
+          word-break: normal;
         }
 
         .freshness-badge.fresh {
@@ -5740,8 +5773,8 @@ function DashboardOverview({
           color: #fffaf4;
           font-size: 15px;
           line-height: 1.35;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .plants-list {
@@ -5893,8 +5926,8 @@ function DashboardOverview({
           font-size: 15px;
           line-height: 1.35;
           min-width: 0;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .plant-list-card-meta {
@@ -5911,8 +5944,8 @@ function DashboardOverview({
           font-size: 13px;
           line-height: 1.4;
           min-width: 0;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .plant-list-card-meta small {
@@ -5960,8 +5993,8 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.52);
           font-size: 12px;
           line-height: 1.45;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .profile-detail-grid {
@@ -5984,8 +6017,8 @@ function DashboardOverview({
           font-size: 12px;
           font-weight: 800;
           line-height: 1.35;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .profile-detail-grid strong {
@@ -5994,8 +6027,8 @@ function DashboardOverview({
           color: #fffaf4;
           font-size: 15px;
           line-height: 1.35;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .station-upload-card {
@@ -6052,8 +6085,8 @@ function DashboardOverview({
           font-size: 12px;
           font-weight: 800;
           line-height: 1.35;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .station-upload-file strong {
@@ -6062,8 +6095,8 @@ function DashboardOverview({
           color: #fffaf4;
           font-size: 14px;
           line-height: 1.35;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .station-upload-actions {
@@ -6109,8 +6142,8 @@ function DashboardOverview({
           font-size: 12px;
           font-weight: 800;
           line-height: 1.35;
-          overflow-wrap: anywhere;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .station-upload-result strong {
@@ -6172,7 +6205,8 @@ function DashboardOverview({
         .station-upload-last strong {
           color: #fffaf4;
           font-size: 15px;
-          overflow-wrap: anywhere;
+          overflow-wrap: break-word;
+          word-break: normal;
         }
 
         .station-upload-last div {
@@ -6405,13 +6439,13 @@ function DashboardOverview({
           font-size: 12px;
           font-weight: 800;
           line-height: 1.2;
-          min-width: 68px;
-          overflow-wrap: anywhere;
+          min-width: 0;
+          overflow-wrap: break-word;
           padding: 7px 10px;
           text-align: center;
           text-transform: uppercase;
           white-space: normal;
-          word-break: break-word;
+          word-break: normal;
         }
 
         .status-badge.good {
