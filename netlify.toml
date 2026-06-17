@@ -4,7 +4,21 @@
   publish = ".next"
 
 [build.environment]
-  NEXT_PUBLIC_API_BASE_URL = "http://111.88.140.213:8010"
+  # Empty base URL = same-origin relative fetches (/api/..., /health),
+  # proxied below to the Energy Copilot API to avoid HTTPS->HTTP mixed content.
+  NEXT_PUBLIC_API_BASE_URL = ""
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[[redirects]]
+  from = "/api/*"
+  to = "http://111.88.140.213:8010/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/health"
+  to = "http://111.88.140.213:8010/health"
+  status = 200
+  force = true
