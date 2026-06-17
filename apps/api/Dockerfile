@@ -31,5 +31,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Apply DB migrations (idempotent: no-op if already at head) then serve.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4"]
+# Startup: try alembic (non-fatal), always ensure onboarding columns, then serve.
+# `alembic upgrade` may fail on an out-of-sync prod DB, so it must not block boot.
+CMD ["sh", "-c", "alembic upgrade head || echo '[startup] alembic upgrade skipped'; python -m app.db.ensure_schema; uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4"]
