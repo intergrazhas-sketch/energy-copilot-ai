@@ -19,6 +19,12 @@ class SolarPlant(Base):
     longitude: Mapped[float | None] = mapped_column(Float)
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="Asia/Almaty")
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    region: Mapped[str | None] = mapped_column(String(120))
+    country: Mapped[str | None] = mapped_column(String(120))
+    scada_system: Mapped[str | None] = mapped_column(String(120))
+    inverter_vendor: Mapped[str | None] = mapped_column(String(120))
+    inverter_count: Mapped[int | None] = mapped_column(Integer)
+    telemetry_interval_minutes: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     forecast_runs: Mapped[list["ForecastRun"]] = relationship(back_populates="solar_plant")

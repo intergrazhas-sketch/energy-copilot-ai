@@ -30,12 +30,24 @@ type SolarPlant = {
   latitude?: number | null;
   longitude?: number | null;
   timezone?: string;
+  region?: string | null;
+  country?: string | null;
+  scada_system?: string | null;
+  inverter_vendor?: string | null;
+  inverter_count?: number | null;
+  telemetry_interval_minutes?: number | null;
   created_at?: string;
 };
 
 type SolarPlantFormState = {
   name: string;
-  capacityKw: string;
+  capacityMw: string;
+  region: string;
+  country: string;
+  scadaSystem: string;
+  inverterVendor: string;
+  inverterCount: string;
+  telemetryIntervalMinutes: string;
   latitude: string;
   longitude: string;
   timezone: string;
@@ -981,7 +993,13 @@ function SolarPlantsSection({
   const activePlants = plants.filter((plant) => plant.status === "active").length;
   const [form, setForm] = useState<SolarPlantFormState>({
     name: "",
-    capacityKw: "",
+    capacityMw: "",
+    region: "",
+    country: "",
+    scadaSystem: "",
+    inverterVendor: "",
+    inverterCount: "",
+    telemetryIntervalMinutes: "",
     latitude: "",
     longitude: "",
     timezone: "Asia/Almaty",
@@ -998,11 +1016,15 @@ function SolarPlantsSection({
     event.preventDefault();
     setFormMessage(null);
 
-    const capacityKw = Number(form.capacityKw);
+    const capacityMw = Number(form.capacityMw);
     const latitude = form.latitude.trim() ? Number(form.latitude) : null;
     const longitude = form.longitude.trim() ? Number(form.longitude) : null;
+    const inverterCount = form.inverterCount.trim() ? Number(form.inverterCount) : null;
+    const telemetryIntervalMinutes = form.telemetryIntervalMinutes.trim()
+      ? Number(form.telemetryIntervalMinutes)
+      : null;
 
-    if (!form.name.trim() || !Number.isFinite(capacityKw) || capacityKw <= 0) {
+    if (!form.name.trim() || !Number.isFinite(capacityMw) || capacityMw <= 0) {
       setFormMessage({ type: "error", text: t("solarPlants.addForm.validationError") });
       return;
     }
@@ -1016,11 +1038,17 @@ function SolarPlantsSection({
         },
         body: JSON.stringify({
           name: form.name.trim(),
-          capacity_kw: capacityKw,
+          capacity_kw: capacityMw * 1000,
           latitude,
           longitude,
           timezone: form.timezone.trim() || "Asia/Almaty",
           status: form.status,
+          region: form.region.trim() || null,
+          country: form.country.trim() || null,
+          scada_system: form.scadaSystem.trim() || null,
+          inverter_vendor: form.inverterVendor.trim() || null,
+          inverter_count: inverterCount,
+          telemetry_interval_minutes: telemetryIntervalMinutes,
         }),
       });
 
@@ -1033,7 +1061,13 @@ function SolarPlantsSection({
       setForm((current) => ({
         ...current,
         name: "",
-        capacityKw: "",
+        capacityMw: "",
+        region: "",
+        country: "",
+        scadaSystem: "",
+        inverterVendor: "",
+        inverterCount: "",
+        telemetryIntervalMinutes: "",
         latitude: "",
         longitude: "",
       }));
@@ -1106,15 +1140,73 @@ function SolarPlantsSection({
                 />
               </label>
               <label>
-                <span>{t("solarPlants.addForm.capacityKw")}</span>
+                <span>{t("solarPlants.addForm.capacityMw")}</span>
                 <input
                   disabled={formSubmitting}
                   min="0"
-                  onChange={(event) => updateForm("capacityKw", event.target.value)}
+                  onChange={(event) => updateForm("capacityMw", event.target.value)}
                   required
                   step="0.01"
                   type="number"
-                  value={form.capacityKw}
+                  value={form.capacityMw}
+                />
+              </label>
+              <label>
+                <span>{t("solarPlants.addForm.region")}</span>
+                <input
+                  disabled={formSubmitting}
+                  onChange={(event) => updateForm("region", event.target.value)}
+                  type="text"
+                  value={form.region}
+                />
+              </label>
+              <label>
+                <span>{t("solarPlants.addForm.country")}</span>
+                <input
+                  disabled={formSubmitting}
+                  onChange={(event) => updateForm("country", event.target.value)}
+                  type="text"
+                  value={form.country}
+                />
+              </label>
+              <label>
+                <span>{t("solarPlants.addForm.scadaSystem")}</span>
+                <input
+                  disabled={formSubmitting}
+                  onChange={(event) => updateForm("scadaSystem", event.target.value)}
+                  type="text"
+                  value={form.scadaSystem}
+                />
+              </label>
+              <label>
+                <span>{t("solarPlants.addForm.inverterVendor")}</span>
+                <input
+                  disabled={formSubmitting}
+                  onChange={(event) => updateForm("inverterVendor", event.target.value)}
+                  type="text"
+                  value={form.inverterVendor}
+                />
+              </label>
+              <label>
+                <span>{t("solarPlants.addForm.inverterCount")}</span>
+                <input
+                  disabled={formSubmitting}
+                  min="0"
+                  onChange={(event) => updateForm("inverterCount", event.target.value)}
+                  step="1"
+                  type="number"
+                  value={form.inverterCount}
+                />
+              </label>
+              <label>
+                <span>{t("solarPlants.addForm.telemetryIntervalMinutes")}</span>
+                <input
+                  disabled={formSubmitting}
+                  min="1"
+                  onChange={(event) => updateForm("telemetryIntervalMinutes", event.target.value)}
+                  step="1"
+                  type="number"
+                  value={form.telemetryIntervalMinutes}
                 />
               </label>
               <label>

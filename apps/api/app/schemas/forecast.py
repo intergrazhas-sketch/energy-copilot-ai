@@ -18,6 +18,12 @@ class SolarPlantCreate(BaseModel):
     longitude: float | None = Field(default=None, ge=-180, le=180)
     timezone: str = "Asia/Almaty"
     status: str = "active"
+    region: str | None = Field(default=None, max_length=120)
+    country: str | None = Field(default=None, max_length=120)
+    scada_system: str | None = Field(default=None, max_length=120)
+    inverter_vendor: str | None = Field(default=None, max_length=120)
+    inverter_count: int | None = Field(default=None, ge=0)
+    telemetry_interval_minutes: int | None = Field(default=None, gt=0, le=1440)
 
 
 class SolarPlantRead(SolarPlantCreate):
