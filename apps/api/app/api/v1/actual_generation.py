@@ -1,5 +1,3 @@
-import csv
-import io
 import uuid
 from datetime import datetime
 
@@ -11,8 +9,25 @@ from app.db.session import get_db_session
 from app.repositories import forecast as repository
 from app.schemas.forecast import ActualGenerationCreate, ActualGenerationRead
 from app.schemas.telemetry import TelemetryCsvImportError, TelemetryCsvImportSummary
+from app.services.tabular_import import (
+    TabularImportError,
+    first_value,
+    has_any_column,
+    read_tabular_upload,
+)
+from app.services.varvarinskaya_excel_adapter import (
+    AdaptedRow,
+    VarvarinskayaAdapterError,
+    adapt_workbook,
+    is_supported_extension,
+    select_actual_rows,
+)
 
 router = APIRouter(prefix="/actual-generation", tags=["Forecast MVP"])
+
+TIMESTAMP_ALIASES = ("timestamp", "datetime", "date_time", "time", "date")
+POWER_ALIASES = ("actual_power_kw", "power_kw", "actual", "actual_kw", "generation_kw")
+ENERGY_ALIASES = ("actual_energy_kwh", "energy_kwh", "energy", "generation_kwh")
 
 
 def _parse_csv_float(value: str, field_name: str) -> float:
@@ -27,14 +42,6 @@ def _parse_csv_timestamp(value: str) -> datetime:
         return datetime.fromisoformat(value)
     except ValueError as exc:
         raise ValueError("timestamp must be a valid ISO 8601 datetime") from exc
-
-
-def _get_first_value(row: dict[str, str], field_names: tuple[str, ...]) -> str:
-    for field_name in field_names:
-        value = row.get(field_name)
-        if value is not None and value.strip():
-            return value.strip()
-    return ""
 
 
 @router.post("", response_model=list[ActualGenerationRead], status_code=status.HTTP_201_CREATED)
@@ -80,32 +87,34 @@ async def import_actual_generation_csv(
 
     raw_content = await file.read()
     try:
-        csv_text = raw_content.decode("utf-8-sig").strip()
-    except UnicodeDecodeError as exc:
-        raise HTTPException(status_code=400, detail="CSV file must be UTF-8 encoded") from exc
+        fieldnames, data_rows = read_tabular_upload(file.filename, raw_content)
+    except TabularImportError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    if not csv_text:
-        raise HTTPException(status_code=400, detail="CSV file is empty")
+    fieldname_set = set(fieldnames)
+    has_timestamp = has_any_column(fieldname_set, TIMESTAMP_ALIASES)
+    has_power = has_any_column(fieldname_set, POWER_ALIASES)
 
-    reader = csv.DictReader(io.StringIO(csv_text))
-    fieldnames = {field.strip() for field in reader.fieldnames or []}
-    if "timestamp" not in fieldnames:
-        raise HTTPException(status_code=400, detail="CSV must include timestamp column")
-    if not ({"actual_power_kw", "power_kw"} & fieldnames):
+    if not (has_timestamp and has_power):
+        adapter_rows = _adapter_actual_rows(file.filename, raw_content)
+        if adapter_rows is not None:
+            return await _import_actual_adapter_rows(session, solar_plant_id, adapter_rows)
+        if not has_timestamp:
+            raise HTTPException(status_code=400, detail="File must include a timestamp column")
         raise HTTPException(
             status_code=400,
-            detail="CSV must include actual_power_kw or power_kw column",
+            detail="File must include actual_power_kw or power_kw column",
         )
 
     imported_rows = 0
     errors: list[TelemetryCsvImportError] = []
     has_data_rows = False
 
-    for row_number, row in enumerate(reader, start=2):
+    for row_number, row in enumerate(data_rows, start=2):
         has_data_rows = True
-        timestamp_text = (row.get("timestamp") or "").strip()
-        power_text = _get_first_value(row, ("actual_power_kw", "power_kw"))
-        energy_text = _get_first_value(row, ("actual_energy_kwh", "energy_kwh"))
+        timestamp_text = first_value(row, TIMESTAMP_ALIASES)
+        power_text = first_value(row, POWER_ALIASES)
+        energy_text = first_value(row, ENERGY_ALIASES)
 
         if not timestamp_text:
             errors.append(TelemetryCsvImportError(row_number=row_number, message="timestamp is required"))
@@ -150,6 +159,65 @@ async def import_actual_generation_csv(
 
     if not has_data_rows:
         raise HTTPException(status_code=400, detail="CSV file has no data rows")
+
+    return TelemetryCsvImportSummary(
+        imported_rows=imported_rows,
+        rejected_rows=len(errors),
+        errors=errors,
+    )
+
+
+def _adapter_actual_rows(filename: str | None, raw_content: bytes) -> list[AdaptedRow] | None:
+    """Return Varvarinskaya actual rows for Excel files, else None.
+
+    None means the file is not a recognized Varvarinskaya daily export, so the
+    caller falls back to the standard 400 column-validation messages.
+    """
+    if not is_supported_extension(filename):
+        return None
+    try:
+        result = adapt_workbook(filename or "", raw_content)
+    except VarvarinskayaAdapterError:
+        return None
+    if not result.supported:
+        return None
+    rows = select_actual_rows(result)
+    return rows or None
+
+
+async def _import_actual_adapter_rows(
+    session: AsyncSession,
+    solar_plant_id: uuid.UUID,
+    rows: list[AdaptedRow],
+) -> TelemetryCsvImportSummary:
+    imported_rows = 0
+    errors: list[TelemetryCsvImportError] = []
+
+    for row_number, row in enumerate(rows, start=2):
+        if row.actual_power_kw is None:
+            continue
+        try:
+            timestamp = _parse_csv_timestamp(row.timestamp)
+        except ValueError as exc:
+            errors.append(TelemetryCsvImportError(row_number=row_number, message=str(exc)))
+            continue
+
+        try:
+            await repository.upsert_actual_generation_point(
+                session,
+                solar_plant_id=solar_plant_id,
+                timestamp=timestamp,
+                actual_power_kw=row.actual_power_kw,
+                actual_energy_kwh=row.actual_energy_kwh,
+                source="excel",
+                quality="valid",
+            )
+        except IntegrityError as exc:
+            await session.rollback()
+            errors.append(TelemetryCsvImportError(row_number=row_number, message=str(exc)))
+            continue
+
+        imported_rows += 1
 
     return TelemetryCsvImportSummary(
         imported_rows=imported_rows,

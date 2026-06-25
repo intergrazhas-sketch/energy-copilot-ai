@@ -1,5 +1,3 @@
-import csv
-import io
 import uuid
 from datetime import datetime
 
@@ -11,10 +9,18 @@ from app.db.session import get_db_session
 from app.repositories import forecast as repository
 from app.schemas.forecast import SolarPlantCreate, SolarPlantRead
 from app.schemas.telemetry import TelemetryCsvImportError, TelemetryCsvImportSummary
+from app.services.tabular_import import (
+    TabularImportError,
+    first_value,
+    has_any_column,
+    read_tabular_upload,
+)
 
 router = APIRouter(prefix="/solar-plants", tags=["Forecast MVP"])
 
-CSV_REQUIRED_COLUMNS = {"timestamp", "power_kw"}
+TIMESTAMP_ALIASES = ("timestamp", "datetime", "date_time", "time", "date")
+POWER_ALIASES = ("power_kw", "actual_power_kw", "power", "actual_kw", "generation_kw")
+ENERGY_ALIASES = ("energy_kwh", "actual_energy_kwh", "energy", "generation_kwh")
 
 
 def _parse_csv_float(value: str, field_name: str) -> float:
@@ -71,32 +77,27 @@ async def import_solar_plant_telemetry_csv(
 
     raw_content = await file.read()
     try:
-        csv_text = raw_content.decode("utf-8-sig").strip()
-    except UnicodeDecodeError as exc:
-        raise HTTPException(status_code=400, detail="CSV file must be UTF-8 encoded") from exc
-    if not csv_text:
-        raise HTTPException(status_code=400, detail="CSV file is empty")
+        fieldnames, data_rows = read_tabular_upload(file.filename, raw_content)
+    except TabularImportError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    reader = csv.DictReader(io.StringIO(csv_text))
-    fieldnames = {field.strip() for field in reader.fieldnames or []}
-    missing_columns = sorted(CSV_REQUIRED_COLUMNS - fieldnames)
-    if missing_columns:
-        raise HTTPException(
-            status_code=400,
-            detail=f"CSV must include required columns: {', '.join(missing_columns)}",
-        )
+    fieldname_set = set(fieldnames)
+    if not has_any_column(fieldname_set, TIMESTAMP_ALIASES):
+        raise HTTPException(status_code=400, detail="File must include a timestamp column")
+    if not has_any_column(fieldname_set, POWER_ALIASES):
+        raise HTTPException(status_code=400, detail="File must include a power_kw column")
 
     imported_rows = 0
     errors: list[TelemetryCsvImportError] = []
     has_data_rows = False
 
-    for row_number, row in enumerate(reader, start=2):
+    for row_number, row in enumerate(data_rows, start=2):
         has_data_rows = True
-        timestamp_text = (row.get("timestamp") or "").strip()
-        power_text = (row.get("power_kw") or "").strip()
-        energy_text = (row.get("energy_kwh") or "").strip()
-        source = (row.get("source") or "").strip() or "csv"
-        quality = (row.get("quality") or "").strip() or "imported"
+        timestamp_text = first_value(row, TIMESTAMP_ALIASES)
+        power_text = first_value(row, POWER_ALIASES)
+        energy_text = first_value(row, ENERGY_ALIASES)
+        source = first_value(row, ("source",)) or "csv"
+        quality = first_value(row, ("quality",)) or "imported"
 
         if not timestamp_text:
             errors.append(TelemetryCsvImportError(row_number=row_number, message="timestamp is required"))

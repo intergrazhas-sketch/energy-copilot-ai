@@ -2280,10 +2280,12 @@ function SolarPlantProfileSection({
         <Panel eyebrow={t("solarPlantProfile.upload.eyebrow")} title={t("solarPlantProfile.upload.title")}>
           <div className="station-upload-card">
             <p>{t("solarPlantProfile.upload.helper")}</p>
+            <p className="station-upload-hint">{t("dataImport.actualGenerationReport")}</p>
+            <p className="station-upload-hint">{t("dataImport.supportedFormats")}</p>
             <label className="station-upload-button">
-              <span>{t("solarPlantProfile.upload.button")}</span>
+              <span>{t("dataImport.uploadCsvOrExcel")}</span>
               <input
-                accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                 disabled={uploadingTelemetry}
                 onChange={(event) => {
                   setStationDataFile(event.target.files?.[0] || null);
@@ -2777,6 +2779,9 @@ function ForecastAccuracyLabSection({
       >
         <div className="station-upload-card">
           <p>{t("accuracyLab.forecastImport.helper")}</p>
+          <p className="station-upload-hint">{t("dataImport.manualExcelCsvForecast")}</p>
+          <p className="station-upload-hint">{t("dataImport.forecastFromOperatingCompany")}</p>
+          <p className="station-upload-hint">{t("dataImport.supportedFormats")}</p>
           <div className="plant-profile-selector">
             <label>
               <span>{t("accuracyLab.forecastImport.plantLabel")}</span>
@@ -2795,9 +2800,9 @@ function ForecastAccuracyLabSection({
             <small>{t("accuracyLab.forecastImport.plantHelper")}</small>
           </div>
           <label className="station-upload-button">
-            <span>{t("accuracyLab.forecastImport.chooseButton")}</span>
+            <span>{t("dataImport.uploadCsvOrExcel")}</span>
             <input
-              accept=".csv,text/csv"
+              accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
               disabled={forecastImporting}
               onChange={(event) => {
                 setForecastCsvFile(event.target.files?.[0] || null);
@@ -6254,6 +6259,11 @@ function DashboardOverview({
           color: rgba(245, 242, 237, 0.58);
           font-size: 13px;
           line-height: 1.45;
+        }
+
+        .station-upload-hint {
+          font-size: 12px;
+          color: rgba(245, 242, 237, 0.46);
         }
 
         .station-upload-button {

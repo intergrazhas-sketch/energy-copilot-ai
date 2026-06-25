@@ -1,4 +1,12 @@
 {
+  "dataImport": {
+    "uploadCsvOrExcel": "Загрузить CSV или Excel-файл",
+    "manualExcelCsvForecast": "Ручной прогноз Excel/CSV",
+    "forecastFromOperatingCompany": "Прогноз от эксплуатационной компании",
+    "actualGenerationReport": "Отчёт фактической генерации",
+    "weatherStationExport": "Выгрузка метеостанции",
+    "supportedFormats": "Поддерживаемые форматы: .csv, .xlsx, .xls"
+  },
   "brand": {
     "name": "Energy Copilot",
     "subtitle": "AI-операции",

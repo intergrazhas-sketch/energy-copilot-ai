@@ -1,6 +1,4 @@
 import uuid
-import csv
-import io
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -20,11 +18,40 @@ from app.schemas.forecast import (
 )
 from app.schemas.telemetry import TelemetryCsvImportError, TelemetryCsvImportSummary
 from app.services.forecast_accuracy import calculate_accuracy_for_run
+from app.services.tabular_import import (
+    TabularImportError,
+    first_value,
+    has_any_column,
+    read_tabular_upload,
+)
+from app.services.varvarinskaya_excel_adapter import (
+    AdaptedRow,
+    VarvarinskayaAdapterError,
+    adapt_workbook,
+    is_supported_extension,
+    select_forecast_rows,
+)
 
 router = APIRouter(prefix="/forecast-runs", tags=["Forecast MVP"])
 
 MANUAL_CSV_FORECAST_PROVIDER_CODE = "manual_csv_forecast"
+MANUAL_EXCEL_FORECAST_PROVIDER_CODE = "manual_excel_forecast"
 MANUAL_CSV_FORECAST_PROVIDER_NAME = "Manual CSV / Forecast provider"
+# Both manual CSV and manual Excel uploads are accepted; an empty provider_code
+# defaults to the CSV code. Storage stays under the single manual provider.
+SUPPORTED_MANUAL_FORECAST_CODES = frozenset(
+    {MANUAL_CSV_FORECAST_PROVIDER_CODE, MANUAL_EXCEL_FORECAST_PROVIDER_CODE}
+)
+
+TIMESTAMP_ALIASES = ("timestamp", "datetime", "date_time", "time", "date")
+FORECAST_POWER_ALIASES = (
+    "forecast_power_kw",
+    "forecast",
+    "forecast_kw",
+    "power_kw",
+    "forecast_power",
+)
+FORECAST_ENERGY_ALIASES = ("forecast_energy_kwh", "energy", "energy_kwh")
 
 
 def _parse_csv_float(value: str, field_name: str) -> float:
@@ -42,6 +69,11 @@ def _parse_csv_timestamp(value: str) -> datetime:
         timestamp = datetime.fromisoformat(value)
     except ValueError as exc:
         raise ValueError("timestamp_invalid") from exc
+    if timestamp.tzinfo is None:
+        # Forecast values are bulk-inserted into a timestamptz column; naive
+        # datetimes break SQLAlchemy insertmany sentinel matching, so default
+        # tz-naive inputs to UTC. Adapter (+01:00) / CSV offsets are untouched.
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
     try:
         return validate_15_minute_timestamp(timestamp)
     except ValueError as exc:
@@ -70,6 +102,24 @@ async def _refresh_accuracy_for_run(
         solar_plant_id=plant_id,
         provider_id=provider_id,
     )
+
+
+def _adapter_forecast_rows(filename: str | None, raw_content: bytes) -> list[AdaptedRow] | None:
+    """Return Varvarinskaya forecast rows for Excel files, else None.
+
+    None means the file is not a recognized Varvarinskaya daily export. An empty
+    list means it is recognized but contains no forecast column (e.g. only a
+    15-minute generation sheet) -> the import succeeds with 0 forecast rows.
+    """
+    if not is_supported_extension(filename):
+        return None
+    try:
+        result = adapt_workbook(filename or "", raw_content)
+    except VarvarinskayaAdapterError:
+        return None
+    if not result.supported:
+        return None
+    return select_forecast_rows(result)
 
 
 @router.post("", response_model=ForecastRunRead, status_code=status.HTTP_201_CREATED)
@@ -109,67 +159,83 @@ async def import_forecast_run_csv(
 
     raw_content = await file.read()
     try:
-        csv_text = raw_content.decode("utf-8-sig").strip()
-    except UnicodeDecodeError as exc:
-        raise HTTPException(status_code=400, detail="CSV file must be UTF-8 encoded") from exc
+        fieldnames, data_rows = read_tabular_upload(file.filename, raw_content)
+    except TabularImportError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    if not csv_text:
-        raise HTTPException(status_code=400, detail="CSV file is empty")
-
-    reader = csv.DictReader(io.StringIO(csv_text))
-    fieldnames = {field.strip() for field in reader.fieldnames or []}
-    required_columns = {
-        "timestamp",
-        "provider_code",
-        "forecast_power_kw",
-        "forecast_energy_kwh",
-    }
-    missing_columns = sorted(required_columns - fieldnames)
-    if missing_columns:
-        raise HTTPException(
-            status_code=400,
-            detail=f"CSV must include columns: {', '.join(missing_columns)}",
-        )
+    fieldname_set = set(fieldnames)
+    has_timestamp = has_any_column(fieldname_set, TIMESTAMP_ALIASES)
+    has_power = has_any_column(fieldname_set, FORECAST_POWER_ALIASES)
 
     imported_values: list[ForecastValueItem] = []
     errors: list[TelemetryCsvImportError] = []
     has_data_rows = False
 
-    for row_number, raw_row in enumerate(reader, start=2):
-        has_data_rows = True
-        row = {key.strip(): (value or "").strip() for key, value in raw_row.items() if key}
-        timestamp_text = row.get("timestamp", "")
-        provider_code = row.get("provider_code", "")
-        power_text = row.get("forecast_power_kw", "")
-        energy_text = row.get("forecast_energy_kwh", "")
-
-        if not timestamp_text:
-            errors.append(TelemetryCsvImportError(row_number=row_number, message="timestamp_required"))
-            continue
-        if not provider_code:
-            errors.append(TelemetryCsvImportError(row_number=row_number, message="provider_code_required"))
-            continue
-        if provider_code != MANUAL_CSV_FORECAST_PROVIDER_CODE:
-            errors.append(TelemetryCsvImportError(row_number=row_number, message="provider_code_unsupported"))
-            continue
-        if not power_text:
-            errors.append(TelemetryCsvImportError(row_number=row_number, message="forecast_power_kw_required"))
-            continue
-        if not energy_text:
-            errors.append(TelemetryCsvImportError(row_number=row_number, message="forecast_energy_kwh_required"))
-            continue
-
-        try:
-            imported_values.append(
-                ForecastValueItem(
-                    timestamp=_parse_csv_timestamp(timestamp_text),
-                    predicted_power_kw=_parse_csv_float(power_text, "forecast_power_kw"),
-                    predicted_energy_kwh=_parse_csv_float(energy_text, "forecast_energy_kwh"),
-                )
+    adapter_rows = None
+    if not (has_timestamp and has_power):
+        adapter_rows = _adapter_forecast_rows(file.filename, raw_content)
+        if adapter_rows is None:
+            if not has_timestamp:
+                raise HTTPException(status_code=400, detail="File must include a timestamp column")
+            raise HTTPException(
+                status_code=400,
+                detail="File must include a forecast_power_kw column",
             )
-        except ValueError as exc:
-            errors.append(TelemetryCsvImportError(row_number=row_number, message=str(exc)))
-            continue
+
+    if adapter_rows is not None:
+        # Varvarinskaya Excel fallback: forecast lives on the hourly sheet only;
+        # an empty list means the file has no forecast (e.g. 15-min only) -> 0 imported.
+        has_data_rows = True
+        for row_number, row in enumerate(adapter_rows, start=2):
+            if row.forecast_power_kw is None:
+                continue
+            try:
+                imported_values.append(
+                    ForecastValueItem(
+                        timestamp=_parse_csv_timestamp(row.timestamp),
+                        predicted_power_kw=_parse_csv_float(
+                            str(row.forecast_power_kw), "forecast_power_kw"
+                        ),
+                        predicted_energy_kwh=row.forecast_energy_kwh,
+                    )
+                )
+            except ValueError as exc:
+                errors.append(TelemetryCsvImportError(row_number=row_number, message=str(exc)))
+                continue
+    else:
+        for row_number, row in enumerate(data_rows, start=2):
+            has_data_rows = True
+            timestamp_text = first_value(row, TIMESTAMP_ALIASES)
+            # provider_code is optional: missing means manual Excel/CSV forecast.
+            provider_code = first_value(row, ("provider_code",)) or MANUAL_CSV_FORECAST_PROVIDER_CODE
+            power_text = first_value(row, FORECAST_POWER_ALIASES)
+            energy_text = first_value(row, FORECAST_ENERGY_ALIASES)
+
+            if not timestamp_text:
+                errors.append(TelemetryCsvImportError(row_number=row_number, message="timestamp_required"))
+                continue
+            if provider_code not in SUPPORTED_MANUAL_FORECAST_CODES:
+                errors.append(TelemetryCsvImportError(row_number=row_number, message="provider_code_unsupported"))
+                continue
+            if not power_text:
+                errors.append(TelemetryCsvImportError(row_number=row_number, message="forecast_power_kw_required"))
+                continue
+
+            try:
+                imported_values.append(
+                    ForecastValueItem(
+                        timestamp=_parse_csv_timestamp(timestamp_text),
+                        predicted_power_kw=_parse_csv_float(power_text, "forecast_power_kw"),
+                        predicted_energy_kwh=(
+                            _parse_csv_float(energy_text, "forecast_energy_kwh")
+                            if energy_text
+                            else None
+                        ),
+                    )
+                )
+            except ValueError as exc:
+                errors.append(TelemetryCsvImportError(row_number=row_number, message=str(exc)))
+                continue
 
     if not has_data_rows:
         raise HTTPException(status_code=400, detail="CSV file has no data rows")
