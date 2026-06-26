@@ -41,6 +41,11 @@ INTERVAL_HOURLY = "60min"
 # Average-power multiplier applied to interval energy (kWh) to get kW.
 POWER_MULTIPLIER = {INTERVAL_15MIN: 4.0, INTERVAL_HOURLY: 1.0}
 
+# Varvarinskaya forecast/plan column ("Прогноз генераций СЭС") is provided in
+# MW/MWh, while actual ("Сумма генерации СЭС") is in kW/kWh scale; convert
+# forecast by *1000 before comparison so MAPE/RMSE are computed in one unit.
+FORECAST_MW_TO_KW = 1000.0
+
 # Varvarinskaya exports state "UTC+1" in the time-column header. When the header
 # offset cannot be parsed we fall back to this, since the timestamps are naive
 # and the database stores timezone-aware values.
@@ -223,11 +228,13 @@ def _adapt_sheet(worksheet, sheet_name: str, interval: str) -> SheetResult:
         actual_energy = (
             _to_float(raw[actual_idx]) if actual_idx is not None and actual_idx < len(raw) else None
         )
-        forecast_energy = (
+        # Forecast/plan cell is in MW/MWh — scale to kW/kWh to match actual.
+        forecast_raw = (
             _to_float(raw[forecast_idx])
             if forecast_idx is not None and forecast_idx < len(raw)
             else None
         )
+        forecast_energy = forecast_raw * FORECAST_MW_TO_KW if forecast_raw is not None else None
         if actual_energy is None and forecast_energy is None:
             continue
 

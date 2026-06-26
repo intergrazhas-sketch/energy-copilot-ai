@@ -44,3 +44,4 @@ Thumbs.db
 
 # Реальные пилотные данные — НИКОГДА не коммитить (только локальная диагностика)
 docs/pilot-data/raw/
+docs/pilot-data/new-raw/

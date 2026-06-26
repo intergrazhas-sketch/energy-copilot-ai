@@ -10,11 +10,22 @@ from app.models.forecast import ActualGeneration, ForecastAccuracy, ForecastRun,
 
 
 def _actual_metric(row: ActualGeneration) -> float:
-    return row.actual_energy_kwh if row.actual_energy_kwh is not None else row.actual_power_kw
+    # Compare on average power (kW), not energy. Actual is stored at a 15-minute
+    # cadence and forecast at hourly cadence, so their per-interval energy values
+    # are not comparable; power is interval-independent. actual_power_kw is
+    # always populated (NOT NULL), fall back to energy only as a safety net.
+    if row.actual_power_kw is not None:
+        return row.actual_power_kw
+    return row.actual_energy_kwh if row.actual_energy_kwh is not None else 0.0
 
 
 def _forecast_metric(row: ForecastValue) -> float:
-    return row.predicted_energy_kwh if row.predicted_energy_kwh is not None else row.predicted_power_kw
+    # Compare on average power (kW) to match _actual_metric. predicted_power_kw is
+    # always populated (NOT NULL); for hourly forecasts it already equals the
+    # hourly energy in kWh, so it is the correct counterpart to actual power.
+    if row.predicted_power_kw is not None:
+        return row.predicted_power_kw
+    return row.predicted_energy_kwh if row.predicted_energy_kwh is not None else 0.0
 
 
 async def calculate_accuracy_for_run(
