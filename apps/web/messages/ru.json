@@ -268,6 +268,14 @@
     "aggregates": "Агрегаты"
   },
   "accuracyLab": {
+    "range": {
+      "label": "Период",
+      "helper": "Выберите период для метрик точности. «Весь период» показывает все загруженные дни.",
+      "7d": "Последние 7 дней",
+      "30d": "Последние 30 дней",
+      "90d": "Последние 90 дней",
+      "all": "Весь период"
+    },
     "unavailableTitle": "Accuracy Lab API недоступен",
     "unavailableDetail": "Dashboard не смог загрузить дневную сводку Accuracy Lab.",
     "noAggregatesTitle": "Агрегатов пока нет",

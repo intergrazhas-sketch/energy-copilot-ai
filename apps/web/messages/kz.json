@@ -268,6 +268,14 @@
     "aggregates": "Агрегаттар"
   },
   "accuracyLab": {
+    "range": {
+      "label": "Кезең",
+      "helper": "Дәлдік метрикалары үшін кезеңді таңдаңыз. «Барлық кезең» барлық жүктелген күндерді көрсетеді.",
+      "7d": "Соңғы 7 күн",
+      "30d": "Соңғы 30 күн",
+      "90d": "Соңғы 90 күн",
+      "all": "Барлық кезең"
+    },
     "unavailableTitle": "Accuracy Lab API қолжетімсіз",
     "unavailableDetail": "Dashboard Accuracy Lab күндік жиынтығын жүктей алмады.",
     "noAggregatesTitle": "Агрегаттар әлі жоқ",

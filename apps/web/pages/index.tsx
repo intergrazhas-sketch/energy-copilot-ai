@@ -780,6 +780,30 @@ function getDataQualityPeriodRange(periodKey: DataQualityPeriodKey) {
   };
 }
 
+type AccuracyRangeKey = "7d" | "30d" | "90d" | "all";
+
+const accuracyRangeOptions: { key: AccuracyRangeKey; days: number | null }[] = [
+  { key: "7d", days: 7 },
+  { key: "30d", days: 30 },
+  { key: "90d", days: 90 },
+  { key: "all", days: null },
+];
+
+function getAccuracyRange(key: AccuracyRangeKey) {
+  const to = new Date();
+  const option = accuracyRangeOptions.find((item) => item.key === key);
+  // "all" (days === null) uses a far-back start so historical imports stay visible.
+  const from =
+    !option || option.days === null
+      ? new Date("2000-01-01T00:00:00.000Z")
+      : new Date(to.getTime() - option.days * 24 * 60 * 60 * 1000);
+
+  return {
+    from: from.toISOString(),
+    to: to.toISOString(),
+  };
+}
+
 function getPlantName(plants: SolarPlant[], plantId: string | null | undefined, fallback: string) {
   if (!plantId) {
     return fallback;
@@ -2619,6 +2643,8 @@ function ForecastAccuracyLabSection({
   ranking,
   loading,
   locale,
+  rangeKey,
+  onRangeChange,
   onImportComplete,
   t,
 }: {
@@ -2627,6 +2653,8 @@ function ForecastAccuracyLabSection({
   ranking: AccuracyProviderRankingResponse | null;
   loading: boolean;
   locale: Locale;
+  rangeKey: AccuracyRangeKey;
+  onRangeChange: (key: AccuracyRangeKey) => void;
   onImportComplete: () => void;
   t: Translate;
 }) {
@@ -2721,6 +2749,24 @@ function ForecastAccuracyLabSection({
 
   return (
     <section className="section-stack">
+      <div className="accuracy-lab-range plant-profile-selector">
+        <label>
+          <span>{t("accuracyLab.range.label")}</span>
+          <select
+            disabled={loading}
+            onChange={(event) => onRangeChange(event.target.value as AccuracyRangeKey)}
+            value={rangeKey}
+          >
+            {accuracyRangeOptions.map((option) => (
+              <option key={option.key} value={option.key}>
+                {t(`accuracyLab.range.${option.key}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <small>{t("accuracyLab.range.helper")}</small>
+      </div>
+
       {!loading && !summary ? (
         <EmptyState
           detail={t("accuracyLab.unavailableDetail")}
@@ -4044,6 +4090,8 @@ function DashboardOverview({
   const [activeSection, setActiveSection] = useState<SectionKey>("overview");
   const [selectedProfilePlantId, setSelectedProfilePlantId] = useState("");
   const [dashboardRefreshToken, setDashboardRefreshToken] = useState(0);
+  // Default to "all" so historical imports (e.g. files dated weeks ago) are visible.
+  const [accuracyRangeKey, setAccuracyRangeKey] = useState<AccuracyRangeKey>("all");
 
   const openPlantProfile = (plantId: string) => {
     setSelectedProfilePlantId(plantId);
@@ -4071,6 +4119,8 @@ function DashboardOverview({
     };
   }, []);
 
+  const accuracyRange = useMemo(() => getAccuracyRange(accuracyRangeKey), [accuracyRangeKey]);
+
   useEffect(() => {
     let mounted = true;
 
@@ -4089,13 +4139,13 @@ function DashboardOverview({
         fetchJson<ForecastProvider[]>("/api/v1/forecast-providers"),
         fetchJson<ForecastRun[]>("/api/v1/forecast-runs"),
         fetchJson<AccuracySummary>("/api/v1/accuracy-lab/summary", {
-          from: period.from,
-          to: period.to,
+          from: accuracyRange.from,
+          to: accuracyRange.to,
           bucket: "day",
         }),
         fetchJson<AccuracyProviderRankingResponse>("/api/v1/accuracy-lab/providers/ranking", {
-          from: period.from,
-          to: period.to,
+          from: accuracyRange.from,
+          to: accuracyRange.to,
           bucket: "day",
         }),
         fetchJson<RejectedTelemetrySummary>("/api/v1/telemetry/rejected/summary", {
@@ -4175,7 +4225,7 @@ function DashboardOverview({
     return () => {
       mounted = false;
     };
-  }, [period.from, period.to, dashboardRefreshToken]);
+  }, [period.from, period.to, accuracyRange.from, accuracyRange.to, dashboardRefreshToken]);
 
   const totalCapacity = state.data.plants.reduce(
     (sum, plant) => sum + plant.capacity_kw,
@@ -4484,7 +4534,9 @@ function DashboardOverview({
             locale={locale}
             loading={state.loading}
             onImportComplete={() => setDashboardRefreshToken((current) => current + 1)}
+            onRangeChange={setAccuracyRangeKey}
             plants={state.data.plants}
+            rangeKey={accuracyRangeKey}
             ranking={state.data.accuracyRanking}
             summary={state.data.accuracy}
             t={t}
