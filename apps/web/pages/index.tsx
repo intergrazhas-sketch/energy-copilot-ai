@@ -204,6 +204,33 @@ type BatchImportResponse = {
   files: BatchImportFileResult[];
 };
 
+type BatchImportHistoryItem = {
+  id: string;
+  status: string;
+  import_mode: string;
+  source: string;
+  original_filename: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string;
+  total_files: number;
+  processed_files: number;
+  skipped_files: number;
+  failed_files: number;
+  actual_rows_imported: number;
+  forecast_rows_imported: number;
+  rejected_rows: number;
+  data_start_at: string | null;
+  data_end_at: string | null;
+  message: string | null;
+  files: BatchImportFileResult[];
+};
+
+type BatchImportHistoryResponse = {
+  plant_id: string;
+  batches: BatchImportHistoryItem[];
+};
+
 type LastCsvImportSummary = {
   fileName: string;
   importedRows: number;
@@ -1987,6 +2014,7 @@ function SolarPlantProfileSection({
   const [batchUploading, setBatchUploading] = useState(false);
   const [batchResult, setBatchResult] = useState<BatchImportResponse | null>(null);
   const [batchMessage, setBatchMessage] = useState<{ type: "info" | "success" | "error"; text: string } | null>(null);
+  const [batchHistory, setBatchHistory] = useState<BatchImportHistoryItem[]>([]);
 
   useEffect(() => {
     setLastActualImport(readLastCsvImportSummary(lastActualCsvImportStorageKey));
@@ -2096,6 +2124,36 @@ function SolarPlantProfileSection({
       mounted = false;
     };
   }, [selectedPlantId, period.from, period.to, profileRefreshToken]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadBatchHistory() {
+      if (!selectedPlantId) {
+        setBatchHistory([]);
+        return;
+      }
+      try {
+        const response = await fetchJson<BatchImportHistoryResponse>("/api/v1/import/batches", {
+          plant_id: selectedPlantId,
+          limit: "20",
+        });
+        if (mounted) {
+          setBatchHistory(response.batches || []);
+        }
+      } catch {
+        if (mounted) {
+          setBatchHistory([]);
+        }
+      }
+    }
+
+    loadBatchHistory();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedPlantId, profileRefreshToken]);
 
   const selectedPlant = plants.find((plant) => plant.id === selectedPlantId) || null;
   const rankingProviders = profileState.ranking?.providers || [];
@@ -2615,6 +2673,72 @@ function SolarPlantProfileSection({
             </div>
           ) : null}
         </div>
+      </Panel>
+
+      <Panel eyebrow={t("batchHistory.eyebrow")} title={t("batchHistory.title")}>
+        {batchHistory.length === 0 ? (
+          <EmptyState detail={t("batchHistory.emptyDetail")} title={t("batchHistory.emptyTitle")} />
+        ) : (
+          <div className="batch-history-list">
+            {batchHistory.map((batch) => {
+              const skippedFiles = batch.files.filter(
+                (file) => file.status === "skipped" || file.status === "failed",
+              );
+              return (
+                <div className="batch-history-item" key={batch.id}>
+                  <div className="batch-history-head">
+                    <strong>{formatDateTime(batch.created_at, noData, locale)}</strong>
+                    <span className={`batch-history-status ${batch.status}`}>
+                      {t(`batchHistory.status.${batch.status}`)}
+                    </span>
+                  </div>
+                  <div className="batch-history-stats">
+                    <span>
+                      {t("batchHistory.filesProcessed", {
+                        processed: formatNumber(batch.processed_files, 0, noData, locale),
+                        total: formatNumber(batch.total_files, 0, noData, locale),
+                      })}
+                    </span>
+                    <span>
+                      {t("batchHistory.actualRows", {
+                        value: formatNumber(batch.actual_rows_imported, 0, noData, locale),
+                      })}
+                    </span>
+                    <span>
+                      {t("batchHistory.forecastRows", {
+                        value: formatNumber(batch.forecast_rows_imported, 0, noData, locale),
+                      })}
+                    </span>
+                    <span>
+                      {t("batchHistory.rejectedRows", {
+                        value: formatNumber(batch.rejected_rows, 0, noData, locale),
+                      })}
+                    </span>
+                  </div>
+                  <p className="batch-history-period">
+                    {t("batchImport.result.period", {
+                      from: formatDateTime(batch.data_start_at, noData, locale),
+                      to: formatDateTime(batch.data_end_at, noData, locale),
+                    })}
+                  </p>
+                  {skippedFiles.length > 0 ? (
+                    <div className="batch-history-skipped">
+                      <span>{t("batchHistory.skippedTitle")}</span>
+                      <ul>
+                        {skippedFiles.slice(0, 10).map((file) => (
+                          <li key={`${batch.id}-${file.filename}`}>
+                            {file.filename}
+                            {file.error_message ? ` — ${file.error_message}` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Panel>
     </section>
   );
@@ -6720,6 +6844,107 @@ function DashboardOverview({
         }
 
         .batch-import-failed li {
+          font-size: 12px;
+          line-height: 1.4;
+          color: rgba(245, 242, 237, 0.72);
+          overflow-wrap: anywhere;
+        }
+
+        .batch-history-list {
+          display: grid;
+          gap: 12px;
+        }
+
+        .batch-history-item {
+          display: grid;
+          gap: 8px;
+          padding: 14px;
+          border-radius: 14px;
+          border: 1px solid rgba(245, 242, 237, 0.1);
+          background: rgba(245, 242, 237, 0.03);
+        }
+
+        .batch-history-head {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+
+        .batch-history-head strong {
+          font-size: 14px;
+          font-weight: 800;
+        }
+
+        .batch-history-status {
+          font-size: 11px;
+          font-weight: 800;
+          padding: 4px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(245, 242, 237, 0.18);
+          color: rgba(245, 242, 237, 0.72);
+          white-space: nowrap;
+        }
+
+        .batch-history-status.success {
+          border-color: rgba(50, 213, 131, 0.4);
+          background: rgba(50, 213, 131, 0.1);
+          color: #7cf2b4;
+        }
+
+        .batch-history-status.partial_failed {
+          border-color: rgba(255, 183, 77, 0.4);
+          background: rgba(255, 183, 77, 0.1);
+          color: #ffce8a;
+        }
+
+        .batch-history-status.failed {
+          border-color: rgba(255, 95, 86, 0.4);
+          background: rgba(255, 95, 86, 0.1);
+          color: #ffb4ad;
+        }
+
+        .batch-history-stats {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px 16px;
+        }
+
+        .batch-history-stats span {
+          font-size: 12px;
+          color: rgba(245, 242, 237, 0.74);
+        }
+
+        .batch-history-period {
+          margin: 0;
+          font-size: 12px;
+          color: rgba(245, 242, 237, 0.56);
+        }
+
+        .batch-history-skipped {
+          display: grid;
+          gap: 6px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 183, 77, 0.24);
+          background: rgba(255, 183, 77, 0.06);
+          padding: 10px 12px;
+        }
+
+        .batch-history-skipped span {
+          font-size: 12px;
+          font-weight: 800;
+          color: #ffce8a;
+        }
+
+        .batch-history-skipped ul {
+          margin: 0;
+          padding-left: 18px;
+          display: grid;
+          gap: 4px;
+        }
+
+        .batch-history-skipped li {
           font-size: 12px;
           line-height: 1.4;
           color: rgba(245, 242, 237, 0.72);

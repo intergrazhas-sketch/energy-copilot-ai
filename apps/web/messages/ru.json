@@ -39,6 +39,24 @@
       "failedTitle": "Пропущенные файлы или файлы с ошибкой"
     }
   },
+  "batchHistory": {
+    "eyebrow": "Аудит",
+    "title": "История массовых загрузок",
+    "emptyTitle": "Массовых загрузок пока нет",
+    "emptyDetail": "Здесь появятся массовые импорты по этой станции.",
+    "filesProcessed": "Файлов: обработано {processed} из {total}",
+    "actualRows": "Строк факта: {value}",
+    "forecastRows": "Строк прогноза: {value}",
+    "rejectedRows": "Отклонено строк: {value}",
+    "skippedTitle": "Пропущенные файлы или файлы с ошибкой",
+    "status": {
+      "success": "Успешно",
+      "partial_failed": "Частично",
+      "failed": "Ошибка",
+      "running": "Выполняется",
+      "pending": "В очереди"
+    }
+  },
   "brand": {
     "name": "Energy Copilot",
     "subtitle": "AI-операции",

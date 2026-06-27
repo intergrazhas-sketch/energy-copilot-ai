@@ -39,6 +39,24 @@
       "failedTitle": "Skipped or failed files"
     }
   },
+  "batchHistory": {
+    "eyebrow": "Audit",
+    "title": "Bulk upload history",
+    "emptyTitle": "No bulk uploads yet",
+    "emptyDetail": "Batch imports for this station will appear here.",
+    "filesProcessed": "Files: {processed} of {total} processed",
+    "actualRows": "Actual rows: {value}",
+    "forecastRows": "Forecast rows: {value}",
+    "rejectedRows": "Rejected rows: {value}",
+    "skippedTitle": "Skipped / failed files",
+    "status": {
+      "success": "Success",
+      "partial_failed": "Partial",
+      "failed": "Failed",
+      "running": "Running",
+      "pending": "Pending"
+    }
+  },
   "brand": {
     "name": "Energy Copilot",
     "subtitle": "AI Operations",

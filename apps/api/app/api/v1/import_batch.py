@@ -3,13 +3,19 @@ import uuid
 import zipfile
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
 from app.models.import_audit import ImportBatch, ImportError, ImportFile
 from app.repositories import forecast as repository
-from app.schemas.import_batch import BatchImportFileResult, BatchImportSummary
+from app.repositories import import_audit as audit_repository
+from app.schemas.import_batch import (
+    BatchImportFileResult,
+    BatchImportHistoryItem,
+    BatchImportHistoryResponse,
+    BatchImportSummary,
+)
 from app.services.batch_import import IMPORT_MODES, BatchResult, run_batch_import
 
 router = APIRouter(prefix="/import", tags=["Forecast MVP"])
@@ -212,3 +218,61 @@ async def batch_import(
             for f in result.files
         ],
     )
+
+
+@router.get("/batches", response_model=BatchImportHistoryResponse)
+async def list_import_batches(
+    plant_id: uuid.UUID = Query(...),
+    limit: int = Query(20, ge=1, le=50),
+    session: AsyncSession = Depends(get_db_session),
+):
+    plant = await repository.get_solar_plant(session, plant_id)
+    if plant is None:
+        raise HTTPException(status_code=404, detail="Solar plant not found")
+
+    batches = await audit_repository.list_recent_batches(session, plant_id=plant_id, limit=limit)
+    files_by_batch = await audit_repository.list_files_for_batches(
+        session, [batch.id for batch in batches]
+    )
+
+    items: list[BatchImportHistoryItem] = []
+    for batch in batches:
+        files = files_by_batch.get(batch.id, [])
+        items.append(
+            BatchImportHistoryItem(
+                id=batch.id,
+                status=batch.status,
+                import_mode=batch.import_mode,
+                source=batch.source,
+                original_filename=batch.original_filename,
+                started_at=batch.started_at,
+                finished_at=batch.finished_at,
+                created_at=batch.created_at,
+                total_files=batch.total_files,
+                processed_files=batch.processed_files,
+                skipped_files=batch.skipped_files,
+                failed_files=batch.failed_files,
+                actual_rows_imported=batch.actual_rows_imported,
+                forecast_rows_imported=batch.forecast_rows_imported,
+                rejected_rows=batch.rejected_rows,
+                data_start_at=batch.data_start_at,
+                data_end_at=batch.data_end_at,
+                message=batch.message,
+                files=[
+                    BatchImportFileResult(
+                        filename=f.filename,
+                        file_type=f.file_type,
+                        status=f.status,
+                        actual_rows_imported=f.actual_rows_imported,
+                        forecast_rows_imported=f.forecast_rows_imported,
+                        rejected_rows=f.rejected_rows,
+                        data_start_at=f.data_start_at,
+                        data_end_at=f.data_end_at,
+                        error_message=f.error_message,
+                    )
+                    for f in files
+                ],
+            )
+        )
+
+    return BatchImportHistoryResponse(plant_id=plant_id, batches=items)

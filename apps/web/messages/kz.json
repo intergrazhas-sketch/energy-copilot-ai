@@ -39,6 +39,24 @@
       "failedTitle": "Өткізілген немесе қатемен файлдар"
     }
   },
+  "batchHistory": {
+    "eyebrow": "Аудит",
+    "title": "Топтап жүктеу тарихы",
+    "emptyTitle": "Әзірге топтап жүктеулер жоқ",
+    "emptyDetail": "Осы станция бойынша топтап импорттар осында көрінеді.",
+    "filesProcessed": "Файлдар: {total} ішінен {processed} өңделді",
+    "actualRows": "Факт жолдары: {value}",
+    "forecastRows": "Болжам жолдары: {value}",
+    "rejectedRows": "Қабылданбаған жолдар: {value}",
+    "skippedTitle": "Өткізілген немесе қатемен файлдар",
+    "status": {
+      "success": "Сәтті",
+      "partial_failed": "Ішінара",
+      "failed": "Қате",
+      "running": "Орындалуда",
+      "pending": "Кезекте"
+    }
+  },
   "brand": {
     "name": "Energy Copilot",
     "subtitle": "AI операциялары",
