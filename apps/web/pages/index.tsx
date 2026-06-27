@@ -173,6 +173,37 @@ type TelemetryCsvImportResponse = {
   }>;
 };
 
+type BatchImportMode = "actual_and_forecast" | "actual_only" | "forecast_only";
+
+type BatchImportFileResult = {
+  filename: string;
+  file_type: string;
+  status: string;
+  actual_rows_imported: number;
+  forecast_rows_imported: number;
+  rejected_rows: number;
+  data_start_at: string | null;
+  data_end_at: string | null;
+  error_message: string | null;
+};
+
+type BatchImportResponse = {
+  batch_id: string;
+  plant_id: string;
+  import_mode: string;
+  status: string;
+  total_files: number;
+  processed_files: number;
+  skipped_files: number;
+  failed_files: number;
+  actual_rows_imported: number;
+  forecast_rows_imported: number;
+  rejected_rows: number;
+  data_start_at: string | null;
+  data_end_at: string | null;
+  files: BatchImportFileResult[];
+};
+
 type LastCsvImportSummary = {
   fileName: string;
   importedRows: number;
@@ -1951,6 +1982,11 @@ function SolarPlantProfileSection({
   const [uploadMessage, setUploadMessage] = useState<{ type: "info" | "success"; text: string } | null>(null);
   const [lastActualImport, setLastActualImport] = useState<LastCsvImportSummary | null>(null);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
+  const [batchFiles, setBatchFiles] = useState<File[]>([]);
+  const [batchMode, setBatchMode] = useState<BatchImportMode>("actual_and_forecast");
+  const [batchUploading, setBatchUploading] = useState(false);
+  const [batchResult, setBatchResult] = useState<BatchImportResponse | null>(null);
+  const [batchMessage, setBatchMessage] = useState<{ type: "info" | "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     setLastActualImport(readLastCsvImportSummary(lastActualCsvImportStorageKey));
@@ -2133,6 +2169,56 @@ function SolarPlantProfileSection({
       setUploadError(error instanceof Error ? error.message : t("solarPlantProfile.upload.error"));
     } finally {
       setUploadingTelemetry(false);
+    }
+  };
+
+  const handleBatchImport = async () => {
+    if (!selectedPlantId || batchFiles.length === 0) {
+      setBatchMessage({ type: "error", text: t("batchImport.validationError") });
+      return;
+    }
+
+    setBatchUploading(true);
+    setBatchResult(null);
+    setBatchMessage({ type: "info", text: t("batchImport.started") });
+
+    const formData = new FormData();
+    formData.append("plant_id", selectedPlantId);
+    formData.append("mode", batchMode);
+    batchFiles.forEach((file) => formData.append("files", file));
+
+    try {
+      const response = await fetch(buildUrl("/api/v1/import/batch"), {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        let detail = t("batchImport.error");
+        try {
+          const payload = (await response.json()) as { detail?: string };
+          if (payload.detail) {
+            detail = `${t("batchImport.error")}: ${payload.detail}`;
+          }
+        } catch {
+          detail = t("batchImport.error");
+        }
+        throw new Error(detail);
+      }
+
+      const result = (await response.json()) as BatchImportResponse;
+      setBatchResult(result);
+      setBatchMessage({ type: "success", text: t("batchImport.success") });
+      setBatchFiles([]);
+      setProfileRefreshToken((current) => current + 1);
+    } catch (error) {
+      setBatchResult(null);
+      setBatchMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : t("batchImport.error"),
+      });
+    } finally {
+      setBatchUploading(false);
     }
   };
 
@@ -2414,6 +2500,122 @@ function SolarPlantProfileSection({
           />
         </Panel>
       </section>
+
+      <Panel eyebrow={t("batchImport.eyebrow")} title={t("batchImport.title")}>
+        <div className="station-upload-card">
+          <p>{t("batchImport.helper")}</p>
+          <p className="station-upload-hint">{t("batchImport.supported")}</p>
+
+          <label className="plant-profile-selector batch-mode-selector">
+            <span>{t("batchImport.modeLabel")}</span>
+            <select
+              disabled={batchUploading}
+              onChange={(event) => setBatchMode(event.target.value as BatchImportMode)}
+              value={batchMode}
+            >
+              <option value="actual_and_forecast">{t("batchImport.modes.actualAndForecast")}</option>
+              <option value="actual_only">{t("batchImport.modes.actualOnly")}</option>
+              <option value="forecast_only">{t("batchImport.modes.forecastOnly")}</option>
+            </select>
+          </label>
+
+          <label className="station-upload-button">
+            <span>{t("batchImport.selectFiles")}</span>
+            <input
+              accept=".csv,.xlsx,.xls,.zip"
+              disabled={batchUploading}
+              multiple
+              onChange={(event) => {
+                setBatchFiles(event.target.files ? Array.from(event.target.files) : []);
+                setBatchResult(null);
+                setBatchMessage(null);
+              }}
+              type="file"
+            />
+          </label>
+
+          {batchFiles.length > 0 ? (
+            <div className="station-upload-message info">
+              {t("batchImport.selectedFiles", { count: formatNumber(batchFiles.length, 0, noData, locale) })}
+            </div>
+          ) : (
+            <EmptyState detail={t("batchImport.emptyDetail")} title={t("batchImport.emptyTitle")} />
+          )}
+
+          {batchFiles.length > 0 ? (
+            <div className="station-upload-actions">
+              <button
+                className="station-upload-submit"
+                disabled={!selectedPlant || batchUploading}
+                onClick={handleBatchImport}
+                type="button"
+              >
+                {batchUploading ? t("batchImport.importing") : t("batchImport.import")}
+              </button>
+            </div>
+          ) : null}
+
+          {batchMessage ? (
+            <div className={`station-upload-message ${batchMessage.type}`}>{batchMessage.text}</div>
+          ) : null}
+
+          {batchResult ? (
+            <div className="batch-import-result">
+              <div className="batch-import-stats">
+                <div>
+                  <span>{t("batchImport.result.filesFound")}</span>
+                  <strong>{formatNumber(batchResult.total_files, 0, noData, locale)}</strong>
+                </div>
+                <div>
+                  <span>{t("batchImport.result.filesProcessed")}</span>
+                  <strong>{formatNumber(batchResult.processed_files, 0, noData, locale)}</strong>
+                </div>
+                <div>
+                  <span>{t("batchImport.result.filesSkipped")}</span>
+                  <strong>
+                    {formatNumber(batchResult.skipped_files + batchResult.failed_files, 0, noData, locale)}
+                  </strong>
+                </div>
+                <div>
+                  <span>{t("batchImport.result.actualRows")}</span>
+                  <strong>{formatNumber(batchResult.actual_rows_imported, 0, noData, locale)}</strong>
+                </div>
+                <div>
+                  <span>{t("batchImport.result.forecastRows")}</span>
+                  <strong>{formatNumber(batchResult.forecast_rows_imported, 0, noData, locale)}</strong>
+                </div>
+                <div>
+                  <span>{t("batchImport.result.rejectedRows")}</span>
+                  <strong>{formatNumber(batchResult.rejected_rows, 0, noData, locale)}</strong>
+                </div>
+              </div>
+              <p className="station-upload-hint">
+                {t("batchImport.result.period", {
+                  from: formatDateTime(batchResult.data_start_at, noData, locale),
+                  to: formatDateTime(batchResult.data_end_at, noData, locale),
+                })}
+              </p>
+              {batchResult.files.filter((file) => file.status === "skipped" || file.status === "failed").length >
+              0 ? (
+                <div className="batch-import-failed">
+                  <span>{t("batchImport.result.failedTitle")}</span>
+                  <ul>
+                    {batchResult.files
+                      .filter((file) => file.status === "skipped" || file.status === "failed")
+                      .slice(0, 20)
+                      .map((file) => (
+                        <li key={file.filename}>
+                          {file.filename}
+                          {file.error_message ? ` — ${file.error_message}` : ""}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </Panel>
     </section>
   );
 }
@@ -4287,7 +4489,6 @@ function DashboardOverview({
                 </button>
               ))}
             </div>
-            <span>{t("header.period")}</span>
             <StatusBadge status={systemStatus} t={t} />
           </div>
         </header>
@@ -6459,6 +6660,70 @@ function DashboardOverview({
         .station-upload-message.warning {
           border: 1px solid rgba(255, 183, 77, 0.3);
           background: rgba(255, 183, 77, 0.08);
+        }
+
+        .batch-mode-selector {
+          margin: 0;
+        }
+
+        .batch-import-result {
+          display: grid;
+          gap: 12px;
+        }
+
+        .batch-import-stats {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 10px;
+        }
+
+        .batch-import-stats > div {
+          display: grid;
+          gap: 4px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(245, 242, 237, 0.1);
+          background: rgba(245, 242, 237, 0.03);
+        }
+
+        .batch-import-stats span {
+          color: rgba(245, 242, 237, 0.6);
+          font-size: 12px;
+          line-height: 1.3;
+        }
+
+        .batch-import-stats strong {
+          font-size: 18px;
+          font-weight: 800;
+        }
+
+        .batch-import-failed {
+          display: grid;
+          gap: 6px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 183, 77, 0.28);
+          background: rgba(255, 183, 77, 0.07);
+          padding: 12px;
+        }
+
+        .batch-import-failed span {
+          font-size: 12px;
+          font-weight: 800;
+          color: #ffce8a;
+        }
+
+        .batch-import-failed ul {
+          margin: 0;
+          padding-left: 18px;
+          display: grid;
+          gap: 4px;
+        }
+
+        .batch-import-failed li {
+          font-size: 12px;
+          line-height: 1.4;
+          color: rgba(245, 242, 237, 0.72);
+          overflow-wrap: anywhere;
         }
 
         .station-upload-last {

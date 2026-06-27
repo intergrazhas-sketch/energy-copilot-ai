@@ -7,6 +7,7 @@ from app.api.v1 import (
     alerts,
     forecast_providers,
     forecast_runs,
+    import_batch,
     provider_comparison,
     solar_plants,
     system,
@@ -24,3 +25,4 @@ api_router.include_router(alerts.router)
 api_router.include_router(provider_comparison.router)
 api_router.include_router(accuracy_lab.router)
 api_router.include_router(telemetry.router)
+api_router.include_router(import_batch.router)

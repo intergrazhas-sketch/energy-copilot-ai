@@ -7,6 +7,38 @@
     "weatherStationExport": "Выгрузка метеостанции",
     "supportedFormats": "Поддерживаемые форматы: .csv, .xlsx, .xls"
   },
+  "batchImport": {
+    "eyebrow": "Массовая загрузка",
+    "title": "Массовый импорт",
+    "helper": "Загрузите сразу много дневных файлов или ZIP-архив, чтобы внести историю станции за месяцы или годы.",
+    "supported": "Поддерживаются: .csv, .xlsx, .xls и ZIP-архивы с этими файлами внутри.",
+    "modeLabel": "Режим импорта",
+    "modes": {
+      "actualAndForecast": "Факт + Прогноз",
+      "actualOnly": "Только факт",
+      "forecastOnly": "Только прогноз"
+    },
+    "selectFiles": "Выберите файлы или ZIP",
+    "selectedFiles": "Выбрано файлов: {count}",
+    "emptyTitle": "Файлы не выбраны",
+    "emptyDetail": "Выберите один или несколько файлов Excel/CSV или ZIP-архив.",
+    "import": "Импортировать",
+    "importing": "Импортируем…",
+    "started": "Массовый импорт начат…",
+    "success": "Массовый импорт завершён.",
+    "error": "Не удалось выполнить импорт",
+    "validationError": "Выберите станцию и хотя бы один файл.",
+    "result": {
+      "filesFound": "Найдено файлов",
+      "filesProcessed": "Обработано файлов",
+      "filesSkipped": "Пропущено / с ошибкой",
+      "actualRows": "Строк факта",
+      "forecastRows": "Строк прогноза",
+      "rejectedRows": "Отклонено строк",
+      "period": "Период данных: {from} — {to}",
+      "failedTitle": "Пропущенные файлы или файлы с ошибкой"
+    }
+  },
   "brand": {
     "name": "Energy Copilot",
     "subtitle": "AI-операции",
@@ -27,7 +59,6 @@
   "header": {
     "eyebrow": "Операционный Dashboard",
     "title": "Обзор",
-    "period": "Последние 7 дней",
     "languageLabel": "Язык"
   },
   "common": {

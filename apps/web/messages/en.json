@@ -7,6 +7,38 @@
     "weatherStationExport": "Weather station export",
     "supportedFormats": "Supported formats: .csv, .xlsx, .xls"
   },
+  "batchImport": {
+    "eyebrow": "Bulk upload",
+    "title": "Batch import",
+    "helper": "Upload many daily files or a ZIP archive at once to load months or years of station history.",
+    "supported": "Supported: .csv, .xlsx, .xls and .zip archives with those files inside.",
+    "modeLabel": "Import mode",
+    "modes": {
+      "actualAndForecast": "Actual + Forecast",
+      "actualOnly": "Actual only",
+      "forecastOnly": "Forecast only"
+    },
+    "selectFiles": "Select files or ZIP",
+    "selectedFiles": "Selected files: {count}",
+    "emptyTitle": "No files selected",
+    "emptyDetail": "Choose one or more Excel/CSV files, or a ZIP archive.",
+    "import": "Import",
+    "importing": "Importing…",
+    "started": "Batch import started…",
+    "success": "Batch import finished.",
+    "error": "Batch import failed",
+    "validationError": "Select a station and at least one file.",
+    "result": {
+      "filesFound": "Files found",
+      "filesProcessed": "Files processed",
+      "filesSkipped": "Skipped / failed",
+      "actualRows": "Actual rows",
+      "forecastRows": "Forecast rows",
+      "rejectedRows": "Rejected rows",
+      "period": "Data period: {from} — {to}",
+      "failedTitle": "Skipped or failed files"
+    }
+  },
   "brand": {
     "name": "Energy Copilot",
     "subtitle": "AI Operations",
@@ -27,7 +59,6 @@
   "header": {
     "eyebrow": "Live Operations Dashboard",
     "title": "Overview",
-    "period": "Last 7 days",
     "languageLabel": "Language"
   },
   "common": {

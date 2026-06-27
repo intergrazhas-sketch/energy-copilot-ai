@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -228,6 +228,38 @@ async def get_accuracy_by_run(
         select(ForecastAccuracy).where(ForecastAccuracy.forecast_run_id == forecast_run_id)
     )
     return result.scalar_one_or_none()
+
+
+async def delete_forecast_runs_in_range(
+    session: AsyncSession,
+    *,
+    solar_plant_id: uuid.UUID,
+    provider_id: uuid.UUID,
+    period_from: datetime,
+    period_to: datetime,
+) -> int:
+    """Delete forecast runs (of one provider) that have any value in the range.
+
+    Used by batch import to make re-importing the same day idempotent: the old
+    run + its values + its accuracy row are removed (ON DELETE CASCADE) before
+    the fresh run is inserted, so repeated uploads never double-count accuracy.
+    """
+    run_id_rows = await session.execute(
+        select(ForecastValue.forecast_run_id)
+        .join(ForecastRun, ForecastRun.id == ForecastValue.forecast_run_id)
+        .where(ForecastRun.solar_plant_id == solar_plant_id)
+        .where(ForecastRun.provider_id == provider_id)
+        .where(ForecastValue.timestamp >= period_from)
+        .where(ForecastValue.timestamp <= period_to)
+        .distinct()
+    )
+    run_ids = [row[0] for row in run_id_rows.all()]
+    if not run_ids:
+        return 0
+
+    await session.execute(delete(ForecastRun).where(ForecastRun.id.in_(run_ids)))
+    await session.commit()
+    return len(run_ids)
 
 
 async def list_forecast_runs_for_actual_point(

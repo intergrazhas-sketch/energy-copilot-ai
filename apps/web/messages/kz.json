@@ -7,6 +7,38 @@
     "weatherStationExport": "Метеостанция деректерінің экспорты",
     "supportedFormats": "Қолдау көрсетілетін форматтар: .csv, .xlsx, .xls"
   },
+  "batchImport": {
+    "eyebrow": "Топтап жүктеу",
+    "title": "Топтап импорттау",
+    "helper": "Станцияның айлар немесе жылдар бойынша тарихын енгізу үшін бірден көп күндік файлдарды немесе ZIP-архивті жүктеңіз.",
+    "supported": "Қолдау көрсетіледі: .csv, .xlsx, .xls және ішінде осы файлдары бар ZIP-архивтер.",
+    "modeLabel": "Импорт режимі",
+    "modes": {
+      "actualAndForecast": "Факт + Болжам",
+      "actualOnly": "Тек факт",
+      "forecastOnly": "Тек болжам"
+    },
+    "selectFiles": "Файлдарды немесе ZIP таңдаңыз",
+    "selectedFiles": "Таңдалған файлдар: {count}",
+    "emptyTitle": "Файлдар таңдалмаған",
+    "emptyDetail": "Бір немесе бірнеше Excel/CSV файлын немесе ZIP-архивті таңдаңыз.",
+    "import": "Импорттау",
+    "importing": "Импортталуда…",
+    "started": "Топтап импорттау басталды…",
+    "success": "Топтап импорттау аяқталды.",
+    "error": "Импорттау орындалмады",
+    "validationError": "Станцияны және кемінде бір файлды таңдаңыз.",
+    "result": {
+      "filesFound": "Табылған файлдар",
+      "filesProcessed": "Өңделген файлдар",
+      "filesSkipped": "Өткізілді / қатемен",
+      "actualRows": "Факт жолдары",
+      "forecastRows": "Болжам жолдары",
+      "rejectedRows": "Қабылданбаған жолдар",
+      "period": "Деректер кезеңі: {from} — {to}",
+      "failedTitle": "Өткізілген немесе қатемен файлдар"
+    }
+  },
   "brand": {
     "name": "Energy Copilot",
     "subtitle": "AI операциялары",
@@ -27,7 +59,6 @@
   "header": {
     "eyebrow": "Операциялық Dashboard",
     "title": "Шолу",
-    "period": "Соңғы 7 күн",
     "languageLabel": "Тіл"
   },
   "common": {
