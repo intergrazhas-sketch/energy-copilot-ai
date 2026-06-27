@@ -256,9 +256,9 @@
       "criticalAlerts": "Critical alerts"
     },
     "upload": {
-      "eyebrow": "Station Data",
-      "title": "Data Upload",
-      "helper": "Choose a CSV telemetry file and import data for the selected station.",
+      "eyebrow": "Secondary",
+      "title": "Manual single-file upload",
+      "helper": "For a quick check of a single day. For a month or year of history use “Batch import” above.",
       "button": "Choose CSV",
       "import": "Import Data",
       "importing": "Importing...",
@@ -268,7 +268,7 @@
       "importedRowsMessage": "Imported {count} rows",
       "resultSummary": "Imported rows: {imported}, rejected rows: {rejected}",
       "rejectedRows": "Rejected rows",
-      "lastImportedFile": "Last imported file",
+      "lastImportedFile": "Last manual upload file",
       "lastImportedRows": "Imported rows: {imported}, rejected rows: {rejected}",
       "lastImportedAt": "Imported at: {time}",
       "actualStoredDetail": "Actual telemetry is already saved to the station profile.",
@@ -344,9 +344,9 @@
       "forecastRunsHelper": "Runs included in daily aggregates"
     },
     "forecastImport": {
-      "eyebrow": "Forecast CSV",
-      "title": "Import forecast data",
-      "helper": "Upload forecast CSV for a selected station. The backend stores it as forecast runs and matches it with actual telemetry by timestamp.",
+      "eyebrow": "Secondary",
+      "title": "Manual single-day forecast upload",
+      "helper": "For a quick check of one day of forecast. For a month or year of history use “Batch import” in the station profile — it loads both actual and forecast at once.",
       "plantLabel": "Station",
       "plantHelper": "Accuracy is calculated against actual telemetry for this station.",
       "chooseButton": "Choose Forecast CSV",
@@ -356,7 +356,7 @@
       "success": "Forecast import successful.",
       "error": "Forecast import failed. Check the CSV format and try again.",
       "resultSummary": "Imported rows: {imported}, rejected rows: {rejected}",
-      "lastImportedFile": "Last imported file",
+      "lastImportedFile": "Last manual upload file",
       "lastImportedRows": "Imported rows: {imported}, rejected rows: {rejected}",
       "lastImportedProvider": "Provider: {provider}",
       "lastImportedAt": "Imported at: {time}",

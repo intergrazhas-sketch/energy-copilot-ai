@@ -2446,7 +2446,7 @@ function SolarPlantProfileSection({
         </Panel>
 
         <Panel eyebrow={t("solarPlantProfile.upload.eyebrow")} title={t("solarPlantProfile.upload.title")}>
-          <div className="station-upload-card">
+          <div className="station-upload-card secondary">
             <p>{t("solarPlantProfile.upload.helper")}</p>
             <p className="station-upload-hint">{t("dataImport.actualGenerationReport")}</p>
             <p className="station-upload-hint">{t("dataImport.supportedFormats")}</p>
@@ -3149,7 +3149,7 @@ function ForecastAccuracyLabSection({
         eyebrow={t("accuracyLab.forecastImport.eyebrow")}
         title={t("accuracyLab.forecastImport.title")}
       >
-        <div className="station-upload-card">
+        <div className="station-upload-card secondary">
           <p>{t("accuracyLab.forecastImport.helper")}</p>
           <p className="station-upload-hint">{t("dataImport.manualExcelCsvForecast")}</p>
           <p className="station-upload-hint">{t("dataImport.forecastFromOperatingCompany")}</p>
@@ -6629,6 +6629,14 @@ function DashboardOverview({
         .station-upload-card {
           display: grid;
           gap: 14px;
+        }
+
+        .station-upload-card.secondary {
+          opacity: 0.82;
+          padding: 14px;
+          border-radius: 14px;
+          border: 1px dashed rgba(245, 242, 237, 0.16);
+          background: rgba(245, 242, 237, 0.02);
         }
 
         .station-upload-card p {
