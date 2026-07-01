@@ -34,6 +34,8 @@ from datetime import datetime, timedelta, timezone
 TIME_MARKERS = ("utc", "[15_мин", "[1_час", "15_мин.", "1_час.")
 ACTUAL_MARKERS = ("сумма_генерации_сэс", "сумма_генерации")
 FORECAST_MARKERS = ("прогноз_генераций_сэс", "прогноз_генераци", "прогноз_генерации")
+BY_INTERVAL_ACTUAL_MARKERS = ("свод",)
+BY_INTERVAL_TIME_MARKERS = ("utc", "[15_мин", "[1_час", "15_мин.", "1_час.", "15_мин", "1_час")
 
 INTERVAL_15MIN = "15min"
 INTERVAL_HOURLY = "60min"
@@ -180,6 +182,17 @@ def _interval_for_sheet(sheet_name: str) -> str | None:
     if "15" in low and "мин" in low:
         return INTERVAL_15MIN
     if "час" in low:
+        return INTERVAL_HOURLY
+    return None
+
+
+def _interval_from_time_header(header: str | None) -> str | None:
+    if not header:
+        return None
+    low = _normalize(header)
+    if "15" in low and "мин" in low:
+        return INTERVAL_15MIN
+    if "1_час" in low or ("час" in low and "15" not in low):
         return INTERVAL_HOURLY
     return None
 
@@ -343,3 +356,158 @@ def adapt_workbook(filename: str, raw_content: bytes) -> AdapterResult:
         sheet_names=sheet_names,
         sheets=sheets,
     )
+
+
+def adapt_by_interval_xlsx(filename: str, raw_content: bytes) -> AdapterResult:
+    """Adapt single-sheet ``... by 15min`` / ``... by 60min`` generation exports.
+
+    These files report interval energy (kWh) in a ``Свод`` total column and UTC+1
+    timestamps in the first column. There is no forecast column.
+    """
+    try:
+        from openpyxl import load_workbook
+    except ImportError as exc:  # pragma: no cover
+        raise VarvarinskayaAdapterError(
+            "Excel (.xlsx) support is not installed on the server"
+        ) from exc
+
+    try:
+        workbook = load_workbook(io.BytesIO(raw_content), read_only=True, data_only=True)
+    except Exception as exc:  # noqa: BLE001
+        raise VarvarinskayaAdapterError("Could not read the Excel (.xlsx) file") from exc
+
+    try:
+        sheet_names = list(workbook.sheetnames)
+        if not sheet_names:
+            return AdapterResult(
+                filename=filename,
+                supported=False,
+                reason="Empty workbook",
+                sheet_names=[],
+            )
+
+        sheet_name = sheet_names[0]
+        worksheet = workbook[sheet_name]
+        rows_iter = worksheet.iter_rows(values_only=True)
+        try:
+            header_row = next(rows_iter)
+        except StopIteration:
+            return AdapterResult(
+                filename=filename,
+                supported=False,
+                reason="By-interval sheet is empty",
+                sheet_names=sheet_names,
+            )
+
+        norm_headers: list[str | None] = []
+        for cell in header_row:
+            if cell is None or str(cell).strip() == "":
+                norm_headers.append(None)
+            else:
+                norm_headers.append(_normalize(cell))
+
+        time_col = _find_column(norm_headers, BY_INTERVAL_TIME_MARKERS)
+        actual_col = _find_column(norm_headers, BY_INTERVAL_ACTUAL_MARKERS)
+        if not (time_col and actual_col):
+            return AdapterResult(
+                filename=filename,
+                supported=False,
+                reason=(
+                    "By-interval export detected but time / Свод columns "
+                    "could not be located."
+                ),
+                sheet_names=sheet_names,
+            )
+
+        interval = _interval_from_time_header(time_col)
+        if interval is None:
+            return AdapterResult(
+                filename=filename,
+                supported=False,
+                reason="unsupported_by_interval_format",
+                sheet_names=sheet_names,
+            )
+
+        sheet_result = SheetResult(sheet_name, interval, time_col, actual_col, None)
+        index_by_header: dict[str, int] = {}
+        for index, header in enumerate(norm_headers):
+            if header and header not in index_by_header:
+                index_by_header[header] = index
+
+        time_idx = index_by_header[time_col]
+        actual_idx = index_by_header[actual_col]
+        multiplier = POWER_MULTIPLIER[interval]
+        tz = _tz_from_header(time_col)
+
+        for raw in rows_iter:
+            if raw is None or all(cell is None for cell in raw):
+                continue
+            ts_value = raw[time_idx] if time_idx < len(raw) else None
+            if ts_value is not None and _normalize(ts_value) in ("сумма", "sum", "total"):
+                continue
+            timestamp = _to_timestamp(ts_value, tz)
+            if not timestamp:
+                continue
+            try:
+                datetime.fromisoformat(timestamp)
+            except ValueError:
+                continue
+            actual_energy = _to_float(raw[actual_idx] if actual_idx < len(raw) else None)
+            if actual_energy is None:
+                continue
+            sheet_result.rows.append(
+                AdaptedRow(
+                    timestamp=timestamp,
+                    actual_energy_kwh=actual_energy,
+                    forecast_energy_kwh=None,
+                    actual_power_kw=actual_energy * multiplier,
+                    forecast_power_kw=None,
+                )
+            )
+
+        return AdapterResult(
+            filename=filename,
+            supported=bool(sheet_result.rows),
+            reason=None if sheet_result.rows else "no_generation_rows_in_by_interval_file",
+            sheet_names=sheet_names,
+            sheets=[sheet_result],
+        )
+    finally:
+        workbook.close()
+
+
+def adapt_varvarinskaya_file(filename: str, raw_content: bytes) -> AdapterResult:
+    """Try daily multi-sheet layout first, then single-sheet by-interval exports."""
+    if not is_supported_extension(filename):
+        return AdapterResult(
+            filename=filename,
+            supported=False,
+            reason="unsupported_extension",
+            sheet_names=[],
+        )
+
+    daily: AdapterResult
+    if (filename or "").lower().endswith(".xlsx"):
+        daily = adapt_workbook(filename, raw_content)
+    else:
+        daily = AdapterResult(
+            filename=filename,
+            supported=False,
+            reason="no_recognized_generation_columns",
+            sheet_names=[],
+        )
+
+    if daily.supported:
+        return daily
+
+    by_interval: AdapterResult | None = None
+    if (filename or "").lower().endswith(".xlsx"):
+        by_interval = adapt_by_interval_xlsx(filename, raw_content)
+        if by_interval.supported:
+            return by_interval
+        if by_interval.reason == "unsupported_by_interval_format":
+            return by_interval
+
+    if by_interval is not None:
+        return by_interval
+    return daily

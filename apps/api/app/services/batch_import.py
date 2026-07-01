@@ -29,9 +29,10 @@ from app.services.tabular_import import (
     has_any_column,
     read_tabular_upload,
 )
+from app.services.campbell_toa5 import is_campbell_toa5
 from app.services.varvarinskaya_excel_adapter import (
     VarvarinskayaAdapterError,
-    adapt_workbook,
+    adapt_varvarinskaya_file,
     is_supported_extension,
     select_actual_rows,
     select_forecast_rows,
@@ -115,16 +116,33 @@ def _track_period(
     return start, end
 
 
+def _normalize_skip_reason(adapter_reason: str | None) -> str:
+    if not adapter_reason:
+        return "no_recognized_generation_columns"
+    low = adapter_reason.lower()
+    if adapter_reason == "unsupported_by_interval_format":
+        return adapter_reason
+    if "by-interval" in low or "by_interval" in low:
+        return "unsupported_by_interval_format"
+    if "no generation sheet" in low:
+        return "no_recognized_generation_columns"
+    if adapter_reason == "unsupported_extension":
+        return adapter_reason
+    if adapter_reason == "no_generation_rows_in_by_interval_file":
+        return "no_rows_imported"
+    return "no_recognized_generation_columns"
+
+
 def _adapter_result(filename: str, raw: bytes):
     if not is_supported_extension(filename):
-        return None
+        return None, "unsupported_extension"
     try:
-        result = adapt_workbook(filename or "", raw)
+        result = adapt_varvarinskaya_file(filename or "", raw)
     except VarvarinskayaAdapterError:
-        return None
-    if not result.supported:
-        return None
-    return result
+        return None, "excel_read_error"
+    if result.supported:
+        return result, None
+    return None, _normalize_skip_reason(result.reason)
 
 
 async def _import_actual(
@@ -164,9 +182,13 @@ async def _import_actual(
                 continue
             rows.append((timestamp, power, energy, "csv"))
     else:
-        adapted = _adapter_result(filename, raw)
+        adapted, skip_reason = _adapter_result(filename, raw)
         if adapted is not None:
             recognized = True
+            if any("свод" in (sheet.actual_column or "") for sheet in adapted.sheets):
+                result.file_type = "generation_by_interval"
+            else:
+                result.file_type = "generation_daily"
             for row_number, row in enumerate(select_actual_rows(adapted), start=2):
                 if row.actual_power_kw is None:
                     continue
@@ -176,6 +198,9 @@ async def _import_actual(
                     result.errors.append((row_number, "parse", str(exc)))
                     continue
                 rows.append((timestamp, row.actual_power_kw, row.actual_energy_kwh, "excel"))
+        elif skip_reason:
+            result.error_message = skip_reason
+            result.errors.append((None, "unsupported", skip_reason))
 
     for timestamp, power, energy, source in rows:
         try:
@@ -243,7 +268,7 @@ async def _import_forecast(
                 ForecastValueItem(timestamp=timestamp, predicted_power_kw=power, predicted_energy_kwh=energy)
             )
     else:
-        adapted = _adapter_result(filename, raw)
+        adapted, skip_reason = _adapter_result(filename, raw)
         if adapted is not None:
             recognized = True
             for row_number, row in enumerate(select_forecast_rows(adapted), start=2):
@@ -262,6 +287,9 @@ async def _import_forecast(
                         predicted_energy_kwh=row.forecast_energy_kwh,
                     )
                 )
+        elif skip_reason and result.error_message is None:
+            result.error_message = skip_reason
+            result.errors.append((None, "unsupported", skip_reason))
 
     if not values:
         return recognized
@@ -340,6 +368,13 @@ async def import_single_file(
         result.errors.append((None, "unsupported", "unsupported_extension"))
         return result
 
+    if is_campbell_toa5(filename, raw):
+        result.status = "skipped"
+        result.file_type = "weather"
+        result.error_message = "weather_file_detected_not_imported_yet"
+        result.errors.append((None, "weather", "weather_file_detected_not_imported_yet"))
+        return result
+
     do_actual = mode in ("actual_only", "actual_and_forecast", "auto_detect")
     do_forecast = mode in ("forecast_only", "actual_and_forecast", "auto_detect")
 
@@ -362,14 +397,19 @@ async def import_single_file(
         result.status = "skipped"
         result.file_type = "unsupported"
         if result.error_message is None:
-            result.error_message = "no_recognized_columns"
-            result.errors.append((None, "unsupported", "no_recognized_columns"))
+            result.error_message = "no_recognized_generation_columns"
+            result.errors.append((None, "unsupported", "no_recognized_generation_columns"))
         return result
 
     if result.actual_rows_imported == 0 and result.forecast_rows_imported == 0:
         result.status = "failed" if result.errors else "skipped"
-        if result.error_message is None and result.errors:
-            result.error_message = "no_rows_imported"
+        if result.error_message is None:
+            if mode == "forecast_only" and result.file_type == "generation_by_interval":
+                result.error_message = "generation_actual_only_no_forecast"
+            elif result.errors:
+                result.error_message = "no_rows_imported"
+            else:
+                result.error_message = "no_rows_imported"
         return result
 
     result.status = "partial" if result.errors else "success"
