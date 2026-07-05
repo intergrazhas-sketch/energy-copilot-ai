@@ -9,12 +9,16 @@ Adds:
 - UNIQUE (solar_plant_id, provider_id, timestamp) on forecast_values
 - duplicate_rows_skipped on import_batches / import_files
 
+Production note:
+  Databases created via repair migration (20260627_001) may already have
+  uq_actual_generation_plant_timestamp and other objects. PostgreSQL then
+  raises DuplicateTable (not duplicate_object) when ADD CONSTRAINT runs again.
+  Every DDL step below checks pg_catalog first so upgrade is safe to re-run.
+
 WARNING — production:
   1. Take a DB backup first.
-  2. Step 3 removes duplicate forecast rows (keeps newest run per key).
+  2. Dedupe step removes duplicate forecast rows (keeps newest run per key).
   3. Do NOT run without explicit operator confirmation on production.
-
-Idempotent where possible (IF NOT EXISTS / duplicate_object guards).
 """
 
 from alembic import op
@@ -69,7 +73,12 @@ def upgrade() -> None:
         """
         DO $$
         BEGIN
-            IF NOT EXISTS (
+            IF EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'forecast_values'
+                  AND column_name = 'provider_id'
+            ) AND NOT EXISTS (
                 SELECT 1 FROM forecast_values WHERE provider_id IS NULL
             ) THEN
                 ALTER TABLE forecast_values
@@ -83,25 +92,39 @@ def upgrade() -> None:
         """
         DO $$
         BEGIN
-            ALTER TABLE forecast_values
-            ADD CONSTRAINT uq_forecast_values_plant_provider_timestamp
-            UNIQUE (solar_plant_id, provider_id, timestamp);
-        EXCEPTION
-            WHEN duplicate_object THEN NULL;
+            -- Check pg_constraint AND pg_indexes: unique constraints create an
+            -- index relation; re-adding raises DuplicateTable on production.
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint
+                WHERE conname = 'uq_forecast_values_plant_provider_timestamp'
+            ) AND NOT EXISTS (
+                SELECT 1 FROM pg_indexes
+                WHERE indexname = 'uq_forecast_values_plant_provider_timestamp'
+            ) THEN
+                ALTER TABLE forecast_values
+                ADD CONSTRAINT uq_forecast_values_plant_provider_timestamp
+                UNIQUE (solar_plant_id, provider_id, timestamp);
+            END IF;
         END $$;
         """
     )
 
-    # ── 3. Ensure actual_generation plant+timestamp unique exists ─────────────
+    # ── 3. actual_generation plant+timestamp unique (may already exist) ───────
     op.execute(
         """
         DO $$
         BEGIN
-            ALTER TABLE actual_generation
-            ADD CONSTRAINT uq_actual_generation_plant_timestamp
-            UNIQUE (solar_plant_id, timestamp);
-        EXCEPTION
-            WHEN duplicate_object THEN NULL;
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint
+                WHERE conname = 'uq_actual_generation_plant_timestamp'
+            ) AND NOT EXISTS (
+                SELECT 1 FROM pg_indexes
+                WHERE indexname = 'uq_actual_generation_plant_timestamp'
+            ) THEN
+                ALTER TABLE actual_generation
+                ADD CONSTRAINT uq_actual_generation_plant_timestamp
+                UNIQUE (solar_plant_id, timestamp);
+            END IF;
         END $$;
         """
     )
