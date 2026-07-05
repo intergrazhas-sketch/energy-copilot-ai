@@ -19,7 +19,6 @@ from app.repositories import forecast as repository
 from app.schemas.forecast import (
     ForecastRunCreate,
     ForecastValueItem,
-    ForecastValuesCreate,
     validate_15_minute_timestamp,
 )
 from app.services.forecast_accuracy import calculate_accuracy_for_run
@@ -59,6 +58,7 @@ class PerFileResult:
     status: str = "pending"
     actual_rows_imported: int = 0
     forecast_rows_imported: int = 0
+    duplicate_rows_skipped: int = 0
     rejected_rows: int = 0
     data_start_at: datetime | None = None
     data_end_at: datetime | None = None
@@ -74,6 +74,7 @@ class BatchResult:
     failed_files: int = 0
     actual_rows_imported: int = 0
     forecast_rows_imported: int = 0
+    duplicate_rows_skipped: int = 0
     rejected_rows: int = 0
     data_start_at: datetime | None = None
     data_end_at: datetime | None = None
@@ -204,7 +205,7 @@ async def _import_actual(
 
     for timestamp, power, energy, source in rows:
         try:
-            await repository.upsert_actual_generation_point(
+            action = await repository.upsert_actual_generation_point(
                 session,
                 solar_plant_id=plant_id,
                 timestamp=timestamp,
@@ -217,7 +218,10 @@ async def _import_actual(
             await session.rollback()
             result.errors.append((None, "db", "actual_row_conflict"))
             continue
-        result.actual_rows_imported += 1
+        if action == "inserted":
+            result.actual_rows_imported += 1
+        else:
+            result.duplicate_rows_skipped += 1
         result.data_start_at, result.data_end_at = _track_period(
             result.data_start_at, result.data_end_at, timestamp
         )
@@ -327,13 +331,28 @@ async def _import_forecast(
         ),
     )
     try:
-        await repository.create_forecast_values(
-            session, forecast_run, ForecastValuesCreate(values=values)
-        )
-    except IntegrityError:
+        for value in values:
+            try:
+                action = await repository.upsert_forecast_value_point(
+                    session,
+                    forecast_run_id=forecast_run.id,
+                    solar_plant_id=plant_id,
+                    provider_id=provider.id,
+                    timestamp=value.timestamp,
+                    predicted_power_kw=value.predicted_power_kw,
+                    predicted_energy_kwh=value.predicted_energy_kwh,
+                )
+            except IntegrityError:
+                await session.rollback()
+                result.errors.append((None, "db", "forecast_values_conflict"))
+                return recognized
+            if action == "inserted":
+                result.forecast_rows_imported += 1
+            else:
+                result.duplicate_rows_skipped += 1
+    except SQLAlchemyError:
         await session.rollback()
-        result.errors.append((None, "db", "forecast_values_conflict"))
-        return recognized
+        raise
 
     # Per-run accuracy now; day aggregates are recomputed once at batch end.
     try:
@@ -342,7 +361,6 @@ async def _import_forecast(
         if exc.status_code != status.HTTP_400_BAD_REQUEST:
             raise
 
-    result.forecast_rows_imported += len(values)
     result.data_start_at, result.data_end_at = _track_period(
         result.data_start_at, result.data_end_at, period_from
     )
@@ -402,6 +420,9 @@ async def import_single_file(
         return result
 
     if result.actual_rows_imported == 0 and result.forecast_rows_imported == 0:
+        if result.duplicate_rows_skipped > 0:
+            result.status = "partial" if result.errors else "success"
+            return result
         result.status = "failed" if result.errors else "skipped"
         if result.error_message is None:
             if mode == "forecast_only" and result.file_type == "generation_by_interval":
@@ -430,6 +451,7 @@ async def run_batch_import(
 
         batch.actual_rows_imported += per_file.actual_rows_imported
         batch.forecast_rows_imported += per_file.forecast_rows_imported
+        batch.duplicate_rows_skipped += per_file.duplicate_rows_skipped
         batch.rejected_rows += per_file.rejected_rows
 
         if per_file.status in ("success", "partial"):

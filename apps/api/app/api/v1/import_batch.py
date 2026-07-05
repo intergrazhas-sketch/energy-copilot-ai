@@ -158,6 +158,7 @@ async def batch_import(
                 status=per_file.status,
                 actual_rows_imported=per_file.actual_rows_imported,
                 forecast_rows_imported=per_file.forecast_rows_imported,
+                duplicate_rows_skipped=per_file.duplicate_rows_skipped,
                 rejected_rows=per_file.rejected_rows,
                 data_start_at=per_file.data_start_at,
                 data_end_at=per_file.data_end_at,
@@ -183,6 +184,7 @@ async def batch_import(
     audit_batch.failed_files = result.failed_files
     audit_batch.actual_rows_imported = result.actual_rows_imported
     audit_batch.forecast_rows_imported = result.forecast_rows_imported
+    audit_batch.duplicate_rows_skipped = result.duplicate_rows_skipped
     audit_batch.rejected_rows = result.rejected_rows
     audit_batch.data_start_at = result.data_start_at
     audit_batch.data_end_at = result.data_end_at
@@ -200,6 +202,7 @@ async def batch_import(
         failed_files=result.failed_files,
         actual_rows_imported=result.actual_rows_imported,
         forecast_rows_imported=result.forecast_rows_imported,
+        duplicate_rows_skipped=result.duplicate_rows_skipped,
         rejected_rows=result.rejected_rows,
         data_start_at=result.data_start_at,
         data_end_at=result.data_end_at,
@@ -210,6 +213,7 @@ async def batch_import(
                 status=f.status,
                 actual_rows_imported=f.actual_rows_imported,
                 forecast_rows_imported=f.forecast_rows_imported,
+                duplicate_rows_skipped=f.duplicate_rows_skipped,
                 rejected_rows=f.rejected_rows,
                 data_start_at=f.data_start_at,
                 data_end_at=f.data_end_at,
@@ -254,6 +258,7 @@ async def list_import_batches(
                 failed_files=batch.failed_files,
                 actual_rows_imported=batch.actual_rows_imported,
                 forecast_rows_imported=batch.forecast_rows_imported,
+                duplicate_rows_skipped=getattr(batch, "duplicate_rows_skipped", 0),
                 rejected_rows=batch.rejected_rows,
                 data_start_at=batch.data_start_at,
                 data_end_at=batch.data_end_at,
@@ -265,6 +270,7 @@ async def list_import_batches(
                         status=f.status,
                         actual_rows_imported=f.actual_rows_imported,
                         forecast_rows_imported=f.forecast_rows_imported,
+                        duplicate_rows_skipped=getattr(f, "duplicate_rows_skipped", 0),
                         rejected_rows=f.rejected_rows,
                         data_start_at=f.data_start_at,
                         data_end_at=f.data_end_at,

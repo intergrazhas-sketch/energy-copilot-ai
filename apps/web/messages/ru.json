@@ -27,6 +27,7 @@
     "started": "Массовый импорт начат…",
     "success": "Массовый импорт завершён.",
     "partialSuccess": "Импорт выполнен частично: обработано {processed} из {total} файлов, пропущено {skipped} файлов.",
+    "reimportNoNewRows": "Повторная загрузка: новых строк нет, дубликатов пропущено {duplicates}.",
     "error": "Не удалось выполнить импорт",
     "validationError": "Выберите станцию и хотя бы один файл.",
     "skipReasons": {
@@ -44,6 +45,7 @@
       "actualRows": "Строк факта",
       "forecastRows": "Строк прогноза",
       "rejectedRows": "Отклонено строк",
+      "duplicateRows": "Дубликатов пропущено",
       "period": "Период данных: {from} — {to}",
       "failedTitle": "Пропущенные файлы или файлы с ошибкой"
     }
@@ -57,6 +59,7 @@
     "actualRows": "Строк факта: {value}",
     "forecastRows": "Строк прогноза: {value}",
     "rejectedRows": "Отклонено строк: {value}",
+    "duplicateRows": "Дубликатов пропущено: {value}",
     "skippedTitle": "Пропущенные файлы или файлы с ошибкой",
     "status": {
       "success": "Успешно",

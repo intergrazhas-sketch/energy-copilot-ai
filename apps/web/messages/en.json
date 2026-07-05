@@ -27,6 +27,7 @@
     "started": "Batch import started…",
     "success": "Batch import finished.",
     "partialSuccess": "Import completed partially: {processed} of {total} files processed, {skipped} files skipped.",
+    "reimportNoNewRows": "Re-import: no new rows, {duplicates} duplicates skipped.",
     "error": "Batch import failed",
     "validationError": "Select a station and at least one file.",
     "skipReasons": {
@@ -44,6 +45,7 @@
       "actualRows": "Actual rows",
       "forecastRows": "Forecast rows",
       "rejectedRows": "Rejected rows",
+      "duplicateRows": "Duplicates skipped",
       "period": "Data period: {from} — {to}",
       "failedTitle": "Skipped or failed files"
     }
@@ -57,6 +59,7 @@
     "actualRows": "Actual rows: {value}",
     "forecastRows": "Forecast rows: {value}",
     "rejectedRows": "Rejected rows: {value}",
+    "duplicateRows": "Duplicates skipped: {value}",
     "skippedTitle": "Skipped / failed files",
     "status": {
       "success": "Success",

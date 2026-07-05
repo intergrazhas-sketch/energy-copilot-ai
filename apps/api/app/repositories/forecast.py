@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
@@ -125,6 +126,7 @@ async def create_forecast_values(
         ForecastValue(
             forecast_run_id=forecast_run.id,
             solar_plant_id=forecast_run.solar_plant_id,
+            provider_id=forecast_run.provider_id,
             **item.model_dump(),
         )
         for item in payload.values
@@ -177,7 +179,16 @@ async def upsert_actual_generation_point(
     actual_energy_kwh: float | None,
     source: str,
     quality: str,
-) -> ActualGeneration:
+) -> Literal["inserted", "duplicate"]:
+    """Insert or update one actual point. Returns whether the row already existed."""
+    existing = await session.execute(
+        select(ActualGeneration.id)
+        .where(ActualGeneration.solar_plant_id == solar_plant_id)
+        .where(ActualGeneration.timestamp == timestamp)
+        .limit(1)
+    )
+    was_duplicate = existing.scalar_one_or_none() is not None
+
     statement = (
         insert(ActualGeneration)
         .values(
@@ -197,11 +208,54 @@ async def upsert_actual_generation_point(
                 "quality": quality,
             },
         )
-        .returning(ActualGeneration)
     )
-    result = await session.execute(statement)
+    await session.execute(statement)
     await session.commit()
-    return result.scalar_one()
+    return "duplicate" if was_duplicate else "inserted"
+
+
+async def upsert_forecast_value_point(
+    session: AsyncSession,
+    *,
+    forecast_run_id: uuid.UUID,
+    solar_plant_id: uuid.UUID,
+    provider_id: uuid.UUID,
+    timestamp: datetime,
+    predicted_power_kw: float,
+    predicted_energy_kwh: float | None,
+) -> Literal["inserted", "duplicate"]:
+    """Insert or update one forecast point keyed by plant + provider + timestamp."""
+    existing = await session.execute(
+        select(ForecastValue.id)
+        .where(ForecastValue.solar_plant_id == solar_plant_id)
+        .where(ForecastValue.provider_id == provider_id)
+        .where(ForecastValue.timestamp == timestamp)
+        .limit(1)
+    )
+    was_duplicate = existing.scalar_one_or_none() is not None
+
+    statement = (
+        insert(ForecastValue)
+        .values(
+            forecast_run_id=forecast_run_id,
+            solar_plant_id=solar_plant_id,
+            provider_id=provider_id,
+            timestamp=timestamp,
+            predicted_power_kw=predicted_power_kw,
+            predicted_energy_kwh=predicted_energy_kwh,
+        )
+        .on_conflict_do_update(
+            constraint="uq_forecast_values_plant_provider_timestamp",
+            set_={
+                "predicted_power_kw": predicted_power_kw,
+                "predicted_energy_kwh": predicted_energy_kwh,
+                "forecast_run_id": forecast_run_id,
+            },
+        )
+    )
+    await session.execute(statement)
+    await session.commit()
+    return "duplicate" if was_duplicate else "inserted"
 
 
 async def list_actual_generation(

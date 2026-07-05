@@ -27,6 +27,7 @@
     "started": "Топтап импорттау басталды…",
     "success": "Топтап импорттау аяқталды.",
     "partialSuccess": "Импорт ішінара орындалды: {total} файлдың {processed} өңделді, {skipped} файл өткізілді.",
+    "reimportNoNewRows": "Қайта жүктеу: жаңа жолдар жоқ, {duplicates} дубликат өткізілді.",
     "error": "Импорттау орындалмады",
     "validationError": "Станцияны және кемінде бір файлды таңдаңыз.",
     "skipReasons": {
@@ -44,6 +45,7 @@
       "actualRows": "Факт жолдары",
       "forecastRows": "Болжам жолдары",
       "rejectedRows": "Қабылданбаған жолдар",
+      "duplicateRows": "Өткізілген дубликаттар",
       "period": "Деректер кезеңі: {from} — {to}",
       "failedTitle": "Өткізілген немесе қатемен файлдар"
     }
@@ -57,6 +59,7 @@
     "actualRows": "Факт жолдары: {value}",
     "forecastRows": "Болжам жолдары: {value}",
     "rejectedRows": "Қабылданбаған жолдар: {value}",
+    "duplicateRows": "Өткізілген дубликаттар: {value}",
     "skippedTitle": "Өткізілген немесе қатемен файлдар",
     "status": {
       "success": "Сәтті",

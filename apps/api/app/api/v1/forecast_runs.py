@@ -257,6 +257,15 @@ async def import_forecast_run_csv(
 
     period_from = min(value.timestamp for value in imported_values)
     period_to = max(value.timestamp for value in imported_values)
+
+    await repository.delete_forecast_runs_in_range(
+        session,
+        solar_plant_id=plant_id,
+        provider_id=provider.id,
+        period_from=period_from,
+        period_to=period_to,
+    )
+
     horizon_hours = max(1, min(168, int((period_to - period_from).total_seconds() // 3600) + 1))
     forecast_run = await repository.create_forecast_run(
         session,
@@ -270,12 +279,23 @@ async def import_forecast_run_csv(
         ),
     )
 
+    imported_count = 0
+    duplicate_count = 0
     try:
-        await repository.create_forecast_values(
-            session,
-            forecast_run,
-            ForecastValuesCreate(values=imported_values),
-        )
+        for value in imported_values:
+            action = await repository.upsert_forecast_value_point(
+                session,
+                forecast_run_id=forecast_run.id,
+                solar_plant_id=plant_id,
+                provider_id=provider.id,
+                timestamp=value.timestamp,
+                predicted_power_kw=value.predicted_power_kw,
+                predicted_energy_kwh=value.predicted_energy_kwh,
+            )
+            if action == "inserted":
+                imported_count += 1
+            else:
+                duplicate_count += 1
     except IntegrityError as exc:
         await session.rollback()
         raise HTTPException(status_code=400, detail="Could not import forecast values") from exc
@@ -290,8 +310,8 @@ async def import_forecast_run_csv(
     )
 
     return TelemetryCsvImportSummary(
-        imported_rows=len(imported_values),
-        rejected_rows=len(errors),
+        imported_rows=imported_count,
+        rejected_rows=len(errors) + duplicate_count,
         errors=errors,
     )
 

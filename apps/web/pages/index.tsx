@@ -181,6 +181,7 @@ type BatchImportFileResult = {
   status: string;
   actual_rows_imported: number;
   forecast_rows_imported: number;
+  duplicate_rows_skipped?: number;
   rejected_rows: number;
   data_start_at: string | null;
   data_end_at: string | null;
@@ -198,6 +199,7 @@ type BatchImportResponse = {
   failed_files: number;
   actual_rows_imported: number;
   forecast_rows_imported: number;
+  duplicate_rows_skipped?: number;
   rejected_rows: number;
   data_start_at: string | null;
   data_end_at: string | null;
@@ -219,6 +221,7 @@ type BatchImportHistoryItem = {
   failed_files: number;
   actual_rows_imported: number;
   forecast_rows_imported: number;
+  duplicate_rows_skipped?: number;
   rejected_rows: number;
   data_start_at: string | null;
   data_end_at: string | null;
@@ -608,9 +611,11 @@ function resolveBatchImportOutcome(
   result: BatchImportResponse,
   t: Translate,
 ): { type: "success" | "warning" | "error"; text: string } {
+  const duplicateRows = result.duplicate_rows_skipped ?? 0;
   const hasImportedRows = result.actual_rows_imported > 0 || result.forecast_rows_imported > 0;
   const hasProcessedFiles = result.processed_files > 0;
-  const isFullFailure = result.processed_files === 0 && !hasImportedRows;
+  const hasEffect = hasImportedRows || duplicateRows > 0;
+  const isFullFailure = result.processed_files === 0 && !hasEffect;
 
   if (isFullFailure) {
     return { type: "error", text: t("batchImport.error") };
@@ -632,6 +637,13 @@ function resolveBatchImportOutcome(
     };
   }
 
+  if (!hasImportedRows && duplicateRows > 0) {
+    return {
+      type: "success",
+      text: t("batchImport.reimportNoNewRows", { duplicates: duplicateRows }),
+    };
+  }
+
   return { type: "success", text: t("batchImport.success") };
 }
 
@@ -639,9 +651,10 @@ function resolveBatchHistoryStatus(
   batch: BatchImportHistoryItem,
   t: Translate,
 ): { label: string; className: "success" | "partial_failed" | "failed" | "running" | "pending" } {
+  const duplicateRows = batch.duplicate_rows_skipped ?? 0;
   const hasImportedRows = batch.actual_rows_imported > 0 || batch.forecast_rows_imported > 0;
 
-  if (batch.processed_files === 0 && !hasImportedRows) {
+  if (batch.processed_files === 0 && !hasImportedRows && duplicateRows === 0) {
     return { label: t("batchHistory.status.failed"), className: "failed" };
   }
 
@@ -2716,6 +2729,12 @@ function SolarPlantProfileSection({
                   <span>{t("batchImport.result.rejectedRows")}</span>
                   <strong>{formatNumber(batchResult.rejected_rows, 0, noData, locale)}</strong>
                 </div>
+                <div>
+                  <span>{t("batchImport.result.duplicateRows")}</span>
+                  <strong>
+                    {formatNumber(batchResult.duplicate_rows_skipped ?? 0, 0, noData, locale)}
+                  </strong>
+                </div>
               </div>
               <p className="station-upload-hint">
                 {t("batchImport.result.period", {
@@ -2783,6 +2802,11 @@ function SolarPlantProfileSection({
                     <span>
                       {t("batchHistory.rejectedRows", {
                         value: formatNumber(batch.rejected_rows, 0, noData, locale),
+                      })}
+                    </span>
+                    <span>
+                      {t("batchHistory.duplicateRows", {
+                        value: formatNumber(batch.duplicate_rows_skipped ?? 0, 0, noData, locale),
                       })}
                     </span>
                   </div>

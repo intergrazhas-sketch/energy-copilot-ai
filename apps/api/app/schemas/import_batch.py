@@ -10,6 +10,7 @@ class BatchImportFileResult(BaseModel):
     status: str
     actual_rows_imported: int
     forecast_rows_imported: int
+    duplicate_rows_skipped: int = 0
     rejected_rows: int
     data_start_at: datetime | None = None
     data_end_at: datetime | None = None
@@ -27,6 +28,7 @@ class BatchImportSummary(BaseModel):
     failed_files: int
     actual_rows_imported: int
     forecast_rows_imported: int
+    duplicate_rows_skipped: int = 0
     rejected_rows: int
     data_start_at: datetime | None = None
     data_end_at: datetime | None = None
@@ -48,6 +50,7 @@ class BatchImportHistoryItem(BaseModel):
     failed_files: int
     actual_rows_imported: int
     forecast_rows_imported: int
+    duplicate_rows_skipped: int = 0
     rejected_rows: int
     data_start_at: datetime | None = None
     data_end_at: datetime | None = None

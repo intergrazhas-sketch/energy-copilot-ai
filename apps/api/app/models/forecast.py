@@ -74,6 +74,12 @@ class ForecastValue(Base):
     __tablename__ = "forecast_values"
     __table_args__ = (
         UniqueConstraint("forecast_run_id", "timestamp", name="uq_forecast_values_run_timestamp"),
+        UniqueConstraint(
+            "solar_plant_id",
+            "provider_id",
+            "timestamp",
+            name="uq_forecast_values_plant_provider_timestamp",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -86,6 +92,11 @@ class ForecastValue(Base):
     solar_plant_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("solar_plants.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    provider_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("forecast_providers.id", ondelete="RESTRICT"),
         nullable=False,
     )
     predicted_power_kw: Mapped[float] = mapped_column(Float, nullable=False)
