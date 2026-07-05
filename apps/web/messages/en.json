@@ -26,8 +26,17 @@
     "importing": "Importing…",
     "started": "Batch import started…",
     "success": "Batch import finished.",
+    "partialSuccess": "Import completed partially: {processed} of {total} files processed, {skipped} files skipped.",
     "error": "Batch import failed",
     "validationError": "Select a station and at least one file.",
+    "skipReasons": {
+      "weather_file_detected_not_imported_yet": "weather file detected, but weather data import is not enabled yet",
+      "no_recognized_columns": "no recognizable columns found",
+      "no_recognized_generation_columns": "no generation columns found",
+      "unsupported_extension": "unsupported file type",
+      "unsupported_by_interval_format": "file looks like by 15min/by 60min, but the structure does not match",
+      "generation_actual_only_no_forecast": "file contains actual generation only, no forecast"
+    },
     "result": {
       "filesFound": "Files found",
       "filesProcessed": "Files processed",
@@ -52,6 +61,7 @@
     "status": {
       "success": "Success",
       "partial_failed": "Partial",
+      "partial_completed": "Partially completed",
       "failed": "Failed",
       "running": "Running",
       "pending": "Pending"

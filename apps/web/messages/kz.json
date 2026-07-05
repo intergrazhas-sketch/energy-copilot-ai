@@ -26,8 +26,17 @@
     "importing": "Импортталуда…",
     "started": "Топтап импорттау басталды…",
     "success": "Топтап импорттау аяқталды.",
+    "partialSuccess": "Импорт ішінара орындалды: {total} файлдың {processed} өңделді, {skipped} файл өткізілді.",
     "error": "Импорттау орындалмады",
     "validationError": "Станцияны және кемінде бір файлды таңдаңыз.",
+    "skipReasons": {
+      "weather_file_detected_not_imported_yet": "метеофайл танылды, бірақ метеодеректерді импорттау әзірге қосылмаған",
+      "no_recognized_columns": "жүйе түсінікті бағандарды таппады",
+      "no_recognized_generation_columns": "жүйе генерация бағандарын таппады",
+      "unsupported_extension": "қолдау көрсетілмейтін файл түрі",
+      "unsupported_by_interval_format": "файл by 15min/by 60min сияқты, бірақ құрылымы сәйкес келмейді",
+      "generation_actual_only_no_forecast": "файлда тек нақты генерация бар, болжам жоқ"
+    },
     "result": {
       "filesFound": "Табылған файлдар",
       "filesProcessed": "Өңделген файлдар",
@@ -52,6 +61,7 @@
     "status": {
       "success": "Сәтті",
       "partial_failed": "Ішінара",
+      "partial_completed": "Ішінара орындалды",
       "failed": "Қате",
       "running": "Орындалуда",
       "pending": "Кезекте"

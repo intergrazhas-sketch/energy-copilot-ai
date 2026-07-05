@@ -26,8 +26,17 @@
     "importing": "Импортируем…",
     "started": "Массовый импорт начат…",
     "success": "Массовый импорт завершён.",
+    "partialSuccess": "Импорт выполнен частично: обработано {processed} из {total} файлов, пропущено {skipped} файлов.",
     "error": "Не удалось выполнить импорт",
     "validationError": "Выберите станцию и хотя бы один файл.",
+    "skipReasons": {
+      "weather_file_detected_not_imported_yet": "метео-файл распознан, но импорт метеоданных пока ещё не включён",
+      "no_recognized_columns": "система не нашла понятные колонки",
+      "no_recognized_generation_columns": "система не нашла колонки генерации",
+      "unsupported_extension": "неподдерживаемый тип файла",
+      "unsupported_by_interval_format": "файл похож на by 15min/by 60min, но структура не подходит",
+      "generation_actual_only_no_forecast": "в файле есть только факт генерации, прогноза нет"
+    },
     "result": {
       "filesFound": "Найдено файлов",
       "filesProcessed": "Обработано файлов",
@@ -52,6 +61,7 @@
     "status": {
       "success": "Успешно",
       "partial_failed": "Частично",
+      "partial_completed": "Частично выполнено",
       "failed": "Ошибка",
       "running": "Выполняется",
       "pending": "В очереди"

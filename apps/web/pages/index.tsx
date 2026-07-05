@@ -594,6 +594,75 @@ function translateRejectionReason(reason: string | undefined, t: Translate, fall
   return translated === key ? normalizeReason(reason) : translated;
 }
 
+function translateBatchSkipReason(reason: string | null | undefined, t: Translate) {
+  if (!reason) {
+    return "";
+  }
+
+  const key = `batchImport.skipReasons.${reason}`;
+  const translated = t(key);
+  return translated === key ? normalizeReason(reason) : translated;
+}
+
+function resolveBatchImportOutcome(
+  result: BatchImportResponse,
+  t: Translate,
+): { type: "success" | "warning" | "error"; text: string } {
+  const hasImportedRows = result.actual_rows_imported > 0 || result.forecast_rows_imported > 0;
+  const hasProcessedFiles = result.processed_files > 0;
+  const isFullFailure = result.processed_files === 0 && !hasImportedRows;
+
+  if (isFullFailure) {
+    return { type: "error", text: t("batchImport.error") };
+  }
+
+  const isPartialSuccess =
+    result.status === "partial_failed" ||
+    (hasProcessedFiles && result.skipped_files > 0 && result.failed_files === 0) ||
+    (hasImportedRows && (result.skipped_files > 0 || result.failed_files > 0));
+
+  if (isPartialSuccess) {
+    return {
+      type: "warning",
+      text: t("batchImport.partialSuccess", {
+        processed: result.processed_files,
+        total: result.total_files,
+        skipped: result.skipped_files,
+      }),
+    };
+  }
+
+  return { type: "success", text: t("batchImport.success") };
+}
+
+function resolveBatchHistoryStatus(
+  batch: BatchImportHistoryItem,
+  t: Translate,
+): { label: string; className: "success" | "partial_failed" | "failed" | "running" | "pending" } {
+  const hasImportedRows = batch.actual_rows_imported > 0 || batch.forecast_rows_imported > 0;
+
+  if (batch.processed_files === 0 && !hasImportedRows) {
+    return { label: t("batchHistory.status.failed"), className: "failed" };
+  }
+
+  if (
+    batch.status === "partial_failed" ||
+    (batch.skipped_files > 0 && batch.processed_files > 0 && batch.failed_files === 0)
+  ) {
+    return { label: t("batchHistory.status.partial_completed"), className: "partial_failed" };
+  }
+
+  if (batch.status === "running") {
+    return { label: t("batchHistory.status.running"), className: "running" };
+  }
+
+  if (batch.status === "pending") {
+    return { label: t("batchHistory.status.pending"), className: "pending" };
+  }
+
+  return { label: t("batchHistory.status.success"), className: "success" };
+}
+
 function translateTelemetrySource(source: string | undefined, t: Translate, fallback: string) {
   return translateMachineValue("telemetry.sources", source, t, fallback);
 }
@@ -2013,7 +2082,7 @@ function SolarPlantProfileSection({
   const [batchMode, setBatchMode] = useState<BatchImportMode>("actual_and_forecast");
   const [batchUploading, setBatchUploading] = useState(false);
   const [batchResult, setBatchResult] = useState<BatchImportResponse | null>(null);
-  const [batchMessage, setBatchMessage] = useState<{ type: "info" | "success" | "error"; text: string } | null>(null);
+  const [batchMessage, setBatchMessage] = useState<{ type: "info" | "success" | "warning" | "error"; text: string } | null>(null);
   const [batchHistory, setBatchHistory] = useState<BatchImportHistoryItem[]>([]);
 
   useEffect(() => {
@@ -2266,7 +2335,8 @@ function SolarPlantProfileSection({
 
       const result = (await response.json()) as BatchImportResponse;
       setBatchResult(result);
-      setBatchMessage({ type: "success", text: t("batchImport.success") });
+      const outcome = resolveBatchImportOutcome(result, t);
+      setBatchMessage({ type: outcome.type, text: outcome.text });
       setBatchFiles([]);
       setProfileRefreshToken((current) => current + 1);
     } catch (error) {
@@ -2664,7 +2734,7 @@ function SolarPlantProfileSection({
                       .map((file) => (
                         <li key={file.filename}>
                           {file.filename}
-                          {file.error_message ? ` — ${file.error_message}` : ""}
+                          {file.error_message ? ` — ${translateBatchSkipReason(file.error_message, t)}` : ""}
                         </li>
                       ))}
                   </ul>
@@ -2684,12 +2754,13 @@ function SolarPlantProfileSection({
               const skippedFiles = batch.files.filter(
                 (file) => file.status === "skipped" || file.status === "failed",
               );
+              const historyStatus = resolveBatchHistoryStatus(batch, t);
               return (
                 <div className="batch-history-item" key={batch.id}>
                   <div className="batch-history-head">
                     <strong>{formatDateTime(batch.created_at, noData, locale)}</strong>
-                    <span className={`batch-history-status ${batch.status}`}>
-                      {t(`batchHistory.status.${batch.status}`)}
+                    <span className={`batch-history-status ${historyStatus.className}`}>
+                      {historyStatus.label}
                     </span>
                   </div>
                   <div className="batch-history-stats">
@@ -2728,7 +2799,7 @@ function SolarPlantProfileSection({
                         {skippedFiles.slice(0, 10).map((file) => (
                           <li key={`${batch.id}-${file.filename}`}>
                             {file.filename}
-                            {file.error_message ? ` — ${file.error_message}` : ""}
+                            {file.error_message ? ` — ${translateBatchSkipReason(file.error_message, t)}` : ""}
                           </li>
                         ))}
                       </ul>
