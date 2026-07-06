@@ -3211,6 +3211,7 @@ function ForecastAccuracyLabSection({
     text: string;
   } | null>(null);
   const [lastForecastImport, setLastForecastImport] = useState<LastCsvImportSummary | null>(null);
+  const [clearingLastForecastImport, setClearingLastForecastImport] = useState(false);
 
   useEffect(() => {
     setLastForecastImport(readLastCsvImportSummary(lastForecastCsvImportStorageKey));
@@ -3284,6 +3285,21 @@ function ForecastAccuracyLabSection({
     } finally {
       setForecastImporting(false);
     }
+  };
+
+  const handleClearLastForecastImport = () => {
+    if (clearingLastForecastImport) {
+      return;
+    }
+
+    if (!window.confirm(t("accuracyLab.forecastImport.deleteConfirm"))) {
+      return;
+    }
+
+    setClearingLastForecastImport(true);
+    clearLastCsvImportSummary(lastForecastCsvImportStorageKey);
+    setLastForecastImport(null);
+    setClearingLastForecastImport(false);
   };
 
   return (
@@ -3443,7 +3459,19 @@ function ForecastAccuracyLabSection({
           ) : null}
           {lastForecastImport ? (
             <div className="station-upload-last">
-              <span>{t("accuracyLab.forecastImport.lastImportedFile")}</span>
+              <div className="station-upload-last-head">
+                <span>{t("accuracyLab.forecastImport.lastImportedFile")}</span>
+                <button
+                  className="station-upload-last-delete"
+                  disabled={clearingLastForecastImport}
+                  onClick={handleClearLastForecastImport}
+                  type="button"
+                >
+                  {clearingLastForecastImport
+                    ? t("accuracyLab.forecastImport.deleting")
+                    : t("accuracyLab.forecastImport.delete")}
+                </button>
+              </div>
               <strong>{lastForecastImport.fileName}</strong>
               <div>
                 <span>
