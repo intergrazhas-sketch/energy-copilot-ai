@@ -53,18 +53,6 @@ IMPORT_MODES = ("actual_only", "forecast_only", "actual_and_forecast", "auto_det
 SKIP_ERROR_TYPES = frozenset({"weather", "unsupported"})
 
 
-def _mark_weather_skip(result: PerFileResult) -> PerFileResult:
-    result.status = "skipped"
-    result.file_type = "weather"
-    result.error_message = WEATHER_SKIP_REASON
-    result.errors.append((None, "weather", WEATHER_SKIP_REASON))
-    return result
-
-
-def _only_skip_errors(errors: list[tuple[int | None, str, str]]) -> bool:
-    return bool(errors) and all(error_type in SKIP_ERROR_TYPES for _, error_type, _ in errors)
-
-
 @dataclass
 class PerFileResult:
     filename: str
@@ -93,6 +81,18 @@ class BatchResult:
     data_start_at: datetime | None = None
     data_end_at: datetime | None = None
     files: list[PerFileResult] = field(default_factory=list)
+
+
+def _mark_weather_skip(result: PerFileResult) -> PerFileResult:
+    result.status = "skipped"
+    result.file_type = "weather"
+    result.error_message = WEATHER_SKIP_REASON
+    result.errors.append((None, "weather", WEATHER_SKIP_REASON))
+    return result
+
+
+def _only_skip_errors(errors: list[tuple[int | None, str, str]]) -> bool:
+    return bool(errors) and all(error_type in SKIP_ERROR_TYPES for _, error_type, _ in errors)
 
 
 def _has_supported_extension(filename: str) -> bool:
