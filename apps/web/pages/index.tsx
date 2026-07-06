@@ -514,6 +514,14 @@ function writeLastCsvImportSummary(storageKey: string, summary: LastCsvImportSum
   window.localStorage.setItem(storageKey, JSON.stringify(summary));
 }
 
+function clearLastCsvImportSummary(storageKey: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(storageKey);
+}
+
 function formatNumber(
   value: number | null | undefined,
   digits = 1,
@@ -2090,6 +2098,7 @@ function SolarPlantProfileSection({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<{ type: "info" | "success"; text: string } | null>(null);
   const [lastActualImport, setLastActualImport] = useState<LastCsvImportSummary | null>(null);
+  const [clearingLastActualImport, setClearingLastActualImport] = useState(false);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
   const [batchFiles, setBatchFiles] = useState<File[]>([]);
   const [batchMode, setBatchMode] = useState<BatchImportMode>("actual_and_forecast");
@@ -2311,6 +2320,21 @@ function SolarPlantProfileSection({
     } finally {
       setUploadingTelemetry(false);
     }
+  };
+
+  const handleClearLastActualImport = () => {
+    if (clearingLastActualImport) {
+      return;
+    }
+
+    if (!window.confirm(t("solarPlantProfile.upload.deleteConfirm"))) {
+      return;
+    }
+
+    setClearingLastActualImport(true);
+    clearLastCsvImportSummary(lastActualCsvImportStorageKey);
+    setLastActualImport(null);
+    setClearingLastActualImport(false);
   };
 
   const handleBatchImport = async () => {
@@ -2627,7 +2651,19 @@ function SolarPlantProfileSection({
             ) : null}
             {lastActualImport ? (
               <div className="station-upload-last">
-                <span>{t("solarPlantProfile.upload.lastImportedFile")}</span>
+                <div className="station-upload-last-head">
+                  <span>{t("solarPlantProfile.upload.lastImportedFile")}</span>
+                  <button
+                    className="station-upload-last-delete"
+                    disabled={clearingLastActualImport}
+                    onClick={handleClearLastActualImport}
+                    type="button"
+                  >
+                    {clearingLastActualImport
+                      ? t("solarPlantProfile.upload.deleting")
+                      : t("solarPlantProfile.upload.delete")}
+                  </button>
+                </div>
                 <strong>{lastActualImport.fileName}</strong>
                 <div>
                   <span>
@@ -2644,12 +2680,12 @@ function SolarPlantProfileSection({
                 </div>
                 <p>{t("solarPlantProfile.upload.actualStoredDetail")}</p>
               </div>
-            ) : profileState.summary && profileState.summary.telemetry_points_count > 0 ? (
-              <div className="station-upload-last">
-                <span>{t("solarPlantProfile.upload.dataAvailableTitle")}</span>
-                <p>{t("solarPlantProfile.upload.dataAvailableDetail")}</p>
-              </div>
-            ) : null}
+            ) : (
+              <EmptyState
+                detail={t("solarPlantProfile.upload.noManualUploadsDetail")}
+                title={t("solarPlantProfile.upload.noManualUploadsTitle")}
+              />
+            )}
             {uploadError ? <div className="station-upload-message error">{uploadError}</div> : null}
             {uploadResult?.errors.length ? (
               <div className="station-upload-message warning">
@@ -7125,7 +7161,33 @@ function DashboardOverview({
           padding: 14px;
         }
 
+        .station-upload-last-head {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+
+        .station-upload-last-delete {
+          min-height: 44px;
+          border: 1px solid rgba(255, 95, 86, 0.35);
+          border-radius: 999px;
+          background: rgba(255, 95, 86, 0.08);
+          color: #ffb4ad;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 800;
+          padding: 8px 14px;
+        }
+
+        .station-upload-last-delete:disabled {
+          cursor: not-allowed;
+          opacity: 0.55;
+        }
+
         .station-upload-last > span,
+        .station-upload-last-head > span,
         .station-upload-last div span {
           color: rgba(245, 242, 237, 0.62);
           font-size: 12px;
