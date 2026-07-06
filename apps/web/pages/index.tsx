@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { NextIntlClientProvider } from "next-intl";
 
 import enMessages from "../messages/en.json";
@@ -619,40 +619,57 @@ function resolveBatchImportOutcome(
   result: BatchImportResponse,
   t: Translate,
 ): { type: "success" | "warning" | "error"; text: string } {
-  const duplicateRows = result.duplicate_rows_skipped ?? 0;
-  const hasImportedRows = result.actual_rows_imported > 0 || result.forecast_rows_imported > 0;
-  const hasProcessedFiles = result.processed_files > 0;
-  const hasEffect = hasImportedRows || duplicateRows > 0;
-  const isFullFailure = result.processed_files === 0 && !hasEffect;
+  const duplicateRows = Number(result.duplicate_rows_skipped) || 0;
+  const actualRows = Number(result.actual_rows_imported) || 0;
+  const forecastRows = Number(result.forecast_rows_imported) || 0;
+  const newRows = actualRows + forecastRows;
+  const processedFiles = Number(result.processed_files) || 0;
+  const skippedFiles = Number(result.skipped_files) || 0;
+  const failedFiles = Number(result.failed_files) || 0;
 
-  if (isFullFailure) {
+  const hasOperationalResult = processedFiles > 0 || newRows > 0 || duplicateRows > 0;
+
+  if (!hasOperationalResult) {
     return { type: "error", text: t("batchImport.error") };
   }
 
-  const isPartialSuccess =
-    result.status === "partial_failed" ||
-    (hasProcessedFiles && result.skipped_files > 0 && result.failed_files === 0) ||
-    (hasImportedRows && (result.skipped_files > 0 || result.failed_files > 0));
+  if (failedFiles === 0) {
+    const isPartial =
+      result.status === "partial_failed" ||
+      result.status === "partial_success" ||
+      skippedFiles > 0 ||
+      (duplicateRows > 0 && actualRows === 0);
 
-  if (isPartialSuccess) {
-    return {
-      type: "warning",
-      text: t("batchImport.partialSuccess", {
-        processed: result.processed_files,
-        total: result.total_files,
-        skipped: result.skipped_files,
-      }),
-    };
+    if (isPartial) {
+      return {
+        type: newRows > 0 ? "warning" : "success",
+        text: t("batchImport.partialSuccess", {
+          newRows,
+          duplicates: duplicateRows,
+          skipped: skippedFiles,
+        }),
+      };
+    }
+
+    if (newRows === 0 && duplicateRows > 0) {
+      return {
+        type: "success",
+        text: t("batchImport.reimportNoNewRows", { duplicates: duplicateRows }),
+      };
+    }
+
+    return { type: "success", text: t("batchImport.success") };
   }
 
-  if (!hasImportedRows && duplicateRows > 0) {
-    return {
-      type: "success",
-      text: t("batchImport.reimportNoNewRows", { duplicates: duplicateRows }),
-    };
-  }
-
-  return { type: "success", text: t("batchImport.success") };
+  return {
+    type: "warning",
+    text: t("batchImport.partialSuccessWithFailures", {
+      newRows,
+      duplicates: duplicateRows,
+      skipped: skippedFiles,
+      failed: failedFiles,
+    }),
+  };
 }
 
 function resolveBatchHistoryStatus(
@@ -2217,35 +2234,26 @@ function SolarPlantProfileSection({
     };
   }, [selectedPlantId, period.from, period.to, profileRefreshToken]);
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadBatchHistory() {
-      if (!selectedPlantId) {
-        setBatchHistory([]);
-        return;
-      }
-      try {
-        const response = await fetchJson<BatchImportHistoryResponse>("/api/v1/import/batches", {
-          plant_id: selectedPlantId,
-          limit: "20",
-        });
-        if (mounted) {
-          setBatchHistory(response.batches || []);
-        }
-      } catch {
-        if (mounted) {
-          setBatchHistory([]);
-        }
-      }
+  const loadBatchHistory = useCallback(async (plantId: string) => {
+    if (!plantId) {
+      setBatchHistory([]);
+      return;
     }
 
-    loadBatchHistory();
+    try {
+      const response = await fetchJson<BatchImportHistoryResponse>("/api/v1/import/batches", {
+        plant_id: plantId,
+        limit: "20",
+      });
+      setBatchHistory(response.batches || []);
+    } catch {
+      // Keep the current list when the history request fails transiently.
+    }
+  }, []);
 
-    return () => {
-      mounted = false;
-    };
-  }, [selectedPlantId, profileRefreshToken]);
+  useEffect(() => {
+    void loadBatchHistory(selectedPlantId);
+  }, [selectedPlantId, profileRefreshToken, loadBatchHistory]);
 
   const selectedPlant = plants.find((plant) => plant.id === selectedPlantId) || null;
   const rankingProviders = profileState.ranking?.providers || [];
@@ -2371,12 +2379,26 @@ function SolarPlantProfileSection({
         throw new Error(detail);
       }
 
-      const result = (await response.json()) as BatchImportResponse;
+      setProfileRefreshToken((current) => current + 1);
+      void loadBatchHistory(selectedPlantId);
+
+      let result: BatchImportResponse;
+      try {
+        result = (await response.json()) as BatchImportResponse;
+      } catch {
+        setBatchResult(null);
+        setBatchMessage({
+          type: "warning",
+          text: t("batchImport.responseUnreadable"),
+        });
+        setBatchFiles([]);
+        return;
+      }
+
       setBatchResult(result);
       const outcome = resolveBatchImportOutcome(result, t);
       setBatchMessage({ type: outcome.type, text: outcome.text });
       setBatchFiles([]);
-      setProfileRefreshToken((current) => current + 1);
     } catch (error) {
       setBatchResult(null);
       setBatchMessage({

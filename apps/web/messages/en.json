@@ -26,8 +26,10 @@
     "importing": "Importing…",
     "started": "Batch import started…",
     "success": "Batch import finished.",
-    "partialSuccess": "Import completed partially: {processed} of {total} files processed, {skipped} files skipped.",
+    "partialSuccess": "Import completed partially. New rows: {newRows}. Duplicates skipped: {duplicates}. Files skipped: {skipped}.",
+    "partialSuccessWithFailures": "Import completed with errors. New rows: {newRows}. Duplicates skipped: {duplicates}. Files skipped: {skipped}. Failed files: {failed}.",
     "reimportNoNewRows": "Re-import: no new rows, {duplicates} duplicates skipped.",
+    "responseUnreadable": "Import finished on the server, but the response could not be read. Check batch history below.",
     "error": "Batch import failed",
     "validationError": "Select a station and at least one file.",
     "skipReasons": {
