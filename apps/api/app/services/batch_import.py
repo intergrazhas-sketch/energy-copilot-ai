@@ -28,7 +28,7 @@ from app.services.tabular_import import (
     has_any_column,
     read_tabular_upload,
 )
-from app.services.campbell_toa5 import is_campbell_toa5
+from app.services.weather_file_detection import WEATHER_SKIP_REASON, is_weather_meteo_file
 from app.services.varvarinskaya_excel_adapter import (
     VarvarinskayaAdapterError,
     adapt_varvarinskaya_file,
@@ -49,6 +49,20 @@ FORECAST_ENERGY_ALIASES = ("forecast_energy_kwh", "energy", "energy_kwh")
 SUPPORTED_EXTENSIONS = (".csv", ".xlsx", ".xls")
 
 IMPORT_MODES = ("actual_only", "forecast_only", "actual_and_forecast", "auto_detect")
+
+SKIP_ERROR_TYPES = frozenset({"weather", "unsupported"})
+
+
+def _mark_weather_skip(result: PerFileResult) -> PerFileResult:
+    result.status = "skipped"
+    result.file_type = "weather"
+    result.error_message = WEATHER_SKIP_REASON
+    result.errors.append((None, "weather", WEATHER_SKIP_REASON))
+    return result
+
+
+def _only_skip_errors(errors: list[tuple[int | None, str, str]]) -> bool:
+    return bool(errors) and all(error_type in SKIP_ERROR_TYPES for _, error_type, _ in errors)
 
 
 @dataclass
@@ -386,12 +400,8 @@ async def import_single_file(
         result.errors.append((None, "unsupported", "unsupported_extension"))
         return result
 
-    if is_campbell_toa5(filename, raw):
-        result.status = "skipped"
-        result.file_type = "weather"
-        result.error_message = "weather_file_detected_not_imported_yet"
-        result.errors.append((None, "weather", "weather_file_detected_not_imported_yet"))
-        return result
+    if is_weather_meteo_file(filename, raw):
+        return _mark_weather_skip(result)
 
     do_actual = mode in ("actual_only", "actual_and_forecast", "auto_detect")
     do_forecast = mode in ("forecast_only", "actual_and_forecast", "auto_detect")
@@ -422,6 +432,9 @@ async def import_single_file(
     if result.actual_rows_imported == 0 and result.forecast_rows_imported == 0:
         if result.duplicate_rows_skipped > 0:
             result.status = "partial" if result.errors else "success"
+            return result
+        if _only_skip_errors(result.errors):
+            result.status = "skipped"
             return result
         result.status = "failed" if result.errors else "skipped"
         if result.error_message is None:

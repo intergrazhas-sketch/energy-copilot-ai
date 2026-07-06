@@ -38,6 +38,24 @@ async def list_files_for_batches(
     return grouped
 
 
+async def find_batch_by_fingerprint(
+    session: AsyncSession,
+    *,
+    plant_id: uuid.UUID,
+    fingerprint: str,
+) -> ImportBatch | None:
+    result = await session.execute(
+        select(ImportBatch)
+        .where(
+            ImportBatch.plant_id == plant_id,
+            ImportBatch.upload_fingerprint == fingerprint,
+        )
+        .order_by(ImportBatch.created_at.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
 async def get_batch_by_id(
     session: AsyncSession,
     batch_id: uuid.UUID,

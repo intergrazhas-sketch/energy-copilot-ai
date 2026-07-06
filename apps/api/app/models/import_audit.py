@@ -34,6 +34,7 @@ class ImportBatch(Base):
     data_start_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     data_end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     message: Mapped[str | None] = mapped_column(Text)
+    upload_fingerprint: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

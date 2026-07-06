@@ -29,11 +29,12 @@
     "partialSuccess": "Импорт выполнен частично. Новые строки: {newRows}. Дубликаты пропущены: {duplicates}. Пропущено файлов: {skipped}.",
     "partialSuccessWithFailures": "Импорт выполнен с ошибками. Новые строки: {newRows}. Дубликаты пропущены: {duplicates}. Пропущено файлов: {skipped}. Файлов с ошибкой: {failed}.",
     "reimportNoNewRows": "Повторная загрузка: новых строк нет, дубликатов пропущено {duplicates}.",
+    "alreadyImported": "Этот архив уже был загружен. Новые строки не добавлены. Дубликаты пропущены: {duplicates}.",
     "responseUnreadable": "Импорт на сервере завершён, но ответ не удалось прочитать. Проверьте историю массовых загрузок ниже.",
     "error": "Не удалось выполнить импорт",
     "validationError": "Выберите станцию и хотя бы один файл.",
     "skipReasons": {
-      "weather_file_detected_not_imported_yet": "метео-файл распознан, но импорт метеоданных пока ещё не включён",
+      "weather_file_detected_not_imported_yet": "Метео-файл распознан, но импорт метео-данных пока не поддерживается",
       "no_recognized_columns": "система не нашла понятные колонки",
       "no_recognized_generation_columns": "система не нашла колонки генерации",
       "unsupported_extension": "неподдерживаемый тип файла",
@@ -71,6 +72,7 @@
       "success": "Успешно",
       "partial_failed": "Частично",
       "partial_completed": "Частично выполнено",
+      "duplicate_repeat": "Уже загружено",
       "failed": "Ошибка",
       "running": "Выполняется",
       "pending": "В очереди"

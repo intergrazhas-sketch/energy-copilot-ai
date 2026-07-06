@@ -29,11 +29,12 @@
     "partialSuccess": "Import completed partially. New rows: {newRows}. Duplicates skipped: {duplicates}. Files skipped: {skipped}.",
     "partialSuccessWithFailures": "Import completed with errors. New rows: {newRows}. Duplicates skipped: {duplicates}. Files skipped: {skipped}. Failed files: {failed}.",
     "reimportNoNewRows": "Re-import: no new rows, {duplicates} duplicates skipped.",
+    "alreadyImported": "This archive was already uploaded. No new rows added. Duplicates skipped: {duplicates}.",
     "responseUnreadable": "Import finished on the server, but the response could not be read. Check batch history below.",
     "error": "Batch import failed",
     "validationError": "Select a station and at least one file.",
     "skipReasons": {
-      "weather_file_detected_not_imported_yet": "weather file detected, but weather data import is not enabled yet",
+      "weather_file_detected_not_imported_yet": "Weather file detected, but weather data import is not supported yet",
       "no_recognized_columns": "no recognizable columns found",
       "no_recognized_generation_columns": "no generation columns found",
       "unsupported_extension": "unsupported file type",
@@ -71,6 +72,7 @@
       "success": "Success",
       "partial_failed": "Partial",
       "partial_completed": "Partially completed",
+      "duplicate_repeat": "Already uploaded",
       "failed": "Failed",
       "running": "Running",
       "pending": "Pending"

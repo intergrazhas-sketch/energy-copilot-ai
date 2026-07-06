@@ -627,7 +627,15 @@ function resolveBatchImportOutcome(
   const skippedFiles = Number(result.skipped_files) || 0;
   const failedFiles = Number(result.failed_files) || 0;
 
-  const hasOperationalResult = processedFiles > 0 || newRows > 0 || duplicateRows > 0;
+  if (result.status === "duplicate_repeat" || result.status === "already_imported") {
+    return {
+      type: "success",
+      text: t("batchImport.alreadyImported", { duplicates: duplicateRows }),
+    };
+  }
+
+  const hasOperationalResult =
+    processedFiles > 0 || newRows > 0 || duplicateRows > 0 || skippedFiles > 0;
 
   if (!hasOperationalResult) {
     return { type: "error", text: t("batchImport.error") };
@@ -679,8 +687,16 @@ function resolveBatchHistoryStatus(
   const duplicateRows = batch.duplicate_rows_skipped ?? 0;
   const hasImportedRows = batch.actual_rows_imported > 0 || batch.forecast_rows_imported > 0;
 
-  if (batch.processed_files === 0 && !hasImportedRows && duplicateRows === 0) {
+  if (batch.processed_files === 0 && !hasImportedRows && duplicateRows === 0 && batch.skipped_files === 0) {
     return { label: t("batchHistory.status.failed"), className: "failed" };
+  }
+
+  if (batch.status === "duplicate_repeat") {
+    return { label: t("batchHistory.status.duplicate_repeat"), className: "success" };
+  }
+
+  if (batch.skipped_files > 0 && batch.processed_files === 0 && batch.failed_files === 0) {
+    return { label: t("batchHistory.status.partial_completed"), className: "partial_failed" };
   }
 
   if (

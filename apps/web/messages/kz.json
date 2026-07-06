@@ -29,11 +29,12 @@
     "partialSuccess": "Импорт ішінара орындалды. Жаңа жолдар: {newRows}. Өткізілген дубликаттар: {duplicates}. Өткізілген файлдар: {skipped}.",
     "partialSuccessWithFailures": "Импорт қателермен аяқталды. Жаңа жолдар: {newRows}. Өткізілген дубликаттар: {duplicates}. Өткізілген файлдар: {skipped}. Қатемен файлдар: {failed}.",
     "reimportNoNewRows": "Қайта жүктеу: жаңа жолдар жоқ, {duplicates} дубликат өткізілді.",
+    "alreadyImported": "Бұл архив бұрын жүктелген. Жаңа жолдар қосылмады. Өткізілген дубликаттар: {duplicates}.",
     "responseUnreadable": "Импорт серверде аяқталды, бірақ жауап оқылмады. Төмендегі топтап жүктеу тарихын тексеріңіз.",
     "error": "Импорттау орындалмады",
     "validationError": "Станцияны және кемінде бір файлды таңдаңыз.",
     "skipReasons": {
-      "weather_file_detected_not_imported_yet": "метеофайл танылды, бірақ метеодеректерді импорттау әзірге қосылмаған",
+      "weather_file_detected_not_imported_yet": "Метеофайл танылды, бірақ метеодеректерді импорттау әзірге қолдау көрсетілмейді",
       "no_recognized_columns": "жүйе түсінікті бағандарды таппады",
       "no_recognized_generation_columns": "жүйе генерация бағандарын таппады",
       "unsupported_extension": "қолдау көрсетілмейтін файл түрі",
@@ -71,6 +72,7 @@
       "success": "Сәтті",
       "partial_failed": "Ішінара",
       "partial_completed": "Ішінара орындалды",
+      "duplicate_repeat": "Бұрын жүктелген",
       "failed": "Қате",
       "running": "Орындалуда",
       "pending": "Кезекте"

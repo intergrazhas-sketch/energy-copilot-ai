@@ -17,6 +17,7 @@ from app.schemas.import_batch import (
     BatchImportSummary,
 )
 from app.services.batch_import import IMPORT_MODES, BatchResult, run_batch_import
+from app.services.import_fingerprint import compute_upload_fingerprint
 
 router = APIRouter(prefix="/import", tags=["Forecast MVP"])
 
@@ -97,11 +98,70 @@ def _expand_files(uploads: list[tuple[str, bytes]]) -> list[tuple[str, bytes]]:
 
 
 def _resolve_status(batch: BatchResult) -> str:
-    if batch.processed_files == 0:
+    if batch.processed_files == 0 and batch.failed_files > 0:
         return "failed"
+    if batch.processed_files == 0 and batch.skipped_files > 0 and batch.failed_files == 0:
+        return "partial_failed"
     if batch.failed_files > 0 or batch.skipped_files > 0:
         return "partial_failed"
     return "success"
+
+
+def _is_repeatable_existing_batch(batch: ImportBatch) -> bool:
+    if batch.status == "failed":
+        return False
+    if batch.processed_files > 0:
+        return True
+    if batch.duplicate_rows_skipped > 0:
+        return True
+    if batch.skipped_files > 0:
+        return True
+    return batch.actual_rows_imported + batch.forecast_rows_imported > 0
+
+
+def _file_results_from_models(files: list[ImportFile]) -> list[BatchImportFileResult]:
+    return [
+        BatchImportFileResult(
+            filename=f.filename,
+            file_type=f.file_type,
+            status=f.status,
+            actual_rows_imported=f.actual_rows_imported,
+            forecast_rows_imported=f.forecast_rows_imported,
+            duplicate_rows_skipped=getattr(f, "duplicate_rows_skipped", 0),
+            rejected_rows=f.rejected_rows,
+            data_start_at=f.data_start_at,
+            data_end_at=f.data_end_at,
+            error_message=f.error_message,
+        )
+        for f in files
+    ]
+
+
+def _summary_from_batch(
+    batch: ImportBatch,
+    *,
+    plant_id: uuid.UUID,
+    import_mode: str,
+    status: str,
+    files: list[BatchImportFileResult],
+) -> BatchImportSummary:
+    return BatchImportSummary(
+        batch_id=batch.id,
+        plant_id=plant_id,
+        import_mode=import_mode,
+        status=status,
+        total_files=batch.total_files,
+        processed_files=batch.processed_files,
+        skipped_files=batch.skipped_files,
+        failed_files=batch.failed_files,
+        actual_rows_imported=batch.actual_rows_imported,
+        forecast_rows_imported=batch.forecast_rows_imported,
+        duplicate_rows_skipped=getattr(batch, "duplicate_rows_skipped", 0),
+        rejected_rows=batch.rejected_rows,
+        data_start_at=batch.data_start_at,
+        data_end_at=batch.data_end_at,
+        files=files,
+    )
 
 
 @router.post("/batch", response_model=BatchImportSummary)
@@ -133,6 +193,25 @@ async def batch_import(
     if len(expanded) > MAX_FILES:
         raise HTTPException(status_code=400, detail="too_many_files")
 
+    upload_fingerprint = compute_upload_fingerprint(plant_id, mode, expanded)
+    existing_batch = await audit_repository.find_batch_by_fingerprint(
+        session,
+        plant_id=plant_id,
+        fingerprint=upload_fingerprint,
+    )
+    if existing_batch is not None and _is_repeatable_existing_batch(existing_batch):
+        existing_files = await audit_repository.list_files_for_batches(
+            session, [existing_batch.id]
+        )
+        file_models = existing_files.get(existing_batch.id, [])
+        return _summary_from_batch(
+            existing_batch,
+            plant_id=plant_id,
+            import_mode=mode,
+            status="duplicate_repeat",
+            files=_file_results_from_models(file_models),
+        )
+
     started_at = datetime.now(timezone.utc)
     audit_batch = ImportBatch(
         plant_id=plant_id,
@@ -142,6 +221,7 @@ async def batch_import(
         import_mode=mode,
         original_filename=original_filename[:512],
         total_files=len(expanded),
+        upload_fingerprint=upload_fingerprint,
     )
     session.add(audit_batch)
     await session.commit()
@@ -191,21 +271,11 @@ async def batch_import(
     session.add(audit_batch)
     await session.commit()
 
-    return BatchImportSummary(
-        batch_id=audit_batch.id,
+    return _summary_from_batch(
+        audit_batch,
         plant_id=plant_id,
         import_mode=mode,
         status=batch_status,
-        total_files=result.total_files,
-        processed_files=result.processed_files,
-        skipped_files=result.skipped_files,
-        failed_files=result.failed_files,
-        actual_rows_imported=result.actual_rows_imported,
-        forecast_rows_imported=result.forecast_rows_imported,
-        duplicate_rows_skipped=result.duplicate_rows_skipped,
-        rejected_rows=result.rejected_rows,
-        data_start_at=result.data_start_at,
-        data_end_at=result.data_end_at,
         files=[
             BatchImportFileResult(
                 filename=f.filename,
