@@ -1,7 +1,7 @@
 {
   "dataImport": {
     "uploadCsvOrExcel": "Upload CSV or Excel file",
-    "manualExcelCsvForecast": "Manual Excel/CSV forecast",
+    "manualExcelCsvForecast": "File forecast (Excel/CSV)",
     "forecastFromOperatingCompany": "Forecast from operating company",
     "actualGenerationReport": "Actual generation report",
     "weatherStationExport": "Weather station export",
@@ -399,7 +399,7 @@
         "timestamp_invalid": "timestamp must be a valid ISO 8601 datetime",
         "timestamp_not_15_minute": "timestamp must be aligned to a 15-minute interval",
         "provider_code_required": "provider column is required",
-        "provider_code_unsupported": "Use Manual Forecast in the provider column",
+        "provider_code_unsupported": "Use File forecast in the provider column",
         "forecast_power_kw_required": "forecast_power_kw is required",
         "forecast_power_kw_invalid": "forecast_power_kw must be a number",
         "forecast_power_kw_negative": "forecast_power_kw cannot be negative",
@@ -728,10 +728,10 @@
   "forecastProviders": {
     "demoNames": {
       "mockForecast": "Test Forecast",
-      "manualForecast": "Manual Forecast",
+      "manualForecast": "File forecast",
       "internalBaseline": "Internal Baseline",
       "manualCsvActuals": "Manual CSV / Actuals reference",
-      "manualCsvForecast": "Manual Forecast"
+      "manualCsvForecast": "File forecast"
     },
     "providerTypes": {
       "mock": "Test",
@@ -784,8 +784,8 @@
     "notes": {
       "external_not_configured": "External forecast integration is not configured yet. No successful connection is shown.",
       "pilot_baseline": "Pilot baseline uses the known 14% MAPE reference until real provider accuracy is available.",
-      "manual_forecast_connected": "Manual forecast CSV data is available and can be matched with actual telemetry.",
-      "manual_forecast_empty": "Manual forecast CSV data has not been imported yet.",
+      "manual_forecast_connected": "File forecast CSV data is available and can be matched with actual telemetry.",
+      "manual_forecast_empty": "File forecast CSV data has not been imported yet.",
       "actuals_reference_connected": "Manual CSV actuals are available and can be used as the reference signal.",
       "actuals_reference_empty": "No manual CSV actuals are available yet for the reference signal."
     },

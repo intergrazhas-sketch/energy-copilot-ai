@@ -1,7 +1,7 @@
 {
   "dataImport": {
     "uploadCsvOrExcel": "CSV немесе Excel файлын жүктеу",
-    "manualExcelCsvForecast": "Қолмен жүктелетін Excel/CSV болжамы",
+    "manualExcelCsvForecast": "Файлдан болжам (Excel/CSV)",
     "forecastFromOperatingCompany": "Эксплуатациялық компаниядан алынған болжам",
     "actualGenerationReport": "Нақты генерация есебі",
     "weatherStationExport": "Метеостанция деректерінің экспорты",
@@ -399,7 +399,7 @@
         "timestamp_invalid": "timestamp ISO 8601 күні болуы керек",
         "timestamp_not_15_minute": "timestamp 15 минут қадамына сәйкес болуы керек",
         "provider_code_required": "провайдер бағанын толтырыңыз",
-        "provider_code_unsupported": "провайдер бағанында «Қолмен болжам» мәнін қолданыңыз",
+        "provider_code_unsupported": "провайдер бағанында «Файлдан болжам» мәнін қолданыңыз",
         "forecast_power_kw_required": "forecast_power_kw толтырылуы керек",
         "forecast_power_kw_invalid": "forecast_power_kw сан болуы керек",
         "forecast_power_kw_negative": "forecast_power_kw теріс болмауы керек",
@@ -728,10 +728,10 @@
   "forecastProviders": {
     "demoNames": {
       "mockForecast": "Тест болжам",
-      "manualForecast": "Қолмен енгізілген болжам",
+      "manualForecast": "Файлдан болжам",
       "internalBaseline": "Ішкі базалық болжам",
       "manualCsvActuals": "CSV факт / нақты дерек тірегі",
-      "manualCsvForecast": "Қолмен болжам"
+      "manualCsvForecast": "Файлдан болжам"
     },
     "providerTypes": {
       "mock": "Тест",

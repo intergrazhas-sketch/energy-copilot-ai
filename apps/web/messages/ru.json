@@ -1,7 +1,7 @@
 {
   "dataImport": {
     "uploadCsvOrExcel": "Загрузить CSV или Excel-файл",
-    "manualExcelCsvForecast": "Ручной прогноз Excel/CSV",
+    "manualExcelCsvForecast": "Прогноз из файла (Excel/CSV)",
     "forecastFromOperatingCompany": "Прогноз от эксплуатационной компании",
     "actualGenerationReport": "Отчёт фактической генерации",
     "weatherStationExport": "Выгрузка метеостанции",
@@ -399,7 +399,7 @@
         "timestamp_invalid": "timestamp должен быть датой ISO 8601",
         "timestamp_not_15_minute": "timestamp должен идти с шагом 15 минут",
         "provider_code_required": "нужно заполнить колонку провайдера",
-        "provider_code_unsupported": "в колонке провайдера используйте «Ручной прогноз»",
+        "provider_code_unsupported": "в колонке провайдера используйте «Прогноз из файла»",
         "forecast_power_kw_required": "нужно заполнить forecast_power_kw",
         "forecast_power_kw_invalid": "forecast_power_kw должен быть числом",
         "forecast_power_kw_negative": "forecast_power_kw не может быть отрицательным",
@@ -728,10 +728,10 @@
   "forecastProviders": {
     "demoNames": {
       "mockForecast": "Тестовый прогноз",
-      "manualForecast": "Ручной прогноз",
+      "manualForecast": "Прогноз из файла",
       "internalBaseline": "Внутренний базовый прогноз",
       "manualCsvActuals": "CSV-факт / эталон фактических данных",
-      "manualCsvForecast": "Ручной прогноз"
+      "manualCsvForecast": "Прогноз из файла"
     },
     "providerTypes": {
       "mock": "Тестовый",
