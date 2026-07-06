@@ -61,6 +61,10 @@
     "rejectedRows": "Rejected rows: {value}",
     "duplicateRows": "Duplicates skipped: {value}",
     "skippedTitle": "Skipped / failed files",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "deleteConfirm": "Delete this import history entry? Station data will not be deleted.",
+    "deleteError": "Could not delete the import history entry. Try again.",
     "status": {
       "success": "Success",
       "partial_failed": "Partial",

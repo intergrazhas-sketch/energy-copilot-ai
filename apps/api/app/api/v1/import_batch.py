@@ -282,3 +282,43 @@ async def list_import_batches(
         )
 
     return BatchImportHistoryResponse(plant_id=plant_id, batches=items)
+
+
+@router.delete("/batches/{batch_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_import_batch(
+    batch_id: uuid.UUID,
+    plant_id: uuid.UUID = Query(...),
+    session: AsyncSession = Depends(get_db_session),
+):
+    """Remove an import audit batch and its files/errors. Does not touch station data."""
+    plant = await repository.get_solar_plant(session, plant_id)
+    if plant is None:
+        raise HTTPException(status_code=404, detail="Solar plant not found")
+
+    deleted = await audit_repository.delete_batch_for_plant(
+        session,
+        batch_id=batch_id,
+        plant_id=plant_id,
+    )
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Import batch not found")
+
+
+@router.delete("/files/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_import_file(
+    file_id: uuid.UUID,
+    plant_id: uuid.UUID = Query(...),
+    session: AsyncSession = Depends(get_db_session),
+):
+    """Remove a single import audit file row and related errors. Does not touch station data."""
+    plant = await repository.get_solar_plant(session, plant_id)
+    if plant is None:
+        raise HTTPException(status_code=404, detail="Solar plant not found")
+
+    deleted = await audit_repository.delete_file_for_plant(
+        session,
+        file_id=file_id,
+        plant_id=plant_id,
+    )
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Import file not found")

@@ -2097,6 +2097,7 @@ function SolarPlantProfileSection({
   const [batchResult, setBatchResult] = useState<BatchImportResponse | null>(null);
   const [batchMessage, setBatchMessage] = useState<{ type: "info" | "success" | "warning" | "error"; text: string } | null>(null);
   const [batchHistory, setBatchHistory] = useState<BatchImportHistoryItem[]>([]);
+  const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
 
   useEffect(() => {
     setLastActualImport(readLastCsvImportSummary(lastActualCsvImportStorageKey));
@@ -2360,6 +2361,39 @@ function SolarPlantProfileSection({
       });
     } finally {
       setBatchUploading(false);
+    }
+  };
+
+  const handleDeleteBatch = async (batchId: string) => {
+    if (!selectedPlantId || deletingBatchId) {
+      return;
+    }
+
+    if (!window.confirm(t("batchHistory.deleteConfirm"))) {
+      return;
+    }
+
+    setDeletingBatchId(batchId);
+    setBatchMessage(null);
+
+    try {
+      const response = await fetch(
+        buildUrl(`/api/v1/import/batches/${batchId}`, { plant_id: selectedPlantId }),
+        { method: "DELETE" },
+      );
+
+      if (!response.ok) {
+        throw new Error(t("batchHistory.deleteError"));
+      }
+
+      setBatchHistory((current) => current.filter((batch) => batch.id !== batchId));
+    } catch (error) {
+      setBatchMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : t("batchHistory.deleteError"),
+      });
+    } finally {
+      setDeletingBatchId(null);
     }
   };
 
@@ -2781,6 +2815,16 @@ function SolarPlantProfileSection({
                     <span className={`batch-history-status ${historyStatus.className}`}>
                       {historyStatus.label}
                     </span>
+                    <button
+                      className="batch-history-delete"
+                      disabled={deletingBatchId === batch.id}
+                      onClick={() => handleDeleteBatch(batch.id)}
+                      type="button"
+                    >
+                      {deletingBatchId === batch.id
+                        ? t("batchHistory.deleting")
+                        : t("batchHistory.delete")}
+                    </button>
                   </div>
                   <div className="batch-history-stats">
                     <span>
@@ -6973,6 +7017,24 @@ function DashboardOverview({
           align-items: center;
           justify-content: space-between;
           gap: 8px;
+        }
+
+        .batch-history-delete {
+          min-height: 44px;
+          margin-left: auto;
+          border: 1px solid rgba(255, 95, 86, 0.35);
+          border-radius: 999px;
+          background: rgba(255, 95, 86, 0.08);
+          color: #ffb4ad;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 800;
+          padding: 8px 14px;
+        }
+
+        .batch-history-delete:disabled {
+          cursor: not-allowed;
+          opacity: 0.55;
         }
 
         .batch-history-head strong {
